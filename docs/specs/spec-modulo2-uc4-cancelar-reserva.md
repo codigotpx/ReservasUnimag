@@ -67,7 +67,7 @@ Como Estudiante, quiero cancelar una reserva que ya no voy a usar, para liberar 
 - **Cancelación en el límite del plazo**: solicitud que llega exactamente en el instante de la antelación mínima; el criterio de borde debe ser explícito y determinista.
 - **Recurso dado de baja**: cuando un recurso pasa a `FUERA_DE_SERVICIO`, sus reservas futuras deben cancelarse con motivo propio y notificarse, sin penalizar a los titulares.
 - **Doble cancelación**: una segunda solicitud sobre una reserva ya `CANCELADA` debe ser idempotente y no liberar dos veces el cupo de préstamos.
-- **No presentación (no-show)**: ¿tras cuántos minutos sin uso se libera automáticamente el recurso y se contabiliza ausencia? [NEEDS CLARIFICATION: umbral de no-show y su relación con las sanciones no especificados]
+- **No presentación (no-show)**: tras 10 minutos de que la persona no se presente, el recurso pasa de `EN_USO` a `DISPONIBLE` y a la persona se le aplica una sanción. 
 
 ## Requirements *(mandatory)*
 
@@ -80,7 +80,7 @@ Como Estudiante, quiero cancelar una reserva que ya no voy a usar, para liberar 
 - **FR-005**: Las cancelaciones por prioridad académica NO DEBEN penalizar al estudiante ni computar como ausencia.
 - **FR-006**: La cancelación DEBE ser idempotente: repetirla sobre una reserva ya cancelada no altera el estado ni el cupo.
 - **FR-007**: El sistema DEBE mantener registro de auditoría de toda cancelación, con autor, motivo y marca de tiempo.
-- **FR-008**: La antelación mínima de cancelación DEBE ser parametrizable. [NEEDS CLARIFICATION: valor no especificado]
+- **FR-008**: La antelación mínima de cancelación DEBE ser de 5 minutos.
 
 ### Key Entities
 
