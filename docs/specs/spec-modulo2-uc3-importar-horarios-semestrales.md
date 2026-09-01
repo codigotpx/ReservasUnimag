@@ -7,90 +7,107 @@
 
 ## Contexto
 
-Módulo de carga académica: la fuente de verdad de la prioridad institucional. La Dirección de Programa carga las clases fijas del semestre, que quedan registradas como "Bloqueo Académico" sobre los recursos, y registra necesidades institucionales extraordinarias que prevalecen sobre las reservas estudiantiles ya confirmadas.
+La Dirección de Programa carga al sistema el horario de clases del semestre, y esas clases quedan apartadas automáticamente, de modo que ningún estudiante pueda reservar un salón a la hora en que hay clase.
 
-Alimenta la validación de disponibilidad de `Consultar recursos` y la denegación `RES-001` de `Reservar recursos`.
+Este es el caso de uso que le dice al sistema qué le pertenece a la actividad docente; los demás se apoyan en él. Cuando un estudiante consulta qué espacios hay libres, el sistema oculta los que tienen clase; si intenta reservar uno de ellos, se lo niega explicando que el recurso está reservado para actividad docente.
+
+Además de la carga del semestre completo, la Dirección de Programa puede registrar una **necesidad extraordinaria**: un examen adicional, una jornada institucional, la visita de un par académico. Esas actividades pesan más que las reservas de estudiantes que ya estén confirmadas: el sistema las cancela, deja constancia del motivo y avisa a quienes las tenían.
+
+### Glosario del documento
+
+| Palabra | Qué significa aquí |
+|---|---|
+| **Recurso** | Cualquier espacio o equipo que se pueda apartar: salón, laboratorio, sala de estudio, auditorio, videobeam. |
+| **Franja horaria** | Un día con una hora de inicio y una de fin. Por ejemplo: 10 de septiembre, de 14:00 a 16:00. |
+| **Bloqueo académico** | Marca que pone el sistema sobre un recurso en una franja para indicar que allí hay clase o actividad docente. Mientras esté puesta, ningún estudiante puede apartar ese recurso en esa franja. El sistema la registra con el estado `BLOQUEO_ACADEMICO`. |
+| **Reserva estudiantil** | Apartado hecho por un estudiante o monitor. Pesa menos que un bloqueo académico. Una reserva vigente deja el recurso en estado `EN_USO`. |
+| **Carga académica del semestre** | El archivo con todas las clases del periodo: qué asignatura, en qué salón, qué día y a qué hora. |
+| **Necesidad extraordinaria** | Actividad docente que no estaba en el horario original y que se registra ya empezado el semestre. |
+| **Reporte de importación** | Resumen que devuelve el sistema al terminar de leer el archivo: cuántas clases quedaron cargadas, cuántas filas se rechazaron y por qué. |
+| **Cruce de horarios** | Dos franjas sobre el mismo recurso que comparten aunque sea un minuto. Basta ese cruce para que haya conflicto. |
 
 **Actores**
 
 | Actor | Tipo | Participación |
 |---|---|---|
-| Dirección de Programa | Primario (humano) | Importa la carga académica semestral y registra actividades extraordinarias. |
-| Módulo 1 | Secundario (sistema) | Recibe los eventos de bloqueo de recursos y de cancelación por prioridad académica. |
+| Dirección de Programa | Primario (humano) | Carga el horario del semestre y registra las actividades extraordinarias. |
+| Módulo 1 | Secundario (sistema) | Recibe los avisos de qué recursos quedaron bloqueados y qué reservas se cancelaron, para informar a los estudiantes afectados. |
 
 **Casos de uso relacionados**
 
-- `Consultar recursos` — consume los bloqueos generados; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
-- `Reservar recursos` — deniega con `RES-001` sobre estos bloqueos; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
-- `Cancelar reserva` — recibe las cancelaciones automáticas por prioridad; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
-- `Notificar estado de recursos` (`<<include>>`) — ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Consultar recursos` — usa los bloqueos que aquí se crean para no mostrar como libre un salón que tiene clase; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
+- `Reservar recursos` — cuando un estudiante intenta apartar un recurso con clase, esa reserva se rechaza con el error `RES-001`: el recurso está reservado para actividad docente; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
+- `Cancelar reserva` — cuando una actividad extraordinaria desplaza reservas de estudiantes, esas reservas terminan cancelándose por esta vía, sin que el estudiante haya hecho nada; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
+- `Notificar estado de recursos` (`<<include>>`, es decir: cada vez que este caso de uso bloquea un recurso o cancela una reserva, el aviso se envía **siempre**; no es opcional ni hay que pedirlo aparte) — ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Importar horarios semestrales y aplicar jerarquía académica (Priority: P2)
+### User Story 1 - Cargar el horario del semestre y hacer valer la prioridad académica (Priority: P2)
 
-Como Dirección de Programa, quiero cargar el archivo de horarios del semestre para que las clases fijas queden registradas automáticamente como "Bloqueo Académico", y quiero poder registrar necesidades institucionales extraordinarias que prevalezcan sobre las reservas estudiantiles ya existentes, para garantizar la continuidad de la actividad docente.
+Como Dirección de Programa, quiero cargar de una sola vez el archivo con las clases del semestre para que esos salones queden apartados automáticamente, y quiero poder registrar después actividades académicas imprevistas que se impongan sobre las reservas de estudiantes ya hechas, para que ninguna clase se quede sin espacio.
 
-**Why this priority**: Es la fuente de verdad que alimenta la validación de disponibilidad de `Consultar recursos` y la denegación `RES-001` de `Reservar recursos`. Es P2 y no P1 porque en un MVP los bloqueos pueden cargarse manualmente; la importación masiva es lo que hace el proceso sostenible a escala de semestre.
+**Why this priority**: De aquí sale toda la prioridad académica del módulo: es lo que alimenta la validación de disponibilidad de `Consultar recursos` y el rechazo `RES-001` de `Reservar recursos`. Sin estos bloqueos, la consulta muestra como libres salones que tienen clase y el sistema permite reservas que después habría que deshacer a mano. Es P2 y no P1 porque en una primera versión los bloqueos se pueden cargar uno por uno; la carga masiva es lo que hace sostenible el proceso cuando son cientos de clases por semestre.
 
-**Independent Test**: Se puede probar de forma independiente cargando un archivo de horarios de prueba y verificando en el calendario de recursos que las franjas correspondientes quedaron en `BLOQUEO_ACADEMICO`, más un caso de carga extraordinaria que desplaza una reserva estudiantil preexistente.
+**Independent Test**: Se puede probar sola, sin depender del resto del módulo. Se carga un archivo de horarios de prueba y se revisa en el calendario de cada recurso que las franjas de clase quedaron en `BLOQUEO_ACADEMICO`. Aparte, se registra una actividad extraordinaria sobre un salón que ya tenía una reserva estudiantil y se verifica que esa reserva quedó cancelada con el motivo correcto.
 
 **Acceptance Scenarios**:
 
-1. **Scenario**: Importación exitosa del semestre
-   - **Given** la Dirección de Programa dispone de un archivo válido con las clases del semestre 2026-2
-   - **When** ejecuta la importación
-   - **Then** el sistema crea un bloqueo académico por cada sesión de clase, reporta el total de registros procesados y deja esas franjas no reservables por estudiantes
+*Cada escenario se lee así: **Given** es la situación de partida, **When** es lo que ocurre, y **Then** es lo que el sistema debe hacer.*
 
-2. **Scenario**: Archivo con filas inválidas
-   - **Given** el archivo contiene filas con recurso inexistente u horario mal formado
-   - **When** se ejecuta la importación
-   - **Then** el sistema procesa todo el archivo, en el caso de que haya al menos una fila inválida rechaza todo el archivo y entrega un reporte detallado indicando número de fila y motivo del rechazo
+1. **Scenario**: La carga del semestre sale bien
+   - **Given** la Dirección de Programa tiene el archivo con las clases del semestre 2026-2 y todas sus filas están correctas
+   - **When** ejecuta la carga
+   - **Then** el sistema crea un bloqueo académico por cada sesión de clase, informa cuántas quedaron cargadas y, desde ese momento, ningún estudiante puede reservar esos salones en esas franjas
 
-3. **Scenario**: Jerarquía — necesidad institucional extraordinaria
-   - **Given** el "Auditorio Menor" tiene una reserva estudiantil `CONFIRMADA` el 2026-09-10 de 14:00 a 16:00
-   - **When** la Dirección de Programa registra una actividad académica extraordinaria sobre ese recurso y franja
-   - **Then** el sistema cancela automáticamente la reserva estudiantil con motivo `CANCELADA_POR_PRIORIDAD_ACADEMICA`, crea el bloqueo académico y deja registrado el evento para su notificación
+2. **Scenario**: El archivo trae filas con errores
+   - **Given** el archivo contiene filas que nombran un salón que no existe o que traen una hora mal escrita
+   - **When** se ejecuta la carga
+   - **Then** el sistema revisa el archivo completo y, si encuentra al menos una fila con error, no carga nada: devuelve un reporte que señala fila por fila cuál es el problema, para corregir el archivo y volver a intentarlo
 
-4. **Scenario**: Una reserva académica nunca es desplazada
+3. **Scenario**: Una actividad académica imprevista desplaza una reserva de estudiante
+   - **Given** el "Auditorio Menor" tiene una reserva estudiantil `CONFIRMADA` para el 2026-09-10, de 14:00 a 16:00
+   - **When** la Dirección de Programa registra sobre ese mismo auditorio y esa misma franja una actividad académica extraordinaria
+   - **Then** el sistema cancela la reserva del estudiante con el motivo `CANCELADA_POR_PRIORIDAD_ACADEMICA`, crea el bloqueo académico y deja listo el aviso para que el estudiante se entere
+
+4. **Scenario**: Una clase nunca desplaza a otra clase
    - **Given** una franja ya está en `BLOQUEO_ACADEMICO`
-   - **When** se intenta registrar otra actividad académica solapada sobre el mismo recurso
-   - **Then** el sistema reporta el conflicto y exige resolución manual, sin cancelar automáticamente el bloqueo existente
+   - **When** se intenta registrar otra actividad académica que se cruza con ella en el mismo recurso
+   - **Then** el sistema avisa del choque y pide que lo resuelvan las personas responsables, sin cancelar por su cuenta el bloqueo que ya estaba
 
 ### Edge Cases
 
-- **Importación retroactiva**: ¿qué pasa si se importa un horario que colisiona con decenas de reservas estudiantiles ya confirmadas? El sistema debe presentar el impacto antes de confirmar y cancelar en lote de forma transaccional.
-- **Cambio de horario a mitad de semestre**: la reimportación debe ser idempotente sobre las sesiones ya cargadas y no duplicar bloqueos.
-- **Recurso dado de baja**: filas del archivo que referencien un recurso en `FUERA_DE_SERVICIO` deben reportarse como conflicto y no generar bloqueo silencioso.
-- **Archivo vacío o sin filas válidas**: la importación debe terminar sin efectos y con un reporte explícito, nunca con un éxito falso.
+- **Carga tardía del horario**: si el horario se carga cuando los estudiantes ya hicieron decenas de reservas, el sistema debe mostrar primero cuántas y cuáles reservas se cancelarían, esperar la confirmación de la Dirección de Programa y luego aplicar todo junto: o se cancelan todas y se crean todos los bloqueos, o no se cambia nada. Nunca a medias.
+- **Cambio de horario a mitad de semestre**: volver a cargar un horario que ya se había cargado debe actualizar lo que existe, no repetirlo. Una misma clase no puede quedar bloqueada dos veces sobre el mismo salón.
+- **Recurso dado de baja**: si una fila del archivo nombra un recurso en `FUERA_DE_SERVICIO`, el sistema debe reportarlo como conflicto y no bloquearlo en silencio, porque esa clase necesita otro espacio.
+- **Archivo vacío o sin ninguna fila válida**: la carga debe terminar sin cambiar nada y decirlo con claridad. Nunca puede mostrar un mensaje de éxito cuando no cargó ninguna clase.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: La Dirección de Programa DEBE poder importar el horario semestral de forma masiva desde un archivo.
-- **FR-002**: El sistema DEBE crear automáticamente un `BLOQUEO_ACADEMICO` por cada sesión de clase importada.
-- **FR-003**: El sistema DEBE validar cada fila del archivo y entregar un reporte de importación con registros procesados, rechazados y motivo del rechazo.
-- **FR-004**: El sistema DEBE otorgar a las reservas académicas prioridad total sobre las estudiantiles.
-- **FR-005**: El sistema DEBE cancelar automáticamente las reservas estudiantiles en conflicto cuando se registre una necesidad institucional extraordinaria, marcándolas con motivo `CANCELADA_POR_PRIORIDAD_ACADEMICA`.
-- **FR-006**: El sistema NO DEBE cancelar automáticamente un bloqueo académico existente por causa de otro bloqueo académico; ese conflicto se resuelve manualmente.
-- **FR-007**: La reimportación de un horario ya cargado DEBE ser idempotente y no generar bloqueos duplicados.
-- **FR-008**: El sistema DEBE presentar el impacto sobre reservas estudiantiles confirmadas antes de aplicar una importación o una actividad extraordinaria, y aplicar el lote de forma transaccional.
-- **FR-009**: El sistema DEBE mantener registro de auditoría de toda creación de bloqueo académico, con autor y marca de tiempo.
+- **FR-001**: La Dirección de Programa DEBE poder cargar el horario del semestre completo desde un archivo, en una sola operación.
+- **FR-002**: El sistema DEBE crear automáticamente un `BLOQUEO_ACADEMICO` por cada sesión de clase que traiga el archivo.
+- **FR-003**: El sistema DEBE revisar fila por fila el archivo y entregar un reporte con las clases cargadas, las filas rechazadas y el motivo de cada rechazo.
+- **FR-004**: El sistema DEBE dar siempre preferencia a la actividad académica sobre las reservas de estudiantes.
+- **FR-005**: Cuando se registre una actividad académica extraordinaria, el sistema DEBE cancelar las reservas estudiantiles que se crucen con ella, marcándolas con el motivo `CANCELADA_POR_PRIORIDAD_ACADEMICA`.
+- **FR-006**: El sistema NO DEBE cancelar por su cuenta un `BLOQUEO_ACADEMICO` existente para dar paso a otro; ese choque lo resuelven las personas responsables.
+- **FR-007**: Volver a cargar un horario ya cargado NO DEBE generar bloqueos repetidos de las mismas clases.
+- **FR-008**: Antes de aplicar una carga o una actividad extraordinaria que afecte reservas ya confirmadas, el sistema DEBE mostrar cuántas y cuáles se cancelarían, y aplicar el cambio completo o no aplicarlo en absoluto.
+- **FR-009**: El sistema DEBE guardar constancia de cada bloqueo académico creado, con quién lo creó y en qué fecha y hora.
 
 ### Key Entities
 
-- **BloqueoAcadémico**: ocupación de máxima prioridad derivada de la carga académica. Atributos: recurso, franja, asignatura, programa, docente, origen (horario regular o extraordinario).
-- **HorarioSemestral**: agrupación de sesiones de clase importadas para un periodo académico; conserva el resultado de la importación.
-- **Recurso**: espacio o equipo sobre el que se aplica el bloqueo.
-- **FranjaHoraria**: intervalo con fecha, hora de inicio y hora de fin; unidad sobre la que se calcula el solapamiento.
-- **Reserva**: apartado estudiantil que puede ser desplazado por la jerarquía académica.
+- **BloqueoAcadémico**: el apartado de mayor prioridad, que nace de la carga académica. Guarda de qué recurso se trata, en qué franja, para qué asignatura, de qué programa, con qué docente y si viene del horario regular o de una actividad extraordinaria.
+- **HorarioSemestral**: el conjunto de clases cargadas para un periodo académico, junto con el resultado de esa carga.
+- **Recurso**: el espacio o equipo sobre el que se aplica el bloqueo.
+- **FranjaHoraria**: la fecha con hora de inicio y hora de fin; es lo que se compara para saber si dos cosas se cruzan.
+- **Reserva**: el apartado que hizo un estudiante y que la prioridad académica puede desplazar.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: La importación de un horario semestral completo se procesa en menos de 5 minutos y reporta el 100 % de las filas rechazadas con su motivo.
-- **SC-002**: El 100 % de las sesiones de clase importadas quedan reflejadas como franjas no reservables por estudiantes.
-- **SC-003**: Cero bloqueos duplicados tras una reimportación del mismo horario.
-- **SC-004**: El 100 % de las reservas estudiantiles en conflicto con una actividad extraordinaria quedan canceladas con motivo `CANCELADA_POR_PRIORIDAD_ACADEMICA` y con evento emitido.
+- **SC-001**: La carga del horario de un semestre completo termina en menos de 5 minutos e informa el motivo del 100 % de las filas rechazadas.
+- **SC-002**: El 100 % de las clases cargadas quedan bloqueadas: ningún estudiante puede reservar esos recursos en esas franjas.
+- **SC-003**: Volver a cargar el mismo horario deja cero bloqueos repetidos.
+- **SC-004**: El 100 % de las reservas estudiantiles desplazadas por una actividad extraordinaria quedan canceladas con el motivo `CANCELADA_POR_PRIORIDAD_ACADEMICA` y con su aviso enviado.
