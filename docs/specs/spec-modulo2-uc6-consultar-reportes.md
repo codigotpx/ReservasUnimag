@@ -2,7 +2,7 @@
 
 **Created**: 2026-08-24
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Consultar reportes` (`<<include>>`)
+**Caso de uso (diagrama)**: `Consultar reportes` (se apoya siempre en el historial que dejan los demás casos de uso)
 **Prioridad global**: P3
 
 ## Contexto

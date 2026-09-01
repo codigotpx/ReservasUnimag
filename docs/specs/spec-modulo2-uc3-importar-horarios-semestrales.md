@@ -38,7 +38,7 @@ Además de la carga del semestre completo, la Dirección de Programa puede regis
 - `Consultar recursos` — usa los bloqueos que aquí se crean para no mostrar como libre un salón que tiene clase; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
 - `Reservar recursos` — cuando un estudiante intenta apartar un recurso con clase, esa reserva se rechaza con el error `RES-001`: el recurso está reservado para actividad docente; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Cancelar reserva` — cuando una actividad extraordinaria desplaza reservas de estudiantes, esas reservas terminan cancelándose por esta vía, sin que el estudiante haya hecho nada; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
-- `Notificar estado de recursos` (`<<include>>`, es decir: cada vez que este caso de uso bloquea un recurso o cancela una reserva, el aviso se envía **siempre**; no es opcional ni hay que pedirlo aparte) — ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Notificar estado de recursos` — paso que ocurre siempre: cada vez que este caso de uso bloquea un recurso o cancela una reserva, el aviso se envía **sin que nadie tenga que pedirlo** y sin posibilidad de saltárselo; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
 
 ## User Scenarios & Testing *(mandatory)*
 

@@ -2,12 +2,14 @@
 
 **Created**: 2026-08-24
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Notificar estado de recursos` (`<<include>>` de consultar, reservar y cancelar)
+**Caso de uso (diagrama)**: `Notificar estado de recursos` (paso que ocurre siempre dentro de consultar, reservar y cancelar)
 **Prioridad global**: P3
 
 ## Contexto
 
-Caso de uso transversal. Publica hacia el Módulo 1 cada cambio de estado de un recurso o de una reserva, para que los interesados sean informados oportunamente y los demás módulos operen sobre información consistente. Es incluido por `Consultar recursos`, `Reservar recursos`, `Cancelar reserva` e `Importar horarios semestrales`.
+Caso de uso transversal: no se pide por separado, sino que ocurre siempre, por dentro, cada vez que algo cambia. Cuando un recurso o una reserva cambian de estado, este caso de uso le avisa al Módulo 1, que es el encargado de hacérselo llegar a la persona. Así todos se enteran a tiempo y los demás módulos trabajan con la misma información.
+
+Ocurre dentro de `Consultar recursos`, `Reservar recursos`, `Cancelar reserva` e `Importar horarios semestrales`: ninguno de ellos tiene que pedirlo, y ninguno puede saltárselo.
 
 **Actores**
 
@@ -39,7 +41,7 @@ Caso de uso transversal. Publica hacia el Módulo 1 cada cambio de estado de un 
 
 Como sistema, quiero publicar hacia el Módulo 1 cada cambio de estado de un recurso o de una reserva (consulta que deriva en ocupación, confirmación, cancelación manual y cancelación por prioridad académica), para que los interesados sean informados oportunamente y los demás módulos operen sobre información consistente.
 
-**Why this priority**: Es un caso de uso `<<include>>` transversal a consultar, reservar y cancelar. Es P3 porque las historias base ya entregan valor sin él, pero sin notificación el estudiante desplazado por una clase se entera al llegar al salón.
+**Why this priority**: Es un paso que ocurre siempre dentro de consultar, reservar y cancelar. Es P3 porque las historias base ya entregan valor sin él, pero sin notificación el estudiante desplazado por una clase se entera al llegar al salón.
 
 **Independent Test**: Se puede probar de forma independiente disparando cada transición de estado y verificando contra un doble de prueba del Módulo 1 que se emitió un evento con el tipo, el recurso, la franja y el destinatario correctos.
 

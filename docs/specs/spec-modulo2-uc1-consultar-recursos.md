@@ -9,7 +9,7 @@
 
 Punto de entrada del Módulo 2. Permite al Estudiante (y al Monitor, que hereda sus capacidades) ver el catálogo de recursos físicos de la universidad —salones, laboratorios, salas de estudio y equipos— y saber cuáles están realmente disponibles en una fecha y franja horaria.
 
-Es el único caso de uso del módulo que no depende de ningún otro: `Reservar recursos` lo extiende (`<<extend>>`) e incluye `Notificar estado de recursos` (`<<include>>`).
+Es el único caso de uso del módulo que no depende de ningún otro: el estudiante puede entrar, mirar qué hay libre y salir sin hacer nada más. Desde aquí puede continuar hacia `Reservar recursos` si decide apartar algo, y cada cambio de estado de un recurso se informa siempre a través de `Notificar estado de recursos`.
 
 **Actores**
 
@@ -21,8 +21,8 @@ Es el único caso de uso del módulo que no depende de ningún otro: `Reservar r
 
 **Casos de uso relacionados**
 
-- `Reservar recursos` (`<<extend>>`) — ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
-- `Notificar estado de recursos` (`<<include>>`) — ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Reservar recursos` — continuación opcional de esta consulta: el estudiante puede quedarse solo mirando, o seguir y apartar uno de los recursos que encontró libres; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
+- `Notificar estado de recursos` — paso que ocurre siempre: los cambios de estado de los recursos se avisan sin que nadie tenga que pedirlo; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
 - `Importar horarios semestrales` — fuente de los estados `BLOQUEO_ACADEMICO` que esta consulta debe respetar; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
 
 ## User Scenarios & Testing *(mandatory)*
@@ -31,7 +31,7 @@ Es el único caso de uso del módulo que no depende de ningún otro: `Reservar r
 
 Como Estudiante (o Monitor), quiero consultar el catálogo de recursos filtrando por fecha, franja horaria y tipo de recurso, para ver únicamente aquellos que están realmente disponibles y no perder tiempo intentando apartar espacios ocupados o bloqueados por clase.
 
-**Why this priority**: Es la puerta de entrada del módulo y el único caso de uso que no depende de ningún otro (todos los demás lo extienden o lo consumen). Por sí solo ya entrega valor: elimina el recorrido físico por el campus para averiguar qué está libre.
+**Why this priority**: Es la puerta de entrada del módulo y el único caso de uso que no depende de ningún otro (todos los demás parten de aquí o usan la información que aquí se muestra). Por sí solo ya entrega valor: elimina el recorrido físico por el campus para averiguar qué está libre.
 
 **Independent Test**: Se puede probar de forma independiente cargando un conjunto de recursos con estados mixtos (`DISPONIBLE`, `EN_USO`, `BLOQUEO_ACADEMICO`, `FUERA_DE_SERVICIO`) y verificando que la consulta para una franja dada devuelve solo los disponibles, sin necesidad de que exista la funcionalidad de reserva.
 
