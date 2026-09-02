@@ -25,6 +25,8 @@ Es el único caso de uso del módulo que no depende de ningún otro: el estudian
 - `Notificar estado de recursos` — paso que ocurre siempre: los cambios de estado de los recursos se avisan sin que nadie tenga que pedirlo; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
 - `Importar horarios semestrales` — fuente de los estados `BLOQUEO_ACADEMICO` que esta consulta debe respetar; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
 
+**Estados del recurso (Módulo 1)**: conforme a [gestionunimag.md](../gestionunimag.md), el inventario gestiona cinco estados: `DISPONIBLE`, `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` y `EN_MANTENIMIENTO`. Esta consulta respeta ese catálogo.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Consultar recursos disponibles (Priority: P1)
@@ -33,7 +35,7 @@ Como Estudiante (o Monitor), quiero consultar el catálogo de recursos filtrando
 
 **Why this priority**: Es la puerta de entrada del módulo y el único caso de uso que no depende de ningún otro (todos los demás parten de aquí o usan la información que aquí se muestra). Por sí solo ya entrega valor: elimina el recorrido físico por el campus para averiguar qué está libre.
 
-**Independent Test**: Se puede probar de forma independiente cargando un conjunto de recursos con estados mixtos (`DISPONIBLE`, `EN_USO`, `BLOQUEO_ACADEMICO`, `FUERA_DE_SERVICIO`) y verificando que la consulta para una franja dada devuelve solo los disponibles, sin necesidad de que exista la funcionalidad de reserva.
+**Independent Test**: Se puede probar de forma independiente cargando un conjunto de recursos con estados mixtos (`DISPONIBLE`, `RESERVADO`, `EN_USO`, `BLOQUEO_ACADEMICO`, `EN_MANTENIMIENTO`) y verificando que la consulta para una franja dada devuelve solo los disponibles, sin necesidad de que exista la funcionalidad de reserva.
 
 **Acceptance Scenarios**:
 
@@ -47,20 +49,25 @@ Como Estudiante (o Monitor), quiero consultar el catálogo de recursos filtrando
    - **When** el Estudiante consulta los recursos disponibles para el 2026-09-01 de 08:00 a 10:00
    - **Then** el "Laboratorio de Redes" no aparece dentro de los recursos seleccionables y se indica que está en `BLOQUEO_ACADEMICO`
 
-3. **Scenario**: Ocultamiento por recurso en uso
+3. **Scenario**: Ocultamiento por recurso reservado
    - **Given** el "Auditorio Menor" tiene una reserva estudiantil confirmada el 2026-09-02 de 14:00 a 16:00
    - **When** otro Estudiante consulta ese mismo día y franja
-   - **Then** el "Auditorio Menor" se muestra como `EN_USO` y no es seleccionable
+   - **Then** el "Auditorio Menor" se muestra como `RESERVADO` y no es seleccionable
 
-4. **Scenario**: Sin resultados
+4. **Scenario**: Ocultamiento por recurso en uso
+   - **Given** el "Salón 201" tiene una reserva activa cuya franja actual es 2026-09-01 de 14:00 a 16:00
+   - **When** el Estudiante consulta los recursos disponibles para el 2026-09-01 de 14:00 a 16:00
+   - **Then** el "Salón 201" se muestra como `EN_USO` y no es seleccionable
+
+5. **Scenario**: Sin resultados
    - **Given** todos los recursos del tipo "Laboratorio" están ocupados o bloqueados en la franja consultada
    - **When** el Estudiante ejecuta la consulta filtrando por tipo "Laboratorio"
-   - **Then** el sistema devuelve una lista vacía con un mensaje explicativo, muestra los recursos fuera de operación con estado `FUERA_DE_SERVICIO` y sugiere la siguiente franja con disponibilidad
+   - **Then** el sistema devuelve una lista vacía con un mensaje explicativo, muestra los recursos en reparación con estado `EN_MANTENIMIENTO` y sugiere la siguiente franja con disponibilidad
 
 ### Edge Cases
 
 - **Solapamiento parcial**: un recurso con bloqueo académico de 08:00 a 10:00 no debe presentarse como disponible para una consulta de 09:30 a 10:30; cualquier intersección no vacía lo excluye.
-- **Recurso dado de baja**: un recurso en `FUERA_DE_SERVICIO` nunca debe ser seleccionable, aunque no tenga reservas ni bloqueos en la franja.
+- **Recurso en mantenimiento**: un recurso en `EN_MANTENIMIENTO` nunca debe ser seleccionable, aunque no tenga reservas ni bloqueos en la franja.
 - **Zona horaria y cambio de día**: franjas definidas en el límite del día o que crucen la medianoche. [NEEDS CLARIFICATION: ¿se permiten franjas que crucen la medianoche?]
 - **Vista desactualizada**: qué se muestra cuando un recurso pasa a `EN_USO` justo después de renderizarse la lista de resultados; la disponibilidad mostrada es orientativa y se revalida al reservar.
 
@@ -69,17 +76,18 @@ Como Estudiante (o Monitor), quiero consultar el catálogo de recursos filtrando
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE permitir consultar los recursos filtrando por fecha, franja horaria, tipo de recurso y capacidad mínima.
-- **FR-002**: El sistema DEBE excluir de la selección estudiantil todo recurso cuyo estado en la franja consultada sea `BLOQUEO_ACADEMICO`, `EN_USO` o `FUERA_DE_SERVICIO`.
+- **FR-002**: El sistema DEBE excluir de la selección estudiantil todo recurso cuyo estado en la franja consultada sea `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO`.
 - **FR-003**: El sistema DEBE calcular la disponibilidad como la ausencia de intersección con cualquier bloqueo académico o reserva vigente sobre el mismo recurso.
 - **FR-004**: El sistema DEBE indicar, para cada recurso no disponible, el estado que motiva su exclusión.
 - **FR-005**: El sistema DEBE aplicar al rol Monitor todas las capacidades de consulta del rol Estudiante.
 
 ### Key Entities
 
-- **Recurso**: espacio o equipo reservable. Atributos: identificador, nombre, tipo, ubicación, capacidad, estado operativo.
+- **Recurso**: espacio o equipo reservable. Atributos: identificador, nombre, tipo, ubicación, capacidad, estado operativo. Conforme a la tipificación del Módulo 1, el **tipo** categoriza el recurso en «Recursos Físicos (Muebles/Equipos)» —p. ej. Libro, Microscopio, Kit de dibujo— o «Espacios (Aforo)» —p. ej. Salón, Auditorio, Laboratorio, Sala de estudio— y define sus reglas de uso (capacidad en unidades vs. aforo máximo).
 - **FranjaHoraria**: intervalo con fecha, hora de inicio y hora de fin; unidad sobre la que se calcula el solapamiento.
-- **Reserva**: apartado vigente que hace que un recurso figure como `EN_USO` en una franja.
+- **Reserva**: apartado vigente que hace que un recurso figure como `RESERVADO` en una franja.
 - **BloqueoAcadémico**: ocupación de máxima prioridad que hace que un recurso figure como `BLOQUEO_ACADEMICO` en una franja.
+- **Mantenimiento**: estado operativo por el que un recurso se encuentra en reparación y figura como `EN_MANTENIMIENTO` en una franja.
 
 ## Success Criteria *(mandatory)*
 
