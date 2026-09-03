@@ -30,8 +30,8 @@ Además de la carga del semestre completo, la Dirección de Programa puede regis
 
 | Actor | Tipo | Participación |
 |---|---|---|
-| Dirección de Programa | Primario (humano) | Carga el horario del semestre y registra las actividades extraordinarias. |
-| Módulo 1 | Secundario (sistema) | Recibe los avisos de qué recursos quedaron bloqueados y qué reservas se cancelaron, para informar a los estudiantes afectados. |
+| Dirección de Programa | Primario | Carga el horario del semestre y registra las actividades extraordinarias. |
+| Módulo 1 | Secundario | Recibe los avisos de qué recursos quedaron bloqueados y qué reservas se cancelaron, para informar a los estudiantes afectados. |
 
 **Casos de uso relacionados**
 

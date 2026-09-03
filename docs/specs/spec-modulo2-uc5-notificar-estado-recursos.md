@@ -15,8 +15,8 @@ Ocurre dentro de `Consultar recursos`, `Reservar recursos`, `Cancelar reserva` e
 
 | Actor | Tipo | Participación |
 |---|---|---|
-| Módulo 1 | Secundario (sistema) | Destinatario de los eventos; responsable de la entrega al usuario final. |
-| Estudiante / Monitor / Dirección de Programa | Primarios (humanos) | Destinatarios finales de la información notificada. |
+| Módulo 1 | Secundario | Destinatario de los eventos; responsable de la entrega al usuario final. |
+| Estudiante / Monitor / Dirección de Programa | Primarios | Destinatarios finales de la información notificada. |
 
 **Casos de uso relacionados**
 

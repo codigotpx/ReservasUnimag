@@ -13,9 +13,9 @@ Capa analítica del módulo. El Monitor y la Dirección de Programa consultan re
 
 | Actor | Tipo | Participación |
 |---|---|---|
-| Monitor | Primario (humano) | Consulta reportes de uso; es la capacidad que lo distingue del Estudiante. |
-| Dirección de Programa | Primario (humano) | Consulta reportes institucionales de ocupación y denegaciones. |
-| Módulo 3 | Secundario (sistema) | Consume y provee la información consolidada de uso. |
+| Monitor | Primario | Consulta reportes de uso; es la capacidad que lo distingue del Estudiante. |
+| Dirección de Programa | Primario | Consulta reportes institucionales de ocupación y denegaciones. |
+| Módulo 3 | Secundario | Consume y provee la información consolidada de uso. |
 
 **Casos de uso relacionados**
 

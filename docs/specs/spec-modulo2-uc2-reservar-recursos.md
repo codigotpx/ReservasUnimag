@@ -2,7 +2,7 @@
 
 **Created**: 2026-08-24
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Reservar recursos` (`<<extend>>` de `Consultar recursos`)
+**Caso de uso**: `Reservar recursos`, continuación de `Consultar recursos`
 **Prioridad global**: P1
 
 ## Contexto
@@ -13,14 +13,14 @@ Propuesta de valor central del Módulo 2: la interfaz de apartado estudiantil. E
 
 | Actor | Tipo | Participación |
 |---|---|---|
-| Estudiante | Primario (humano) | Solicita el apartado de un recurso para una franja horaria. |
-| Monitor | Primario (humano) | Especialización de Estudiante: hereda esta capacidad. |
-| Módulo 1 | Secundario (sistema) | Recibe el evento de confirmación de la reserva. |
+| Estudiante | Primario | Solicita el apartado de un recurso para una franja horaria. |
+| Monitor | Primario | Especialización de Estudiante: hereda esta capacidad. |
+| Módulo 1 | Secundario | Recibe el evento de confirmación de la reserva. |
 
 **Casos de uso relacionados**
 
-- `Consultar recursos` (caso base extendido) — ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
-- `Notificar estado de recursos` (`<<include>>`) — ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Consultar recursos` — ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
+- `Notificar estado de recursos` — ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
 - `Importar horarios semestrales` — origen de las denegaciones `RES-001`; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
 
 **Diccionario de errores**
@@ -47,7 +47,7 @@ Como Estudiante, quiero apartar un recurso disponible para una franja horaria co
 1. **Scenario**: Reserva exitosa
    - **Given** el Estudiante no tiene sanciones activas, tiene 1 de 3 préstamos vigentes y la "Sala de Estudio 3" está `DISPONIBLE` el 2026-09-01 de 10:00 a 12:00
    - **When** solicita la reserva de ese recurso en esa franja
-   - **Then** el sistema crea la reserva en estado `CONFIRMADA`, marca el recurso como `EN_USO` para esa franja y devuelve el identificador de la reserva
+   - **Then** el sistema crea la reserva en estado `CONFIRMADA` y marca el recurso como `RESERVADO` para esa franja; cuando llega la hora de la franja y la persona se presenta, el recurso pasa a `EN_USO`. El sistema devuelve el identificador de la reserva
 
 2. **Scenario**: Denegación por conflicto académico (RES-001)
    - **Given** el "Laboratorio de Redes" quedó marcado como `BLOQUEO_ACADEMICO` el 2026-09-01 de 08:00 a 10:00
@@ -75,7 +75,7 @@ Como Estudiante, quiero apartar un recurso disponible para una franja horaria co
 - **Concurrencia en la última franja**: dos confirmaciones simultáneas sobre el mismo recurso y franja nunca pueden coexistir.
 - **Sanción que inicia con reservas vigentes**: se le debe impedir crear nuevas reservas y además se le deben cancelar las que ya tenían.
 - **Múltiples causas de denegación simultáneas**: se aplica el orden de validación definido (sanción, luego límite, luego conflicto/ocupación) y se devuelve un único código, el primero que falla.
-- **No presentación (no-show)**: tras 10 minutos de que la persona no se presente, el recurso pasa de `EN_USO` a `DISPONIBLE` y a la persona se le aplica una sanción. 
+- **No presentación (no-show)**: el recurso pasa a `EN_USO` al llegar la hora de la franja, aunque la persona no se haya presentado; tras 10 minutos sin presentarse, el recurso vuelve a `DISPONIBLE` y a la persona se le aplica una sanción. 
 
 ## Requirements *(mandatory)*
 

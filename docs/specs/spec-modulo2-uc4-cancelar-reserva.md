@@ -13,9 +13,9 @@ Cierra el ciclo de vida de la reserva. Permite al Estudiante liberar a tiempo un
 
 | Actor | Tipo | Participación |
 |---|---|---|
-| Estudiante | Primario (humano) | Cancela sus propias reservas. |
-| Monitor | Primario (humano) | Especialización de Estudiante: hereda esta capacidad. |
-| Módulo 1 | Secundario (sistema) | Recibe el evento de cancelación. |
+| Estudiante | Primario | Cancela sus propias reservas. |
+| Monitor | Primario | Especialización de Estudiante: hereda esta capacidad. |
+| Módulo 1 | Secundario | Recibe el evento de cancelación. |
 
 **Casos de uso relacionados**
 

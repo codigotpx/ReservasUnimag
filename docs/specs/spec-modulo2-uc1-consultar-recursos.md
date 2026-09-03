@@ -15,9 +15,9 @@ Es el único caso de uso del módulo que no depende de ningún otro: el estudian
 
 | Actor | Tipo | Participación |
 |---|---|---|
-| Estudiante | Primario (humano) | Consulta el catálogo filtrando por fecha, franja y tipo de recurso. |
-| Monitor | Primario (humano) | Especialización de Estudiante: hereda esta capacidad. |
-| Módulo 1 | Secundario (sistema) | Recibe los eventos de cambio de estado de los recursos. |
+| Estudiante | Primario | Consulta el catálogo filtrando por fecha, franja y tipo de recurso. |
+| Monitor | Primario | Especialización de Estudiante: hereda esta capacidad. |
+| Módulo 1 | Secundario | Recibe los eventos de cambio de estado de los recursos. |
 
 **Casos de uso relacionados**
 
