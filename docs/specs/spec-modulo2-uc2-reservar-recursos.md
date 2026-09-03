@@ -8,19 +8,24 @@
 ## Contexto
 
 Propuesta de valor central del Módulo 2: la interfaz de apartado estudiantil. Extiende `Consultar recursos` —el estudiante llega aquí desde la lista de recursos disponibles— y aplica el motor de reglas de negocio que decide si la reserva se confirma o se deniega, con un diccionario de errores que explica siempre la causa exacta.
-¿tras cuántos minutos sin uso se libera automáticamente el recurso y se contabiliza ausencia?:1
+
 **Actores**
 
 | Actor | Tipo | Participación |
 |---|---|---|
 | Estudiante | Primario | Solicita el apartado de un recurso para una franja horaria. |
 | Monitor | Primario | Especialización de Estudiante: hereda esta capacidad. |
-| Módulo 1 | Secundario | Recibe el evento de confirmación de la reserva. |
+| Módulo 1 | Secundario | Aporta el estado real del recurso y recibe el estado actualizado tras la reserva. |
+| Módulo 3 | Secundario | Provee las sanciones vigentes de la persona y recibe el reporte cuando no se presenta a usar lo que apartó. |
 
 **Casos de uso relacionados**
 
 - `Consultar recursos` — ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
-- `Notificar estado de recursos` — ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Actualizar estado de los recursos` — **paso que ocurre siempre por dentro**: al confirmar la reserva, el recurso cambia de estado y el Módulo 1 se entera; no se puede saltar; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
+- `Consultar disponibilidad de los recursos` — la comprobación que se hace en el último momento, antes de confirmar; ver [spec-modulo2-uc8-consultar-disponibilidad-recursos.md](./spec-modulo2-uc8-consultar-disponibilidad-recursos.md)
+- `Consultar reportes` — de ahí sale la información de sanciones que sustenta la denegación `RES-003`; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
+- `Reportar no asistencia` — lo que ocurre si la persona no llega a usar lo que apartó; ver [spec-modulo2-uc9-reportar-no-asistencia.md](./spec-modulo2-uc9-reportar-no-asistencia.md)
+- `Notificar estado de recursos al finalizar reserva` — le cuenta al Módulo 3 cómo terminó la reserva; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
 - `Importar horarios semestrales` — origen de las denegaciones `RES-001`; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
 
 **Diccionario de errores**
@@ -64,32 +69,29 @@ Como Estudiante, quiero apartar un recurso disponible para una franja horaria co
    - **When** intenta reservar cualquier recurso
    - **Then** el sistema rechaza la solicitud con el error `RES-003 — Sanción activa` e informa la fecha de finalización de la sanción
 
-5. **Scenario**: Doble reserva concurrente sobre el mismo recurso
-   - **Given** dos estudiantes solicitan simultáneamente la misma franja del mismo recurso disponible
-   - **When** ambas solicitudes se procesan
-   - **Then** exactamente la primera queda `CONFIRMADA` y la otra recibe `RES-004 — El recurso acaba de ser tomado`, sin que existan dos reservas solapadas
-
 ### Edge Cases
 
 - **Solapamiento parcial**: ¿Qué ocurre si una solicitud de reserva de 09:30 a 10:30 cae parcialmente sobre un bloqueo académico de 08:00 a 10:00? Debe denegarse por `RES-001`.
-- **Concurrencia en la última franja**: dos confirmaciones simultáneas sobre el mismo recurso y franja nunca pueden coexistir.
+- **Concurrencia sobre la misma franja**: si dos estudiantes solicitan simultáneamente el mismo recurso y franja, exactamente uno queda `CONFIRMADA` y el otro recibe `RES-004 — El recurso acaba de ser tomado`; dos reservas solapadas nunca pueden coexistir.
 - **Sanción que inicia con reservas vigentes**: se le debe impedir crear nuevas reservas y además se le deben cancelar las que ya tenían.
 - **Múltiples causas de denegación simultáneas**: se aplica el orden de validación definido (sanción, luego límite, luego conflicto/ocupación) y se devuelve un único código, el primero que falla.
-- **No presentación (no-show)**: el recurso pasa a `EN_USO` al llegar la hora de la franja, aunque la persona no se haya presentado; tras 10 minutos sin presentarse, el recurso vuelve a `DISPONIBLE` y a la persona se le aplica una sanción. 
+- **No presentación (no-show)**: el recurso pasa a `EN_USO` al llegar la hora de la franja, aunque la persona no se haya presentado; tras 10 minutos sin presentarse, el recurso vuelve a `DISPONIBLE` y la ausencia se le reporta al Módulo 3, que es quien decide y aplica la sanción. Este módulo no sanciona a nadie.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: Los usuarios DEBEN poder crear una reserva sobre un recurso disponible indicando fecha, hora de inicio y hora de fin.
-- **FR-002**: El sistema DEBE validar, antes de confirmar, y en este orden: sanción activa, límite de préstamos vigentes y conflicto académico u ocupación.
+- **FR-002**: El sistema DEBE validar, antes de confirmar, y en este orden: sanción activa, límite de préstamos vigentes y conflicto académico u ocupación. La sanción se comprueba contra el Módulo 3 mediante `Consultar reportes`.
 - **FR-003**: El sistema DEBE denegar la reserva con un código y mensaje específico del diccionario de errores: `RES-001` conflicto académico, `RES-002` límite máximo de préstamos alcanzado, `RES-003` sanción activa, `RES-004` recurso tomado concurrentemente.
 - **FR-004**: El sistema DEBE garantizar que no existan dos reservas confirmadas solapadas sobre el mismo recurso, incluso bajo solicitudes concurrentes.
 - **FR-005**: El sistema DEBE registrar toda denegación con su código, usuario, recurso y marca de tiempo, para alimentar la reportería.
-- **FR-006**: El sistema DEBE revalidar la disponibilidad en el momento de confirmar, sin confiar en el resultado de la consulta previa.
+- **FR-006**: El sistema DEBE revalidar la disponibilidad en el momento de confirmar, mediante `Consultar disponibilidad de los recursos`, sin confiar en el resultado de la consulta previa.
 - **FR-007**: El sistema DEBE mantener registro de auditoría de toda creación de reserva, con autor y marca de tiempo.
 - **FR-008**: El límite máximo de préstamos simultáneos DEBE ser parametrizable. [NEEDS CLARIFICATION: valor por defecto y si varía por rol o tipo de recurso]
 - **FR-009**: La duración máxima de una reserva DEBE ser parametrizable. [NEEDS CLARIFICATION: valor no especificado]
+- **FR-010**: El sistema DEBE liberar automáticamente el recurso y reportar la ausencia del titular al Módulo 3 si transcurren 10 minutos desde el inicio de la franja sin que se registre el uso; la sanción la decide y la aplica el Módulo 3.
+- **FR-011**: Al confirmar una reserva, el sistema DEBE ejecutar siempre `Actualizar estado de los recursos`, sin que el usuario tenga que pedirlo y sin posibilidad de omitirlo.
 
 ### Key Entities
 

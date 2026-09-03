@@ -9,7 +9,7 @@
 
 Punto de entrada del Módulo 2. Permite al Estudiante (y al Monitor, que hereda sus capacidades) ver el catálogo de recursos físicos de la universidad —salones, laboratorios, salas de estudio y equipos— y saber cuáles están realmente disponibles en una fecha y franja horaria.
 
-Es el único caso de uso del módulo que no depende de ningún otro: el estudiante puede entrar, mirar qué hay libre y salir sin hacer nada más. Desde aquí puede continuar hacia `Reservar recursos` si decide apartar algo, y cada cambio de estado de un recurso se informa siempre a través de `Notificar estado de recursos`.
+Es el único caso de uso del módulo que no depende de ningún otro: el estudiante puede entrar, mirar qué hay libre y salir sin hacer nada más. Desde aquí puede continuar hacia `Reservar recursos` si decide apartar algo. Lo que ve es una foto del momento: la disponibilidad de cada recurso se comprueba contra el inventario del Módulo 1 a través de `Consultar disponibilidad de los recursos`, y se vuelve a comprobar al confirmar una reserva, porque entre mirar y decidir alguien más pudo haberse adelantado.
 
 **Actores**
 
@@ -17,12 +17,14 @@ Es el único caso de uso del módulo que no depende de ningún otro: el estudian
 |---|---|---|
 | Estudiante | Primario | Consulta el catálogo filtrando por fecha, franja y tipo de recurso. |
 | Monitor | Primario | Especialización de Estudiante: hereda esta capacidad. |
-| Módulo 1 | Secundario | Recibe los eventos de cambio de estado de los recursos. |
+| Dirección de Programa | Primario | Consulta el catálogo para ver la ocupación real de la infraestructura. |
+| Módulo 1 | Secundario | Aporta el estado real de cada recurso; es el dueño del inventario. |
 
 **Casos de uso relacionados**
 
 - `Reservar recursos` — continuación opcional de esta consulta: el estudiante puede quedarse solo mirando, o seguir y apartar uno de los recursos que encontró libres; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
-- `Notificar estado de recursos` — paso que ocurre siempre: los cambios de estado de los recursos se avisan sin que nadie tenga que pedirlo; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Consultar disponibilidad de los recursos` — la comprobación que responde, recurso por recurso, si está libre en la franja pedida; es con lo que se arma esta lista; ver [spec-modulo2-uc8-consultar-disponibilidad-recursos.md](./spec-modulo2-uc8-consultar-disponibilidad-recursos.md)
+- `Consultar reportes` — obtiene del Módulo 3 si la persona está sancionada, para poder avisárselo antes de que intente apartar algo; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
 - `Importar horarios semestrales` — fuente de los estados `BLOQUEO_ACADEMICO` que esta consulta debe respetar; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
 
 **Estados del recurso (Módulo 1)**: conforme a [gestionunimag.md](../gestionunimag.md), el inventario gestiona cinco estados: `DISPONIBLE`, `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` y `EN_MANTENIMIENTO`. Esta consulta respeta ese catálogo.
@@ -42,7 +44,7 @@ Como Estudiante (o Monitor), quiero consultar el catálogo de recursos filtrando
 1. **Scenario**: Consulta de franja completamente libre
    - **Given** el recurso "Sala de Estudio 3" no tiene reservas ni clases registradas para el 2026-09-01 entre 10:00 y 12:00
    - **When** el Estudiante consulta los recursos disponibles para esa fecha y franja
-   - **Then** el sistema muestra "Sala de Estudio 3" con estado `DISPONIBLE` y su capacidad asociada
+   - **Then** el sistema muestra "Sala de Estudio 3" con estado `DISPONIBLE` y su aforo máximo
 
 2. **Scenario**: Ocultamiento por bloqueo académico
    - **Given** el "Laboratorio de Redes" tiene una clase importada del horario semestral el 2026-09-01 de 08:00 a 10:00
@@ -75,7 +77,7 @@ Como Estudiante (o Monitor), quiero consultar el catálogo de recursos filtrando
 
 ### Functional Requirements
 
-- **FR-001**: El sistema DEBE permitir consultar los recursos filtrando por fecha, franja horaria, tipo de recurso y capacidad mínima.
+- **FR-001**: El sistema DEBE permitir consultar los recursos filtrando por fecha, franja horaria, tipo de recurso y, para espacios, por aforo mínimo.
 - **FR-002**: El sistema DEBE excluir de la selección estudiantil todo recurso cuyo estado en la franja consultada sea `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO`.
 - **FR-003**: El sistema DEBE calcular la disponibilidad como la ausencia de intersección con cualquier bloqueo académico o reserva vigente sobre el mismo recurso.
 - **FR-004**: El sistema DEBE indicar, para cada recurso no disponible, el estado que motiva su exclusión.
@@ -83,7 +85,9 @@ Como Estudiante (o Monitor), quiero consultar el catálogo de recursos filtrando
 
 ### Key Entities
 
-- **Recurso**: espacio o equipo reservable. Atributos: identificador, nombre, tipo, ubicación, capacidad, estado operativo. Conforme a la tipificación del Módulo 1, el **tipo** categoriza el recurso en «Recursos Físicos (Muebles/Equipos)» —p. ej. Libro, Microscopio, Kit de dibujo— o «Espacios (Aforo)» —p. ej. Salón, Auditorio, Laboratorio, Sala de estudio— y define sus reglas de uso (capacidad en unidades vs. aforo máximo).
+- **Recurso**: espacio o equipo reservable. Conforme a la tipificación del Módulo 1, separa dos categorías con atributos propios:
+  - **Espacio (Aforo)** —p. ej. Salón, Auditorio, Laboratorio, Sala de estudio—: identificador (ID de salón/auditorio), nombre, aforo máximo, equipamiento fijo (proyector, aire acondicionado, sillas), facultad a la que pertenece y ubicación.
+  - **Recurso físico (Mueble/Equipo)** —p. ej. Libro, Microscopio, Kit de dibujo, Videobeam—: identificador (placa de inventario), nombre, tipo, estado físico y ubicación. No tiene capacidad.
 - **FranjaHoraria**: intervalo con fecha, hora de inicio y hora de fin; unidad sobre la que se calcula el solapamiento.
 - **Reserva**: apartado vigente que hace que un recurso figure como `RESERVADO` en una franja.
 - **BloqueoAcadémico**: ocupación de máxima prioridad que hace que un recurso figure como `BLOQUEO_ACADEMICO` en una franja.

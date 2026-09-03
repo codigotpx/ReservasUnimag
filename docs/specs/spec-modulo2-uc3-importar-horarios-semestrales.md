@@ -20,7 +20,7 @@ Además de la carga del semestre completo, la Dirección de Programa puede regis
 | **Recurso** | Cualquier espacio o equipo que se pueda apartar: salón, laboratorio, sala de estudio, auditorio, videobeam. |
 | **Franja horaria** | Un día con una hora de inicio y una de fin. Por ejemplo: 10 de septiembre, de 14:00 a 16:00. |
 | **Bloqueo académico** | Marca que pone el sistema sobre un recurso en una franja para indicar que allí hay clase o actividad docente. Mientras esté puesta, ningún estudiante puede apartar ese recurso en esa franja. El sistema la registra con el estado `BLOQUEO_ACADEMICO`. |
-| **Reserva estudiantil** | Apartado hecho por un estudiante o monitor. Pesa menos que un bloqueo académico. Una reserva vigente deja el recurso en estado `EN_USO`. |
+| **Reserva estudiantil** | Apartado hecho por un estudiante o monitor. Pesa menos que un bloqueo académico. Una reserva vigente deja el recurso en estado `RESERVADO`; solo pasa a `EN_USO` cuando llega la franja y la persona se presenta. |
 | **Carga académica del semestre** | El archivo con todas las clases del periodo: qué asignatura, en qué salón, qué día y a qué hora. |
 | **Necesidad extraordinaria** | Actividad docente que no estaba en el horario original y que se registra ya empezado el semestre. |
 | **Reporte de importación** | Resumen que devuelve el sistema al terminar de leer el archivo: cuántas clases quedaron cargadas, cuántas filas se rechazaron y por qué. |
@@ -38,7 +38,8 @@ Además de la carga del semestre completo, la Dirección de Programa puede regis
 - `Consultar recursos` — usa los bloqueos que aquí se crean para no mostrar como libre un salón que tiene clase; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
 - `Reservar recursos` — cuando un estudiante intenta apartar un recurso con clase, esa reserva se rechaza con el error `RES-001`: el recurso está reservado para actividad docente; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Cancelar reserva` — cuando una actividad extraordinaria desplaza reservas de estudiantes, esas reservas terminan cancelándose por esta vía, sin que el estudiante haya hecho nada; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
-- `Notificar estado de recursos` — paso que ocurre siempre: cada vez que este caso de uso bloquea un recurso o cancela una reserva, el aviso se envía **sin que nadie tenga que pedirlo** y sin posibilidad de saltárselo; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Actualizar estado de los recursos` — marcar un bloqueo académico es un cambio de estado: el recurso queda bloqueado en esa franja y el Módulo 1 se entera, **sin que nadie tenga que pedirlo**; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
+- `Notificar estado de recursos al finalizar reserva` — cuando esta carga desplaza reservas de estudiantes, el cierre de cada una se le informa al Módulo 3; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
 
 ## User Scenarios & Testing *(mandatory)*
 

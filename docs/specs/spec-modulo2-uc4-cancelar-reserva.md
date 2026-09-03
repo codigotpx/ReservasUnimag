@@ -15,13 +15,16 @@ Cierra el ciclo de vida de la reserva. Permite al Estudiante liberar a tiempo un
 |---|---|---|
 | Estudiante | Primario | Cancela sus propias reservas. |
 | Monitor | Primario | Especialización de Estudiante: hereda esta capacidad. |
-| Módulo 1 | Secundario | Recibe el evento de cancelación. |
+| Módulo 1 | Secundario | Recibe el estado actualizado del recurso cuando la franja se libera. |
+| Módulo 3 | Secundario | Recibe el aviso de cómo terminó la reserva. |
 
 **Casos de uso relacionados**
 
 - `Reservar recursos` — crea las reservas que aquí se cancelan; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Importar horarios semestrales` — origen de la cancelación automática por prioridad; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
-- `Notificar estado de recursos` — paso que ocurre siempre: toda cancelación se avisa sin que nadie tenga que pedirlo; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Actualizar estado de los recursos` — **paso que ocurre siempre por dentro**: al cancelar, la franja se libera y el Módulo 1 se entera; no se puede saltar; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
+- `Notificar estado de recursos al finalizar reserva` — le cuenta al Módulo 3 que la reserva se cerró por cancelación y no por incumplimiento; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Reportar no asistencia` — el caso contrario: la persona no canceló y tampoco se presentó; ver [spec-modulo2-uc9-reportar-no-asistencia.md](./spec-modulo2-uc9-reportar-no-asistencia.md)
 
 **Diccionario de errores**
 
@@ -67,14 +70,14 @@ Como Estudiante, quiero cancelar una reserva que ya no voy a usar, para liberar 
 - **Cancelación en el límite del plazo**: solicitud que llega exactamente en el instante de la antelación mínima; el criterio de borde debe ser explícito y determinista.
 - **Recurso dado de baja**: cuando un recurso pasa a `FUERA_DE_SERVICIO`, sus reservas futuras deben cancelarse con motivo propio y notificarse, sin penalizar a los titulares.
 - **Doble cancelación**: una segunda solicitud sobre una reserva ya `CANCELADA` debe ser idempotente y no liberar dos veces el cupo de préstamos.
-- **No presentación**: si pasan 10 minutos desde la hora de inicio y la persona no llegó a usar el recurso, este se libera solo y se le aplica una sanción, tal como se define en `Reservar recursos`. Esa liberación no cuenta como una cancelación hecha por el estudiante. [NEEDS CLARIFICATION: cuánto dura la sanción y cuántas ausencias hacen falta para aplicarla]
+- **No presentación**: si pasan 10 minutos desde la hora de inicio y la persona no llegó a usar el recurso, este se libera solo y la ausencia se le reporta al Módulo 3, tal como se define en `Reportar no asistencia`. Esa liberación no cuenta como una cancelación hecha por el estudiante. [NEEDS CLARIFICATION: cuánto dura la sanción y cuántas ausencias hacen falta para aplicarla]
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: Los usuarios DEBEN poder cancelar sus propias reservas no iniciadas, respetando la antelación mínima configurada.
-- **FR-002**: El sistema DEBE liberar la franja del recurso y actualizar el cupo de préstamos vigentes al cancelar.
+- **FR-002**: El sistema DEBE liberar la franja del recurso y actualizar el cupo de préstamos vigentes al cancelar, ejecutando siempre `Actualizar estado de los recursos`.
 - **FR-003**: El sistema DEBE impedir que un usuario cancele reservas de las que no es titular (`CAN-001`) y que cancele reservas ya iniciadas o finalizadas (`CAN-002`).
 - **FR-004**: El sistema DEBE soportar la cancelación automática por prioridad académica, marcando la reserva con `CANCELADA_POR_PRIORIDAD_ACADEMICA`.
 - **FR-005**: Las cancelaciones por prioridad académica NO DEBEN penalizar al estudiante ni computar como ausencia.

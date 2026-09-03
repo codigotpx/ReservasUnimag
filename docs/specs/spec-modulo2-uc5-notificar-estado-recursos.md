@@ -1,97 +1,120 @@
-# Feature Specification: Notificar estado de recursos
+# Feature Specification: Notificar estado de recursos al finalizar reserva
 
 **Created**: 2026-08-24
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Notificar estado de recursos` (paso que ocurre siempre dentro de consultar, reservar y cancelar)
+**Caso de uso (diagrama)**: `Notificar estado de recursos al finalizar reserva` (se conecta directamente con el Módulo 3, sin depender de ningún otro caso de uso)
 **Prioridad global**: P3
 
 ## Contexto
 
-Caso de uso transversal: no se pide por separado, sino que ocurre siempre, por dentro, cada vez que algo cambia. Cuando un recurso o una reserva cambian de estado, este caso de uso le avisa al Módulo 1, que es el encargado de hacérselo llegar a la persona. Así todos se enteran a tiempo y los demás módulos trabajan con la misma información.
+Cuando una reserva termina, alguien tiene que contar cómo terminó. Este caso de uso toma el cierre de cada reserva —se acabó la franja, la persona canceló, una clase la desplazó, nadie se presentó, el equipo volvió dañado— y se lo informa al Módulo 3, que es el que lleva el control de cumplimiento y la analítica de uso.
 
-Ocurre dentro de `Consultar recursos`, `Reservar recursos`, `Cancelar reserva` e `Importar horarios semestrales`: ninguno de ellos tiene que pedirlo, y ninguno puede saltárselo.
+En el diagrama no cuelga de ningún otro óvalo: no lo incluye ni lo extiende nadie. Se dispara solo, por el final de la reserva, y su única conexión hacia afuera es el Módulo 3.
+
+Conviene no confundirlo con `Actualizar estado de los recursos`, que es distinto y va por otro lado: aquel cambia el estado del recurso y se lo informa al **Módulo 1**, que es el dueño del inventario, cada vez que algo pasa. Este solo habla al final de la reserva, y le habla al **Módulo 3**.
 
 **Actores**
 
 | Actor | Tipo | Participación |
 |---|---|---|
-| Módulo 1 | Secundario | Destinatario de los eventos; responsable de la entrega al usuario final. |
-| Estudiante / Monitor / Dirección de Programa | Primarios | Destinatarios finales de la información notificada. |
+| Módulo 3 | Secundario | Destinatario del aviso; con él alimenta la matriz de cumplimiento y la analítica de uso. |
+| Estudiante / Monitor | Indirectos | Son los titulares de las reservas que se cierran; no ejecutan este caso de uso. |
 
 **Casos de uso relacionados**
 
-- `Consultar recursos` — ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
-- `Reservar recursos` — ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
-- `Importar horarios semestrales` — ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
-- `Cancelar reserva` — ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
+- `Reservar recursos` — crea las reservas cuyo cierre se informa aquí; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
+- `Cancelar reserva` — una de las formas en que una reserva puede terminar; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
+- `Actualizar estado de los recursos` — el otro camino, el que habla con el Módulo 1 y mantiene el inventario al día; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
+- `Reportar no asistencia` — cuando la reserva termina porque nadie llegó; ver [spec-modulo2-uc9-reportar-no-asistencia.md](./spec-modulo2-uc9-reportar-no-asistencia.md)
+- `Reportar fecha y hora de entrega` — cuando lo que termina es un préstamo de equipo; ver [spec-modulo2-uc10-reportar-fecha-hora-entrega.md](./spec-modulo2-uc10-reportar-fecha-hora-entrega.md)
+- `Consultar reportes` — el camino de vuelta: con todo lo que se le informa aquí, el Módulo 3 arma las sanciones que después se leen desde allí; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
 
-**Catálogo de eventos**
+**Catálogo de avisos**
 
-| Evento | Se emite cuando |
+| Aviso | Se envía cuando |
 |---|---|
-| `RESERVA_CONFIRMADA` | Una reserva estudiantil queda persistida. |
-| `RESERVA_CANCELADA` | El titular cancela su reserva. |
-| `RESERVA_CANCELADA_POR_PRIORIDAD` | La jerarquía académica desplaza una reserva estudiantil. |
-| `RECURSO_BLOQUEADO` | Un recurso pasa a `BLOQUEO_ACADEMICO` en una franja. |
-| `RECURSO_LIBERADO` | Una franja vuelve a estar disponible. |
+| `RESERVA_FINALIZADA` | La franja llegó a su fin con normalidad y el recurso quedó libre. |
+| `RESERVA_CANCELADA` | El titular deshizo la reserva antes de que empezara. |
+| `RESERVA_CANCELADA_POR_PRIORIDAD` | Una actividad docente desplazó la reserva del estudiante. |
+| `RESERVA_CERRADA_POR_AUSENCIA` | Nadie se presentó y el recurso se liberó solo. |
+| `RECURSO_CON_NOVEDAD` | El recurso volvió con un daño o una incidencia. |
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Notificar estado de recursos (Priority: P3)
+### User Story 1 - Contarle al Módulo 3 cómo terminó cada reserva (Priority: P3)
 
-Como sistema, quiero publicar hacia el Módulo 1 cada cambio de estado de un recurso o de una reserva (consulta que deriva en ocupación, confirmación, cancelación manual y cancelación por prioridad académica), para que los interesados sean informados oportunamente y los demás módulos operen sobre información consistente.
+Como sistema, quiero avisarle al Módulo 3 cómo terminó cada reserva y en qué estado quedó el recurso, para que pueda llevar el control de cumplimiento de cada persona y construir la analítica de uso de la universidad sin tener que adivinar nada.
 
-**Why this priority**: Es un paso que ocurre siempre dentro de consultar, reservar y cancelar. Es P3 porque las historias base ya entregan valor sin él, pero sin notificación el estudiante desplazado por una clase se entera al llegar al salón.
+**Why this priority**: Es P3 porque el módulo entrega valor sin ella: se puede consultar, reservar y cancelar igual. Pero sin este aviso el Módulo 3 se queda ciego, y toda la matriz de sanciones y de "score" de confianza se queda sin datos con qué trabajar.
 
-**Independent Test**: Se puede probar de forma independiente disparando cada transición de estado y verificando contra un doble de prueba del Módulo 1 que se emitió un evento con el tipo, el recurso, la franja y el destinatario correctos.
+**Independent Test**: Se puede probar sola provocando cada forma de terminar una reserva y comprobando, contra un simulador del Módulo 3, que llegó el aviso correcto con la reserva, la persona, el recurso, la franja y el motivo del cierre. No necesita que existan sanciones ni reportes.
 
 **Acceptance Scenarios**:
 
-1. **Scenario**: Notificación de reserva confirmada
-   - **Given** un Estudiante confirma una reserva
-   - **When** la reserva queda persistida
-   - **Then** el sistema publica hacia el Módulo 1 un evento `RESERVA_CONFIRMADA` con identificador de reserva, recurso, franja y destinatario
+1. **Scenario**: La reserva terminó con normalidad
+   - **Given** un Estudiante usó la "Sala de Estudio 3" el 2026-09-01 de 10:00 a 12:00
+   - **When** llegan las 12:00 y la reserva se cierra
+   - **Then** el sistema le envía al Módulo 3 el aviso `RESERVA_FINALIZADA` con la persona, el recurso, la franja y el estado en que quedó el recurso
 
-2. **Scenario**: Notificación de desplazamiento académico
-   - **Given** una reserva estudiantil fue cancelada automáticamente por prioridad académica
-   - **When** se ejecuta la cancelación
-   - **Then** el sistema publica un evento `RESERVA_CANCELADA_POR_PRIORIDAD` que incluye el motivo institucional y las alternativas de recursos disponibles en la misma franja
+2. **Scenario**: La persona canceló a tiempo
+   - **Given** un Estudiante tenía reservado el "Auditorio Menor" y lo canceló una hora antes
+   - **When** se registra la cancelación
+   - **Then** el sistema le envía al Módulo 3 el aviso `RESERVA_CANCELADA`, dejando claro que la cancelación fue del titular y no un incumplimiento
 
-3. **Scenario**: Módulo 1 no disponible
-   - **Given** el Módulo 1 no responde temporalmente
-   - **When** ocurre un cambio de estado notificable
-   - **Then** la operación de negocio se completa igualmente, el evento se encola y se reintenta, y no se pierde ninguna notificación
+3. **Scenario**: Una clase desplazó la reserva
+   - **Given** una reserva estudiantil fue cancelada automáticamente porque entró una actividad docente
+   - **When** se ejecuta esa cancelación
+   - **Then** el sistema le envía al Módulo 3 el aviso `RESERVA_CANCELADA_POR_PRIORIDAD`, indicando expresamente que **no** es responsabilidad de la persona
+
+4. **Scenario**: Nadie se presentó
+   - **Given** pasaron los 10 minutos de plazo sin que nadie usara el recurso
+   - **When** la reserva se cierra por ausencia
+   - **Then** el sistema le envía al Módulo 3 el aviso `RESERVA_CERRADA_POR_AUSENCIA` con la persona, el recurso y la franja
+
+5. **Scenario**: El equipo volvió dañado
+   - **Given** un Estudiante devuelve el "Videobeam 12" y quien lo recibe reporta un daño
+   - **When** se cierra ese préstamo
+   - **Then** el sistema le envía al Módulo 3 el aviso `RECURSO_CON_NOVEDAD` junto con la descripción del daño
+
+6. **Scenario**: El Módulo 3 no responde
+   - **Given** el Módulo 3 está caído temporalmente
+   - **When** una reserva termina
+   - **Then** la reserva se cierra igual y el recurso se libera igual; el aviso queda pendiente y se vuelve a intentar hasta que llegue
 
 ### Edge Cases
 
-- **Cancelación masiva por importación**: una importación que desplaza decenas de reservas debe notificar a cada titular sin duplicar ni agrupar de forma que se pierda el detalle de su reserva.
-- **Reintentos y duplicados**: el reintento tras una entrega fallida no debe producir dos notificaciones al mismo destinatario para el mismo evento.
-- **Orden de eventos**: `RECURSO_LIBERADO` y `RECURSO_BLOQUEADO` sobre el mismo recurso y franja deben entregarse en el orden en que ocurrieron.
-- **Destinatario sin canal de contacto válido**: el evento se registra igualmente y el fallo de entrega queda visible para soporte.
+- **Cierre masivo por importación**: una carga de horarios que desplaza decenas de reservas debe generar un aviso por cada una, sin agruparlas de forma que se pierda de vista a quién le tocó.
+- **Avisos repetidos**: si un aviso se reintenta, el Módulo 3 no puede terminar contando dos veces el mismo cierre y sancionando dos veces a la misma persona.
+- **Orden de los avisos**: si sobre el mismo recurso se cierran dos reservas seguidas, los avisos deben llegar en el orden en que ocurrieron.
+- **Reserva que termina y préstamo que sigue abierto**: si la franja se acabó pero el equipo no ha vuelto, el aviso debe reflejar que el recurso no quedó libre.
+- **Motivo del cierre siempre presente**: ningún aviso puede salir sin decir por qué terminó la reserva; de eso depende que el Módulo 3 distinga a quien cumplió de quien no.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: El sistema DEBE publicar hacia el Módulo 1 un evento por cada transición de estado relevante: `RESERVA_CONFIRMADA`, `RESERVA_CANCELADA`, `RESERVA_CANCELADA_POR_PRIORIDAD`, `RECURSO_BLOQUEADO`, `RECURSO_LIBERADO`.
-- **FR-002**: Cada evento DEBE incluir identificador de reserva o recurso, franja horaria, destinatario y motivo.
-- **FR-003**: La indisponibilidad del Módulo 1 NO DEBE impedir la operación de negocio; los eventos DEBEN reintentarse hasta su entrega.
-- **FR-004**: El evento `RESERVA_CANCELADA_POR_PRIORIDAD` DEBE incluir las alternativas de recursos disponibles en la misma franja.
-- **FR-005**: La emisión de eventos DEBE ser idempotente frente a reintentos, sin generar notificaciones duplicadas al mismo destinatario.
-- **FR-006**: El sistema DEBE conservar el registro de cada evento emitido y su resultado de entrega.
+- **FR-001**: El sistema DEBE enviarle al Módulo 3 un aviso cada vez que una reserva termina, cualquiera que sea la forma en que terminó.
+- **FR-002**: Cada aviso DEBE indicar el tipo de cierre, la reserva, la persona, el recurso, la franja, el motivo y la fecha y hora.
+- **FR-003**: El aviso DEBE distinguir con claridad los cierres que son responsabilidad de la persona (ausencia, devolución tardía, daño) de los que no lo son (cancelación a tiempo, desplazamiento por prioridad académica).
+- **FR-004**: El sistema NO DEBE decidir ni aplicar sanciones; solo informa el hecho, y el Módulo 3 saca las consecuencias.
+- **FR-005**: Si el Módulo 3 no está disponible, la reserva DEBE cerrarse igualmente y el aviso DEBE reintentarse hasta entregarse.
+- **FR-006**: Reenviar un aviso NO DEBE producir un segundo cierre contabilizado para la misma reserva.
+- **FR-007**: El sistema DEBE conservar el registro de cada aviso enviado y de si llegó o no.
+- **FR-008**: Cuando el recurso vuelva con una novedad, el aviso DEBE incluir su descripción.
 
 ### Key Entities
 
-- **EventoDeEstado**: mensaje publicado hacia el Módulo 1 ante cada transición notificable. Atributos: tipo, identificador de reserva o recurso, franja, destinatario, motivo, marca de tiempo, estado de entrega.
-- **Reserva**: origen de los eventos de confirmación y cancelación.
-- **Recurso**: origen de los eventos de bloqueo y liberación.
-- **Usuario**: destinatario de la notificación.
+- **AvisoDeCierre**: mensaje que se le manda al Módulo 3 cuando una reserva termina. Atributos: tipo de cierre, reserva, persona, recurso, franja, motivo, novedad si la hubo, fecha y hora, resultado del envío.
+- **Reserva**: el apartado que termina y da origen al aviso.
+- **Recurso**: el espacio o equipo cuyo estado final se informa.
+- **Usuario**: la persona titular de la reserva que se cierra.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: El 95 % de los estudiantes afectados por una cancelación por prioridad académica reciben la notificación dentro de los 5 minutos siguientes al desplazamiento.
-- **SC-002**: Cero eventos perdidos ante una indisponibilidad del Módulo 1 de hasta 30 minutos.
-- **SC-003**: El 100 % de las transiciones de estado notificables generan exactamente un evento entregado por destinatario.
-- **SC-004**: Ninguna operación de negocio (reserva, cancelación, importación) falla por causa de un error en la notificación.
+- **SC-001**: El 100 % de las reservas que terminan generan exactamente un aviso al Módulo 3.
+- **SC-002**: El aviso llega al Módulo 3 dentro de los 5 minutos siguientes al cierre de la reserva.
+- **SC-003**: Cero avisos perdidos ante una caída del Módulo 3 de hasta 30 minutos.
+- **SC-004**: Cero cierres contabilizados dos veces por culpa de un reenvío.
+- **SC-005**: Ninguna reserva se queda sin cerrar por culpa de un error al avisar al Módulo 3.
