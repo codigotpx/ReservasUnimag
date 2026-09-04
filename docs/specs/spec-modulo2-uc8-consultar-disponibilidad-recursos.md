@@ -71,7 +71,7 @@ Como sistema, quiero poder preguntar en cualquier momento si un recurso está li
 - **El inventario no responde**: si el Módulo 1 no está disponible, la consulta NO debe responder "disponible" por defecto; debe avisar que no se pudo comprobar, para que nadie confirme una reserva a ciegas.
 - **Recurso que no existe**: se responde que no se encontró, no que está ocupado.
 - **La respuesta envejece enseguida**: la disponibilidad vale para el instante en que se preguntó; por eso `Reservar recursos` vuelve a preguntar antes de confirmar en vez de reutilizar la respuesta anterior.
-- **Franja que cruza la medianoche**: [NEEDS CLARIFICATION: no está definido si se permiten franjas que empiecen un día y terminen al siguiente]
+- **Horario operativo y franjas que cruzan la medianoche**: No se permite reservar ni consultar disponibilidad dentro del horario nocturno de 22:00 (10:00 p. m.) a 06:00 (06:00 a. m.) del día siguiente (zona horaria `America/Bogota`, UTC-5). Toda franja válida debe iniciar y concluir dentro del rango operativo diurno (06:00 a 22:00) del mismo día; cualquier consulta sobre una franja fuera de este horario o que cruce la medianoche se reporta como no disponible / inválida.
 
 ## Requirements *(mandatory)*
 

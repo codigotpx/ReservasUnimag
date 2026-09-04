@@ -56,4 +56,4 @@ Motor de reglas de negocio encargado de gestionar el uso de los recursos físico
 - Política de sanción retroactiva: ¿se cancelan las reservas ya confirmadas de un estudiante sancionado, o solo se le impide crear nuevas? [NEEDS CLARIFICATION]
 - Umbral de no-show: definido en 10 minutos desde el inicio de la franja (ver `Reservar recursos`, FR-010). Queda abierto su encadenamiento con las sanciones. [NEEDS CLARIFICATION: cuántas ausencias acumuladas originan sanción y cuánto dura]
 - Parámetros no definidos: límite máximo de préstamos simultáneos, duración máxima de una reserva y antelación mínima de cancelación. [NEEDS CLARIFICATION]
-- ¿Se permiten reservas o franjas que crucen la medianoche? [NEEDS CLARIFICATION]
+- **Horario de reservas y cambio de día**: Se definió que la ventana de operación es de 06:00 a 22:00 del mismo día (hora Colombia, `America/Bogota`). No se permiten reservas nocturnas (de 10:00 p. m. a 06:00 a. m. del día siguiente) ni franjas que crucen la medianoche.

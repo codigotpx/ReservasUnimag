@@ -70,7 +70,7 @@ Como Estudiante (o Monitor), quiero consultar el catálogo de recursos filtrando
 
 - **Solapamiento parcial**: un recurso con bloqueo académico de 08:00 a 10:00 no debe presentarse como disponible para una consulta de 09:30 a 10:30; cualquier intersección no vacía lo excluye.
 - **Recurso en mantenimiento**: un recurso en `EN_MANTENIMIENTO` nunca debe ser seleccionable, aunque no tenga reservas ni bloqueos en la franja.
-- **Zona horaria y cambio de día**: franjas definidas en el límite del día o que crucen la medianoche. [NEEDS CLARIFICATION: ¿se permiten franjas que crucen la medianoche?]
+- **Zona horaria y horario operativo (restricción nocturna)**: La universidad opera en hora local de Colombia (`America/Bogota`, UTC-5). No se permiten consultas ni reservas dentro del intervalo nocturno de 22:00 (10:00 p. m.) a 06:00 (06:00 a. m.) del día siguiente. Todas las franjas deben iniciar y terminar dentro del horario hábil del mismo día (entre las 06:00 y las 22:00); no se permiten franjas que crucen la medianoche.
 - **Vista desactualizada**: qué se muestra cuando un recurso pasa a `EN_USO` justo después de renderizarse la lista de resultados; la disponibilidad mostrada es orientativa y se revalida al reservar.
 
 ## Requirements *(mandatory)*
