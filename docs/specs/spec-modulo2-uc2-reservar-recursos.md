@@ -2,7 +2,7 @@
 
 **Created**: 2026-08-24
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso**: `Reservar recursos`, continuación de `Consultar recursos`
+**Caso de uso (diagrama)**: `Reservar recursos` — continuación opcional de `Consultar recursos` (`<<extend>>`), y caso base de `Cancelar reserva` y `Reportar no asistencia`
 **Prioridad global**: P1
 
 ## Contexto

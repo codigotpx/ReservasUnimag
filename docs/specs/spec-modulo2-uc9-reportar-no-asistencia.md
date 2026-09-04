@@ -2,7 +2,7 @@
 
 **Created**: 2026-09-03
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Reportar no asistencia` (informa al Módulo 3)
+**Caso de uso (diagrama)**: `Reportar no asistencia` — continuación opcional de `Reservar recursos` (`<<extend>>`), que informa al Módulo 3
 **Prioridad global**: P2
 
 ## Contexto
@@ -22,7 +22,7 @@ La ausencia se detecta a los 10 minutos de empezada la franja sin que se haya re
 
 **Casos de uso relacionados**
 
-- `Reservar recursos` — define el plazo de 10 minutos y la reserva sobre la que se mide la ausencia; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
+- `Reservar recursos` — **caso base al que extiende** (`<<extend>>`): solo hay ausencia si antes hubo una reserva. Define además el plazo de 10 minutos sobre el que se mide; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Cancelar reserva` — cancelar a tiempo es justamente la forma de evitar este reporte; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
 - `Actualizar estado de los recursos` — libera el recurso en cuanto se confirma la ausencia; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
 - `Reportar cancelación de reserva` — el cierre contrario: la persona sí avisó, y por eso no se le reporta ninguna ausencia; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)

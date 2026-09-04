@@ -8,7 +8,7 @@
 
 ## Contexto
 
-Punto de entrada del Módulo 2. Permite al Estudiante (y al Monitor, que hereda sus capacidades) ver el catálogo de recursos físicos de la universidad —salones, laboratorios, salas de estudio y equipos— y saber cuáles están realmente disponibles en una fecha y franja horaria.
+Punto de entrada del Módulo 2. Permite al Estudiante (Monitor, que hereda sus capacidades) y dirección de programa ver el catálogo de recursos físicos de la universidad —salones, laboratorios, salas de estudio y equipos— y saber cuáles están realmente disponibles en una fecha y franja horaria.
 
 Es el único caso de uso del módulo que no arranca desde ningún otro: el estudiante puede entrar, mirar qué hay libre y salir sin hacer nada más. Desde aquí puede continuar hacia `Reservar recursos` si decide apartar algo.
 
@@ -32,7 +32,7 @@ Lo que el estudiante ve es una foto del momento: la disponibilidad se vuelve a c
 
 **Casos de uso relacionados**
 
-- `Reservar recursos` — continuación opcional de esta consulta: el estudiante puede quedarse solo mirando, o seguir y apartar uno de los recursos que encontró libres; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
+- `Reservar recursos` — **continuación opcional de esta consulta** (`<<extend>>`, siendo esta el caso base): el estudiante puede quedarse solo mirando, o seguir y apartar uno de los recursos que encontró libres; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Consultar disponibilidad de los recursos` — **paso que ocurre siempre por dentro** (`<<include>>`): responde, recurso por recurso, si está libre en la franja pedida; es con lo que se arma esta lista y no se puede saltar; ver [spec-modulo2-uc8-consultar-disponibilidad-recursos.md](./spec-modulo2-uc8-consultar-disponibilidad-recursos.md)
 - `Consultar reportes` — obtiene del Módulo 3 si la persona está sancionada, para poder avisárselo antes de que intente apartar algo; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
 - `Importar horarios semestrales` — fuente de los estados `BLOQUEO_ACADEMICO` que esta consulta debe respetar; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)

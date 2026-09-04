@@ -93,18 +93,23 @@ El edge case **Sanción que inicia con reservas vigentes** de UC2 afirma que *"s
 
 **Estado**: abierto. Afecta a cómo se redactan las relaciones en varios specs.
 
-Quedan **dos** flechas cuya dirección dice lo contrario de lo que parece querer decir el equipo. La tercera, `Reservar recursos` `<<extend>>` → `Cancelar reserva`, ya se corrigió en `unimag4.drawio`: ahora va `Cancelar reserva` → `Reservar recursos`, que es lo correcto. En UML, una flecha `A --> B` con `<<include>>` significa *"A incluye a B"*, y con `<<extend>>` significa *"A extiende a B"*, siendo B el caso base.
+En UML, una flecha `A --> B` con `<<include>>` significa *"A incluye a B"*, y con `<<extend>>` significa *"A extiende a B"*, siendo B el caso base.
+
+**Los tres `<<extend>>` ya están bien.** El equipo corrigió `Cancelar reserva` → `Reservar recursos` y agregó `Reportar no asistencia` → `Reservar recursos`; faltaba `Consultar recursos` → `Reservar recursos`, que quedaba al revés y contradecía tanto a UC1 como al propio óvalo punteado de `Reservar recursos`. Se invirtió a `Reservar recursos` → `Consultar recursos`. Los tres apuntan ahora al caso base, en coherencia con el punteado: son extensiones `Reservar recursos`, `Cancelar reserva` y `Reportar no asistencia`, y `Consultar recursos` es el caso base sólido del que cuelga todo.
+
+**Lo único que sigue abierto es un `<<include>>`.**
 
 | Flecha tal como está dibujada | Lo que significa hoy | Lo que probablemente se quiso decir |
 |---|---|---|
-| `Consultar recursos` `<<extend>>` → `Reservar recursos` | Consultar es un añadido opcional de Reservar | Reservar es la continuación opcional de Consultar |
 | `Importar horarios semestrales` `<<include>>` → `Reservar recursos` | Importar incluye a Reservar | Reservar consulta los bloqueos que dejó Importar |
 
 La flecha `Consultar recursos <<include>> Consultar reportes` **sí está bien**: al consultar recursos el sistema comprueba de paso si la persona está sancionada.
 
-**Qué preguntar**: ¿se corrigen las tres flechas restantes en el diagrama, o los specs deben describir las relaciones tal como están dibujadas?
+**Qué preguntar**: ¿`Importar horarios semestrales` `<<include>>` → `Reservar recursos` se invierte, o los specs deben describirla tal como está dibujada?
 
 **Dónde aplicarlo**: `unimag4.drawio` y la sección **Casos de uso relacionados** de UC1, UC2, UC3 y UC4.
+
+> Menor, en el mismo diagrama: la flecha `Reportar no asistencia` → `Reservar recursos` está dibujada con puntos sueltos en vez de anclada a los dos óvalos. Se ve bien, pero se descoloca si alguien mueve un óvalo. Conviene reengancharla en draw.io.
 
 ---
 
