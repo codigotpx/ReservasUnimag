@@ -18,7 +18,7 @@ Hay dos orígenes de cancelación y el reporte tiene que distinguirlos, porque t
 | Cancelación del titular | El Estudiante o Monitor que reservó | Cumplió: liberó a tiempo. Según [gestionunimag.md](../gestionunimag.md), esto alimenta positivamente su "score" de confianza. |
 | Cancelación por prioridad académica | El sistema, al entrar una actividad docente | La persona no tuvo ninguna culpa; no puede penalizársele por esto. |
 
-[NEEDS CLARIFICATION: `Notificar estado de recursos al finalizar reserva` (UC5) ya contempla los avisos `RESERVA_CANCELADA` y `RESERVA_CANCELADA_POR_PRIORIDAD` hacia el Módulo 3. Con el óvalo nuevo del diagrama, hay que decidir si este caso de uso reemplaza esos dos avisos dentro de UC5, o si UC5 pasa a delegar en este las cancelaciones y se queda con los demás cierres. Ver P-12 en pendientes-clarificacion.md.]
+El deslinde con `Notificar estado de recursos al finalizar reserva` (UC5) ya está hecho: aquel notifica **en qué estado quedó el recurso después de usarlo**, y por eso no dice nada cuando la reserva se canceló o cuando nadie se presentó —en esos casos el recurso nunca se usó—. Todas las cancelaciones, sin excepción, se reportan desde aquí.
 
 **Actores**
 
@@ -31,7 +31,7 @@ Hay dos orígenes de cancelación y el reporte tiene que distinguirlos, porque t
 
 - `Cancelar reserva` — es lo que dispara este reporte, tanto la cancelación del titular como la automática por prioridad; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
 - `Reportar no asistencia` — el cierre contrario: la reserva no se canceló, simplemente nadie llegó; ver [spec-modulo2-uc9-reportar-no-asistencia.md](./spec-modulo2-uc9-reportar-no-asistencia.md)
-- `Notificar estado de recursos al finalizar reserva` — el aviso general de cierre de reserva; su catálogo se solapa con este caso de uso y hay que deslindarlos; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Notificar estado de recursos al finalizar reserva` — el complemento: notifica el estado del recurso solo cuando sí se usó, y guarda silencio ante las cancelaciones que se reportan aquí; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
 - `Actualizar estado de los recursos` — libera la franja al cancelar y avisa al Módulo 1; es el camino paralelo hacia el otro módulo; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
 - `Consultar reportes` — el camino de vuelta: lo que aquí se reporta es parte de lo que el Módulo 3 devuelve después como cumplimiento o sanción; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
 

@@ -61,7 +61,7 @@ Como Estudiante, quiero cancelar una reserva que ya no voy a usar, para liberar 
 ### Edge Cases
 
 - **Cancelación en el límite del plazo**: solicitud que llega exactamente en el instante de la antelación mínima; el criterio de borde debe ser explícito y determinista.
-- **Recurso dado de baja**: cuando un recurso pasa a `FUERA_DE_SERVICIO`, sus reservas futuras deben cancelarse con motivo propio y notificarse, sin penalizar a los titulares.
+- **Recurso dado de baja**: cuando un recurso pasa a `EN_MANTENIMIENTO`, sus reservas futuras deben cancelarse con motivo propio y notificarse, sin penalizar a los titulares.
 - **Doble cancelación**: una segunda solicitud sobre una reserva ya `CANCELADA` debe ser idempotente y no liberar dos veces el cupo de préstamos.
 - **No presentación**: si pasan 30 minutos desde la hora de inicio y la persona no llegó a usar el recurso, este se libera automáticamente y la ausencia se le reporta al Módulo 3, tal como se define en `Reportar no asistencia`. Esa liberación no cuenta como una cancelación hecha por el estudiante.
 

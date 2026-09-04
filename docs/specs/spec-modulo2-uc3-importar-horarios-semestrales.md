@@ -79,7 +79,7 @@ Como Dirección de Programa, quiero cargar de una sola vez el archivo con las cl
 
 - **Carga tardía del horario**: si el horario se carga cuando los estudiantes ya hicieron decenas de reservas, el sistema debe mostrar primero cuántas y cuáles reservas se cancelarían, esperar la confirmación de la Dirección de Programa y luego aplicar todo junto: o se cancelan todas y se crean todos los bloqueos, o no se cambia nada. Nunca a medias.
 - **Cambio de horario a mitad de semestre**: volver a cargar un horario que ya se había cargado debe actualizar lo que existe, no repetirlo. Una misma clase no puede quedar bloqueada dos veces sobre el mismo salón.
-- **Recurso dado de baja**: si una fila del archivo nombra un recurso en `FUERA_DE_SERVICIO`, el sistema debe reportarlo como conflicto y no bloquearlo en silencio, porque esa clase necesita otro espacio.
+- **Recurso dado de baja**: si una fila del archivo nombra un recurso en `EN_MANTENIMIENTO`, el sistema debe reportarlo como conflicto y no bloquearlo en silencio, porque esa clase necesita otro espacio.
 - **Archivo vacío o sin ninguna fila válida**: la carga debe terminar sin cambiar nada y decirlo con claridad. Nunca puede mostrar un mensaje de éxito cuando no cargó ninguna clase.
 
 ## Requirements *(mandatory)*

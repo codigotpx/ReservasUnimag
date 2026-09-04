@@ -213,26 +213,6 @@ La matriz de [gestionunimag.md](../gestionunimag.md) dice que la no asistencia p
 
 ---
 
-## P-12 — ¿`Reportar cancelación de reserva` reemplaza los avisos de cancelación de UC5?
-
-**Estado**: abierto. Apareció con el óvalo nuevo del diagrama 3 (`unimag3.drawio`).
-
-El diagrama 3 agrega el óvalo `Reportar cancelación de reserva`, conectado directamente al Módulo 3, igual que `Reportar no asistencia` y `Reportar fecha y hora de entrega`. Pero `Notificar estado de recursos al finalizar reserva` (UC5) ya tenía en su catálogo los avisos `RESERVA_CANCELADA` y `RESERVA_CANCELADA_POR_PRIORIDAD`, que cuentan exactamente lo mismo. Tal como está, el Módulo 3 recibiría dos veces la misma cancelación.
-
-**Qué preguntar**: ¿el caso de uso nuevo se queda con todas las cancelaciones y UC5 pierde esos dos avisos, o UC5 sigue siendo el único emisor y el óvalo nuevo solo detalla lo que ya hacía?
-
-> Lo más limpio es lo primero: cada reporte hacia el Módulo 3 tiene un óvalo propio (ausencia, devolución, cancelación) y UC5 se queda con los cierres que no encajan en ninguno de los tres, como `RESERVA_FINALIZADA` y `RECURSO_CON_NOVEDAD`. Falta confirmarlo.
-
-**Dónde aplicarlo**:
-
-| Archivo | Punto | Qué cambiar |
-|---|---|---|
-| `spec-modulo2-uc11-reportar-cancelacion-reserva.md` | Contexto | Quitar el `[NEEDS CLARIFICATION]` y fijar el alcance. |
-| `spec-modulo2-uc5-notificar-estado-recursos.md` | **Catálogo de avisos** | Quitar `RESERVA_CANCELADA` y `RESERVA_CANCELADA_POR_PRIORIDAD` si pasan a UC11, junto con los escenarios 2 y 3. |
-| `spec-modulo2.md` | Punto abierto sobre el solapamiento | Cerrarlo. |
-
----
-
 ## P-13 — ¿El Módulo 3 premia la cancelación a tiempo?
 
 **Estado**: abierto.
@@ -252,10 +232,34 @@ El diagrama 3 agrega el óvalo `Reportar cancelación de reserva`, conectado dir
 
 ---
 
+## P-14 — Si el Módulo 1 no responde, ¿qué muestra `Consultar recursos`?
+
+**Estado**: abierto. Es el gemelo de P-10, pero con el otro módulo.
+
+El diagrama 3 ya deja explícito que `Consultar recursos` depende del Módulo 1: de allí salen el catálogo, los atributos y el estado de cada recurso. Si ese módulo está caído, el Módulo 2 no tiene de dónde armar la lista. Hay dos caminos: no mostrar nada y decir que el servicio no está disponible, o mostrar la última información conocida advirtiendo que puede estar vieja.
+
+Hoy el spec está escrito con la opción conservadora: no se presenta como vigente una lista que no se pudo comprobar (UC1 FR-008).
+
+**Qué preguntar**: ¿la consulta se cae con el Módulo 1, o sigue mostrando la última foto conocida con una advertencia?
+
+> Ojo con la interacción: si se decide mostrar información vieja, `Reservar recursos` tiene que seguir revalidando contra el Módulo 1 antes de confirmar. Una lista orientativa es aceptable; una reserva confirmada sobre datos viejos no.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2-uc1-consultar-recursos.md` | Edge case **El Módulo 1 no responde** y **FR-008** | Fijar la política y quitar el `[NEEDS CLARIFICATION]`. |
+| `spec-modulo2-uc8-consultar-disponibilidad-recursos.md` | Comportamiento ante inventario no disponible | Debe decir lo mismo que UC1. |
+| `spec-modulo2-uc2-reservar-recursos.md` | Revalidación previa a confirmar | Verificar que nunca confirme sobre datos no comprobados. |
+
+---
+
 ## Resueltos
 
 - **Umbral de no-show** — definido en 10 minutos desde el inicio de la franja. Aplicado en UC2 FR-010; UC4 y `spec-modulo2.md` ya remiten a él. *(2026-09-03)*
 - **Estado de una reserva vigente** — es `RESERVADO`, no `EN_USO`; el recurso solo pasa a `EN_USO` cuando llega la franja y la persona se presenta. Corregido en el glosario de UC3, que aún decía lo contrario. *(2026-09-03)*
 - **Quién sanciona** — el Módulo 2 detecta y reporta; el Módulo 3 decide y aplica. Alineados UC2, UC4, UC5 y UC9 con ese reparto; UC11 nace ya con ese reparto. *(2026-09-03)*
 - **`Consultar reportes` no la pide ninguna persona y va en sentido contrario al que se creía** — no produce reportes para nadie: **obtiene** del Módulo 3 el reporte de cumplimiento de una persona, para poder explicarle por qué no puede reservar cuando tiene una sanción. Se retiró el error `REP-001` del diccionario consolidado, porque ya no hay ningún rol al que negarle el acceso. *(2026-09-03)*
+- **Solapamiento entre `Reportar cancelación de reserva` y los avisos de UC5** (antes P-12) — resuelto en `Use Case 5 completed`: UC5 se queda solo con `RECURSO_SIN_NOVEDAD` y `RECURSO_CON_NOVEDAD`, porque notifica **en qué estado quedó el recurso después de usarlo**. Una reserva cancelada o una ausencia no generan aviso desde UC5, ya que el recurso nunca se usó; esas dos situaciones las reportan UC11 y UC9. Se movió a UC11 el edge case de cierre masivo por importación, que contradecía el escenario de prioridad académica de UC5. *(2026-09-04)*
+- **`Consultar recursos` no decía de dónde salen los recursos** — el spec ya nombraba al Módulo 1 como actor secundario, pero el diagrama no dibujaba ninguna línea entre ambos. Se agregaron en `unimag3.drawio` la asociación directa `Consultar recursos` — Módulo 1 (el catálogo y sus atributos) y el `<<include>>` hacia `Consultar disponibilidad de los recursos` (el estado en la franja), que UC1 y UC8 ya daban por supuesto. *(2026-09-04)*
 - **Enlace roto en UC4** — su sección *Casos de uso relacionados* apuntaba `Reportar cancelación de reserva` al archivo de UC5; ahora apunta a [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md), que es el caso de uso que el diagrama 3 hizo explícito. *(2026-09-04)*

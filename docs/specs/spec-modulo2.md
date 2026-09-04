@@ -58,4 +58,3 @@ Motor de reglas de negocio encargado de gestionar el uso de los recursos físico
 - Umbral de no-show: definido en 10 minutos desde el inicio de la franja (ver `Reservar recursos`, FR-010). Queda abierto su encadenamiento con las sanciones. [NEEDS CLARIFICATION: cuántas ausencias acumuladas originan sanción y cuánto dura]
 - Parámetros no definidos: límite máximo de préstamos simultáneos, duración máxima de una reserva y antelación mínima de cancelación. [NEEDS CLARIFICATION]
 - ¿Se permiten reservas o franjas que crucen la medianoche? [NEEDS CLARIFICATION]
-- Solapamiento entre `Reportar cancelación de reserva` (óvalo nuevo del diagrama 3) y los avisos `RESERVA_CANCELADA` / `RESERVA_CANCELADA_POR_PRIORIDAD` de `Notificar estado de recursos al finalizar reserva`. [NEEDS CLARIFICATION: ver P-12]

@@ -20,7 +20,7 @@ No es lo mismo que `Consultar recursos`. Aquel muestra una lista al estudiante p
 
 **Casos de uso relacionados**
 
-- `Consultar recursos` — la lista que ve el estudiante se arma preguntando la disponibilidad de cada recurso; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
+- `Consultar recursos` — **la incluye** (`<<include>>`): la lista que ve el estudiante se arma preguntando aquí la disponibilidad de cada recurso del catálogo; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
 - `Reservar recursos` — vuelve a preguntar aquí en el último momento, antes de confirmar; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Actualizar estado de los recursos` — deja escrito lo que esta consulta lee; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
 
