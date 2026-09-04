@@ -23,7 +23,7 @@ Cierra el ciclo de vida de la reserva. Permite al Estudiante liberar a tiempo un
 - `Reservar recursos` — crea las reservas que aquí se cancelan; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Importar horarios semestrales` — origen de la cancelación automática por prioridad; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
 - `Actualizar estado de los recursos` — **paso que ocurre siempre por dentro**: al cancelar, la franja se libera y el Módulo 1 se entera; no se puede saltar; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
-- `Reportar cancelación de reserva` — le cuenta al Módulo 3 que la reserva se cerró por cancelación y no por incumplimiento; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Reportar cancelación de reserva` — le cuenta al Módulo 3 que la reserva se cerró por cancelación y no por incumplimiento; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
 
 **Diccionario de errores**
 

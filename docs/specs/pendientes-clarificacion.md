@@ -2,7 +2,7 @@
 
 Lista de decisiones que faltan por definir. Cada entrada dice **qué hay que preguntar** y **exactamente dónde se aplica** una vez se tenga la respuesta, para no volver a rastrear los archivos.
 
-**Última revisión**: 2026-09-03
+**Última revisión**: 2026-09-04
 
 ---
 
@@ -111,7 +111,7 @@ El edge case **Sanción que inicia con reservas vigentes** de UC2 afirma que *"s
 
 **Estado**: abierto. Afecta a cómo se redactan las relaciones en varios specs.
 
-En `unimag2.drawio` hay tres flechas cuya dirección dice lo contrario de lo que parece querer decir el equipo. En UML, una flecha `A --> B` con `<<include>>` significa *"A incluye a B"*, y con `<<extend>>` significa *"A extiende a B"*, siendo B el caso base.
+En `unimag3.drawio` (y antes en `unimag2.drawio`) hay tres flechas cuya dirección dice lo contrario de lo que parece querer decir el equipo. En UML, una flecha `A --> B` con `<<include>>` significa *"A incluye a B"*, y con `<<extend>>` significa *"A extiende a B"*, siendo B el caso base.
 
 | Flecha tal como está dibujada | Lo que significa hoy | Lo que probablemente se quiso decir |
 |---|---|---|
@@ -123,7 +123,7 @@ La flecha `Consultar recursos <<include>> Consultar reportes` **sí está bien**
 
 **Qué preguntar**: ¿se corrigen las tres flechas restantes en el diagrama, o los specs deben describir las relaciones tal como están dibujadas?
 
-**Dónde aplicarlo**: `unimag2.drawio` y la sección **Casos de uso relacionados** de UC1, UC2, UC3 y UC4.
+**Dónde aplicarlo**: `unimag3.drawio` y la sección **Casos de uso relacionados** de UC1, UC2, UC3 y UC4.
 
 ---
 
@@ -171,7 +171,7 @@ El Monitor es una especialización de Estudiante: hereda todo lo suyo. Lo único
 
 | Archivo | Punto | Qué cambiar |
 |---|---|---|
-| `unimag2.drawio` | Actor **Monitor** | Dibujarle una línea propia al caso de uso que lo distinga, o eliminarlo como actor separado. |
+| `unimag3.drawio` | Actor **Monitor** | Dibujarle una línea propia al caso de uso que lo distinga, o eliminarlo como actor separado. |
 | `spec-modulo2.md` | Tabla de **Actores** | Describir su capacidad propia. |
 | `spec-modulo2-uc10-reportar-fecha-hora-entrega.md` | Tabla de **Actores** | Confirmar o quitar la fila que le atribuye el registro de devoluciones. |
 
@@ -213,9 +213,49 @@ La matriz de [gestionunimag.md](../gestionunimag.md) dice que la no asistencia p
 
 ---
 
+## P-12 — ¿`Reportar cancelación de reserva` reemplaza los avisos de cancelación de UC5?
+
+**Estado**: abierto. Apareció con el óvalo nuevo del diagrama 3 (`unimag3.drawio`).
+
+El diagrama 3 agrega el óvalo `Reportar cancelación de reserva`, conectado directamente al Módulo 3, igual que `Reportar no asistencia` y `Reportar fecha y hora de entrega`. Pero `Notificar estado de recursos al finalizar reserva` (UC5) ya tenía en su catálogo los avisos `RESERVA_CANCELADA` y `RESERVA_CANCELADA_POR_PRIORIDAD`, que cuentan exactamente lo mismo. Tal como está, el Módulo 3 recibiría dos veces la misma cancelación.
+
+**Qué preguntar**: ¿el caso de uso nuevo se queda con todas las cancelaciones y UC5 pierde esos dos avisos, o UC5 sigue siendo el único emisor y el óvalo nuevo solo detalla lo que ya hacía?
+
+> Lo más limpio es lo primero: cada reporte hacia el Módulo 3 tiene un óvalo propio (ausencia, devolución, cancelación) y UC5 se queda con los cierres que no encajan en ninguno de los tres, como `RESERVA_FINALIZADA` y `RECURSO_CON_NOVEDAD`. Falta confirmarlo.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2-uc11-reportar-cancelacion-reserva.md` | Contexto | Quitar el `[NEEDS CLARIFICATION]` y fijar el alcance. |
+| `spec-modulo2-uc5-notificar-estado-recursos.md` | **Catálogo de avisos** | Quitar `RESERVA_CANCELADA` y `RESERVA_CANCELADA_POR_PRIORIDAD` si pasan a UC11, junto con los escenarios 2 y 3. |
+| `spec-modulo2.md` | Punto abierto sobre el solapamiento | Cerrarlo. |
+
+---
+
+## P-13 — ¿El Módulo 3 premia la cancelación a tiempo?
+
+**Estado**: abierto.
+
+`Reportar cancelación de reserva` reporta la antelación con la que el titular canceló, partiendo de que [gestionunimag.md](../gestionunimag.md) trata el cumplimiento como un "score" de confianza. Pero la matriz de esa fuente solo describe castigos: no dice si cancelar a tiempo suma algo, ni desde cuánta antelación cuenta como mérito.
+
+**Qué preguntar**: ¿una cancelación a tiempo mejora el "score" de la persona, y a partir de cuánta antelación? ¿O simplemente evita la ausencia y nada más?
+
+> Es una regla del **Módulo 3**, no del 2. Este módulo reporta la antelación en cualquier caso; lo abierto es qué hace el otro con ella.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2-uc11-reportar-cancelacion-reserva.md` | Contexto y **FR-004** | Confirmar que la antelación es el dato que el Módulo 3 necesita, o cambiarlo por el que pida. |
+| `spec-modulo2-uc6-consultar-reportes.md` | Entidad del reporte de cumplimiento | Verificar si el "score" entra en lo que devuelve el Módulo 3. |
+
+---
+
 ## Resueltos
 
 - **Umbral de no-show** — definido en 10 minutos desde el inicio de la franja. Aplicado en UC2 FR-010; UC4 y `spec-modulo2.md` ya remiten a él. *(2026-09-03)*
 - **Estado de una reserva vigente** — es `RESERVADO`, no `EN_USO`; el recurso solo pasa a `EN_USO` cuando llega la franja y la persona se presenta. Corregido en el glosario de UC3, que aún decía lo contrario. *(2026-09-03)*
-- **Quién sanciona** — el Módulo 2 detecta y reporta; el Módulo 3 decide y aplica. Alineados UC2, UC4, UC5 y UC9 con ese reparto. *(2026-09-03)*
+- **Quién sanciona** — el Módulo 2 detecta y reporta; el Módulo 3 decide y aplica. Alineados UC2, UC4, UC5 y UC9 con ese reparto; UC11 nace ya con ese reparto. *(2026-09-03)*
 - **`Consultar reportes` no la pide ninguna persona y va en sentido contrario al que se creía** — no produce reportes para nadie: **obtiene** del Módulo 3 el reporte de cumplimiento de una persona, para poder explicarle por qué no puede reservar cuando tiene una sanción. Se retiró el error `REP-001` del diccionario consolidado, porque ya no hay ningún rol al que negarle el acceso. *(2026-09-03)*
+- **Enlace roto en UC4** — su sección *Casos de uso relacionados* apuntaba `Reportar cancelación de reserva` al archivo de UC5; ahora apunta a [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md), que es el caso de uso que el diagrama 3 hizo explícito. *(2026-09-04)*

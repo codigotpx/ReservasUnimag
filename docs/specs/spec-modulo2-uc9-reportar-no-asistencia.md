@@ -25,6 +25,7 @@ La ausencia se detecta a los 10 minutos de empezada la franja sin que se haya re
 - `Reservar recursos` — define el plazo de 10 minutos y la reserva sobre la que se mide la ausencia; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Cancelar reserva` — cancelar a tiempo es justamente la forma de evitar este reporte; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
 - `Actualizar estado de los recursos` — libera el recurso en cuanto se confirma la ausencia; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
+- `Reportar cancelación de reserva` — el cierre contrario: la persona sí avisó, y por eso no se le reporta ninguna ausencia; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
 - `Consultar reportes` — el camino de vuelta: las ausencias que aquí se reportan son parte de lo que el Módulo 3 devuelve después como sanción; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
 
 ## User Scenarios & Testing *(mandatory)*

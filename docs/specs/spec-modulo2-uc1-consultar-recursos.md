@@ -1,3 +1,4 @@
+
 # Feature Specification: Consultar recursos
 
 **Created**: 2026-08-24

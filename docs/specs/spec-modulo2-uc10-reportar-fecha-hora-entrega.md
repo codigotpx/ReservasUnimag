@@ -26,6 +26,7 @@ Igual que con las ausencias, el reparto es claro: el Módulo 2 registra y report
 - `Reservar recursos` — define la franja y con ella la hora pactada de devolución; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Actualizar estado de los recursos` — al registrarse la devolución, el recurso vuelve a estar disponible; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
 - `Reportar no asistencia` — el caso contrario: la persona nunca llegó a llevarse el recurso; ver [spec-modulo2-uc9-reportar-no-asistencia.md](./spec-modulo2-uc9-reportar-no-asistencia.md)
+- `Reportar cancelación de reserva` — el tercer reporte de la familia hacia el Módulo 3: la reserva del equipo se deshizo antes de la entrega; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
 - `Consultar reportes` — el camino de vuelta: las moras que aquí se reportan son parte de lo que el Módulo 3 devuelve después como sanción; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
 
 ## User Scenarios & Testing *(mandatory)*
