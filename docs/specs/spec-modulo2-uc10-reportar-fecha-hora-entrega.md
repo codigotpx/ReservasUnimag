@@ -11,8 +11,6 @@ Cuando lo que se apartó es un equipo prestado —un microscopio, un kit de dibu
 
 Igual que con las ausencias, el reparto es claro: el Módulo 2 registra y reporta los hechos, el Módulo 3 saca las consecuencias. Según [gestionunimag.md](../gestionunimag.md), una entrega a tiempo sube el "score" de confianza de la persona y un retraso genera suspensión temporal de reservas, pero esas dos cosas las aplica el Módulo 3.
 
-[NEEDS CLARIFICATION: en el diagrama la flecha va del Módulo 3 hacia este caso de uso. Está escrito asumiendo que es el Módulo 2 el que reporta la devolución al Módulo 3, igual que `Reportar no asistencia`. Confirmar la dirección con el equipo.]
-
 **Actores**
 
 | Actor | Tipo | Participación |
@@ -68,7 +66,7 @@ Como sistema, quiero registrar la fecha y la hora exactas en que se devuelve un 
 - **Doble registro de la misma devolución**: registrarla dos veces no puede generar dos reportes ni dos cálculos de mora.
 - **El Módulo 3 no responde**: la devolución se registra igual y el recurso se libera igual; el reporte queda pendiente y se reintenta hasta entregarse.
 - **Devolución antes de la hora de inicio**: si alguien devuelve un recurso que nunca llegó a usar, se registra igual y no cuenta como retraso.
-- **Recursos que no se prestan**: los espacios como salones y auditorios no se devuelven físicamente; para ellos la hora de fin de la franja hace las veces de devolución. [NEEDS CLARIFICATION: confirmar si este caso de uso aplica solo a equipos o también a espacios]
+- **Espacios físicos (salones, auditorios, salas de estudio)**: Para los espacios físicos no se realiza un reporte físico de entrega o devolución. Su liberación ocurre automáticamente al cumplirse la hora de fin de la franja horaria pactada (mediante el ciclo de vida del recurso gestionado por el sistema). Por lo tanto, este caso de uso aplica de forma exclusiva a recursos muebles y equipos en préstamo físico (videobeams, microscopios, kits de dibujo, etc.).
 
 ## Requirements *(mandatory)*
 

@@ -80,7 +80,7 @@ Como Estudiante (o Monitor), quiero consultar el catálogo de recursos filtrando
 
 - **Solapamiento parcial**: un recurso con bloqueo académico de 08:00 a 10:00 no debe presentarse como disponible para una consulta de 09:30 a 10:30; cualquier intersección no vacía lo excluye.
 - **Recurso en mantenimiento**: un recurso en `EN_MANTENIMIENTO` nunca debe ser seleccionable, aunque no tenga reservas ni bloqueos en la franja.
-- **Zona horaria y cambio de día**: la zona horaria está fijada: el Módulo 1 normaliza toda fecha y hora a **UTC-5 (Colombia)**, y esta consulta usa la misma. Lo que sigue sin definirse es si se permiten franjas que empiecen un día y terminen al siguiente. [NEEDS CLARIFICATION: ¿se permiten franjas que crucen la medianoche?]
+- **Zona horaria y horario operativo (restricción nocturna)**: La universidad opera en hora local de Colombia (`America/Bogota`, UTC-5). No se permiten consultas ni reservas dentro del intervalo nocturno de 22:00 (10:00 p. m.) a 06:00 (06:00 a. m.) del día siguiente. Todas las franjas deben iniciar y terminar dentro del horario hábil del mismo día (entre las 06:00 y las 22:00); no se permiten franjas que crucen la medianoche.
 - **El Módulo 1 no responde**: si el inventario no está disponible, esta consulta no tiene de dónde sacar el catálogo. No puede inventarse una lista ni mostrar una guardada de antes como si fuera de ahora; debe decir que la información no está disponible en este momento. [NEEDS CLARIFICATION: ver P-14]
 - **Catálogo muy grande**: una consulta sin filtros sobre un tipo con cientos de recursos no puede traerlos todos de una vez; se pide por páginas y se le dice a la persona cuántos hay en total, para que sepa que está viendo un trozo.
 - **Vista desactualizada**: qué se muestra cuando un recurso pasa a `EN_USO` justo después de renderizarse la lista de resultados; la disponibilidad mostrada es orientativa y se revalida al reservar.
@@ -98,7 +98,8 @@ Como Estudiante (o Monitor), quiero consultar el catálogo de recursos filtrando
 - **FR-007**: El sistema DEBE resolver la disponibilidad de cada recurso de la lista mediante `Consultar disponibilidad de los recursos`.
 - **FR-008**: Si el Módulo 1 no está disponible, el sistema NO DEBE presentar como vigente una lista que no pudo comprobar; DEBE informar que la consulta no se puede resolver en ese momento.
 - **FR-009**: El sistema DEBE paginar los resultados cuando la consulta devuelva un conjunto grande de recursos, en coherencia con la paginación que impone el Módulo 1, e indicar cuántos resultados hay en total.
-- **FR-010**: El sistema DEBE expresar e interpretar toda fecha y hora en UTC-5 (Colombia), la zona a la que el Módulo 1 normaliza el inventario.
+- **FR-010**: El sistema DEBE expresar e interpretar toda fecha y hora en hora local de Colombia (`America/Bogota`, UTC-5), la zona a la que el Módulo 1 normaliza el inventario.
+- **FR-011**: El sistema DEBE rechazar las consultas cuya franja caiga fuera de la ventana operativa de 06:00 a 22:00 del mismo día, o que crucen la medianoche.
 
 ### Key Entities
 
