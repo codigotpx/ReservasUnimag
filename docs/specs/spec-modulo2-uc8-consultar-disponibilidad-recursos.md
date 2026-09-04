@@ -86,6 +86,8 @@ Como sistema, quiero poder preguntar en cualquier momento si un recurso está li
 - **FR-007**: Si el inventario del Módulo 1 no está disponible, el sistema DEBE informar que no se pudo comprobar y NO DEBE dar el recurso por disponible.
 - **FR-008**: El sistema DEBE poder responder por varios recursos de una vez, para que `Consultar recursos` pueda armar su lista sin preguntar uno por uno.
 - **FR-009**: La consulta NO DEBE cambiar nada: no aparta el recurso ni modifica su estado.
+- **FR-010**: El sistema DEBE expresar e interpretar toda fecha y hora en hora local de Colombia (`America/Bogota`, UTC-5), la zona a la que el Módulo 1 normaliza el inventario.
+- **FR-011**: Cuando el Módulo 1 devuelva los resultados paginados, el sistema DEBE recorrer todas las páginas antes de dar por completa una respuesta sobre varios recursos.
 
 ### Key Entities
 
@@ -97,7 +99,7 @@ Como sistema, quiero poder preguntar en cualquier momento si un recurso está li
 
 ### Measurable Outcomes
 
-- **SC-001**: La consulta responde en menos de 2 segundos para un recurso y una franja.
+- **SC-001**: La consulta responde en menos de 5 segundos para un recurso y una franja, el tiempo que promete el Módulo 1 para `Consultar disponibilidad del recurso`; esta consulta no añade cómputo propio apreciable sobre esa respuesta.
 - **SC-002**: El 100 % de las respuestas negativas vienen acompañadas de un motivo; ninguna dice solo "no disponible".
 - **SC-003**: Cero casos en los que la consulta diga que un recurso está libre cuando en el inventario figura ocupado.
 - **SC-004**: Cero reservas confirmadas sobre recursos que esta consulta había reportado como ocupados.

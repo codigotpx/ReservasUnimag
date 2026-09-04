@@ -89,58 +89,22 @@ El edge case **Sanción que inicia con reservas vigentes** de UC2 afirma que *"s
 
 ---
 
-## P-05 — Estado `FUERA_DE_SERVICIO` fuera del catálogo
-
-**Estado**: abierto. Inconsistencia entre casos de uso de distintos autores.
-
-`spec-modulo2-uc1-consultar-recursos.md` fija el catálogo oficial en cinco estados, conforme a `gestionunimag.md`: `DISPONIBLE`, `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` y `EN_MANTENIMIENTO`. Pero UC3 y UC4 usan un sexto estado, `FUERA_DE_SERVICIO`, que no existe en esa lista.
-
-**Qué preguntar**: ¿`FUERA_DE_SERVICIO` es lo mismo que `EN_MANTENIMIENTO` y sobra, o es un estado distinto que hay que añadir al catálogo del Módulo 1?
-
-**Dónde aplicarlo**:
-
-| Archivo | Punto | Qué cambiar |
-|---|---|---|
-| `spec-modulo2-uc3-importar-horarios-semestrales.md` | Edge case **Recurso dado de baja** | Usar el nombre correcto. |
-| `spec-modulo2-uc4-cancelar-reserva.md` | Edge case **Recurso dado de baja** | Usar el nombre correcto. |
-| `spec-modulo2-uc1-consultar-recursos.md` | **Estados del recurso** y **FR-002** | Si es un estado nuevo, añadirlo al catálogo y a la lista de exclusión. |
-
----
-
 ## P-06 — Direcciones de flecha del diagrama de casos de uso
 
 **Estado**: abierto. Afecta a cómo se redactan las relaciones en varios specs.
 
-En `unimag3.drawio` (y antes en `unimag2.drawio`) hay tres flechas cuya dirección dice lo contrario de lo que parece querer decir el equipo. En UML, una flecha `A --> B` con `<<include>>` significa *"A incluye a B"*, y con `<<extend>>` significa *"A extiende a B"*, siendo B el caso base.
+Quedan **dos** flechas cuya dirección dice lo contrario de lo que parece querer decir el equipo. La tercera, `Reservar recursos` `<<extend>>` → `Cancelar reserva`, ya se corrigió en `unimag4.drawio`: ahora va `Cancelar reserva` → `Reservar recursos`, que es lo correcto. En UML, una flecha `A --> B` con `<<include>>` significa *"A incluye a B"*, y con `<<extend>>` significa *"A extiende a B"*, siendo B el caso base.
 
 | Flecha tal como está dibujada | Lo que significa hoy | Lo que probablemente se quiso decir |
 |---|---|---|
 | `Consultar recursos` `<<extend>>` → `Reservar recursos` | Consultar es un añadido opcional de Reservar | Reservar es la continuación opcional de Consultar |
-| `Reservar recursos` `<<extend>>` → `Cancelar reserva` | Reservar extiende a Cancelar | Cancelar extiende a Reservar |
 | `Importar horarios semestrales` `<<include>>` → `Reservar recursos` | Importar incluye a Reservar | Reservar consulta los bloqueos que dejó Importar |
 
 La flecha `Consultar recursos <<include>> Consultar reportes` **sí está bien**: al consultar recursos el sistema comprueba de paso si la persona está sancionada.
 
 **Qué preguntar**: ¿se corrigen las tres flechas restantes en el diagrama, o los specs deben describir las relaciones tal como están dibujadas?
 
-**Dónde aplicarlo**: `unimag3.drawio` y la sección **Casos de uso relacionados** de UC1, UC2, UC3 y UC4.
-
----
-
-## P-07 — ¿`Reportar fecha y hora de entrega` aplica solo a equipos?
-
-**Estado**: abierto.
-
-Un microscopio o un videobeam se devuelven físicamente; un salón no. Para los espacios, la hora de fin de la franja haría las veces de devolución. El caso de uso está escrito asumiendo préstamos de equipos.
-
-**Qué preguntar**: ¿este caso de uso cubre solo equipos en préstamo, o también hay que registrar una "entrega" para los espacios?
-
-**Dónde aplicarlo**:
-
-| Archivo | Punto | Qué cambiar |
-|---|---|---|
-| `spec-modulo2-uc10-reportar-fecha-hora-entrega.md` | Contexto y edge case **Recursos que no se prestan** | Fijar el alcance y quitar el `[NEEDS CLARIFICATION]`. |
-| `spec-modulo2-uc7-actualizar-estado-recursos.md` | Escenario de fin de franja | Verificar que la liberación de espacios sea coherente con lo que se decida. |
+**Dónde aplicarlo**: `unimag4.drawio` y la sección **Casos de uso relacionados** de UC1, UC2, UC3 y UC4.
 
 ---
 
@@ -171,7 +135,7 @@ El Monitor es una especialización de Estudiante: hereda todo lo suyo. Lo único
 
 | Archivo | Punto | Qué cambiar |
 |---|---|---|
-| `unimag3.drawio` | Actor **Monitor** | Dibujarle una línea propia al caso de uso que lo distinga, o eliminarlo como actor separado. |
+| `unimag4.drawio` | Actor **Monitor** | Dibujarle una línea propia al caso de uso que lo distinga, o eliminarlo como actor separado. |
 | `spec-modulo2.md` | Tabla de **Actores** | Describir su capacidad propia. |
 | `spec-modulo2-uc10-reportar-fecha-hora-entrega.md` | Tabla de **Actores** | Confirmar o quitar la fila que le atribuye el registro de devoluciones. |
 
@@ -236,7 +200,7 @@ La matriz de [gestionunimag.md](../gestionunimag.md) dice que la no asistencia p
 
 **Estado**: abierto. Es el gemelo de P-10, pero con el otro módulo.
 
-El diagrama 3 ya deja explícito que `Consultar recursos` depende del Módulo 1: de allí salen el catálogo, los atributos y el estado de cada recurso. Si ese módulo está caído, el Módulo 2 no tiene de dónde armar la lista. Hay dos caminos: no mostrar nada y decir que el servicio no está disponible, o mostrar la última información conocida advirtiendo que puede estar vieja.
+El diagrama ya deja explícito que `Consultar recursos` depende del Módulo 1: de allí salen el catálogo, los atributos y el estado de cada recurso. Si ese módulo está caído, el Módulo 2 no tiene de dónde armar la lista. Hay dos caminos: no mostrar nada y decir que el servicio no está disponible, o mostrar la última información conocida advirtiendo que puede estar vieja.
 
 Hoy el spec está escrito con la opción conservadora: no se presenta como vigente una lista que no se pudo comprobar (UC1 FR-008).
 
@@ -254,6 +218,84 @@ Hoy el spec está escrito con la opción conservadora: no se presenta como vigen
 
 ---
 
+## P-15 — ¿Quién calcula el cruce de franjas, el Módulo 1 o el 2?
+
+**Estado**: abierto. Salió al comparar con el spec del Módulo 1 `Consultar disponibilidad del recurso`.
+
+Su spec devuelve dos cosas: el **estado actual** del recurso (FR-001) y su **horario de ocupación** con hora de inicio y fin (FR-002). Eso es un calendario, no una respuesta de sí o no. Nuestro UC8 FR-001, en cambio, está escrito como si el Módulo 1 ya resolviera la pregunta: *"si un recurso concreto está o no disponible en una fecha y franja horaria concretas"*.
+
+Su edge case de *"fecha/hora que ya pasó → fecha inválida"* indica que sí aceptan un parámetro de fecha, pero ningún requisito suyo dice qué calculan con él.
+
+**Qué preguntar**: cuando el Módulo 2 pregunta por una franja futura, ¿el Módulo 1 responde disponible/no disponible, o devuelve el calendario de ocupación para que el Módulo 2 cruce las franjas?
+
+> Nuestro UC1 FR-003 ya dice que el Módulo 2 calcula la disponibilidad como *"la ausencia de intersección"*. Si esa sigue siendo la idea, el que hay que reescribir es UC8, no ellos.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2-uc8-consultar-disponibilidad-recursos.md` | **FR-001** y escenarios | Decir si esta consulta recibe un sí/no del Módulo 1 o si cruza el calendario ella misma. |
+| `spec-modulo2-uc1-consultar-recursos.md` | **FR-003** | Debe quedar coherente con lo anterior; hoy atribuye el cálculo al Módulo 2. |
+
+---
+
+## P-16 — El aforo no viene en la respuesta del Módulo 1
+
+**Estado**: abierto. Es la razón por la que `Consultar recursos` necesita su propia línea al Módulo 1.
+
+Nuestro UC1 FR-001 permite filtrar *"para espacios, por aforo mínimo"*, y el escenario 1 muestra el recurso junto con su aforo máximo. Pero `Consultar disponibilidad del recurso` del Módulo 1 solo filtra por **categoría** (FR-003) y solo devuelve *"el estado de disponibilidad actual"*. Su entidad `Espacio` sí tiene `aforo maximo`, `equipamiento`, `ubicacion` y `facultad`, pero esa operación no los expone.
+
+**Qué preguntar**: ¿extienden `Consultar disponibilidad del recurso` para devolver los atributos del catálogo y filtrar por aforo, o el Módulo 1 expone una **operación aparte** de consulta de catálogo?
+
+> De la respuesta depende cómo se lee la asociación directa `Consultar recursos` → Módulo 1 del diagrama: si es una segunda operación, conviene que el diagrama del Módulo 1 la muestre como un óvalo propio.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2-uc1-consultar-recursos.md` | Contexto, **FR-001** y **FR-006** | Nombrar la operación real del Módulo 1 de la que sale el catálogo. |
+| `unimag4.drawio` | Asociación `Consultar recursos` — Módulo 1 | Confirmar que representa una operación distinta de `Consultar disponibilidad`. |
+
+---
+
+## P-17 — Los tiempos de respuesta no cuadran entre módulos
+
+**Estado**: abierto, mitigado de nuestro lado.
+
+El Módulo 1 promete su consulta en **menos de 5 s** con hasta 100 consultas concurrentes, y admite hasta **10 s** en pico de 500. Nuestro UC1 prometía **2 s con 500 concurrentes**: imposible, porque el Módulo 2 no puede responder más rápido que su fuente.
+
+Ya se corrigió del lado nuestro (UC1 SC-001 pasó a 6 s / 12 s, y UC8 SC-001 a 5 s), pero esos números son ahora una consecuencia de los suyos, no una decisión de producto.
+
+**Qué preguntar**: ¿son 5 s y 10 s los objetivos definitivos del Módulo 1, o hay margen para bajarlos? Si la universidad quiere una consulta de menos de 3 s, el compromiso tiene que cambiar en el Módulo 1 primero.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2-uc1-consultar-recursos.md` | **SC-001** | Recalcular si el Módulo 1 mejora su compromiso. |
+| `spec-modulo2-uc8-consultar-disponibilidad-recursos.md` | **SC-001** | Igual. |
+
+---
+
+## P-18 — ¿El "monitor" del Módulo 1 es el mismo que el nuestro?
+
+**Estado**: abierto. Relacionado con P-09.
+
+El spec del Módulo 1 nombra como actor a *"el monitor de recursos"*, que por el contexto suena a personal que administra el inventario. Nuestro Monitor es una **especialización de Estudiante**. Si son dos roles distintos con el mismo nombre, va a haber confusión en cuanto los dos módulos se junten.
+
+**Qué preguntar**: ¿el "monitor de recursos" del Módulo 1 es el mismo Monitor estudiantil del Módulo 2, o es personal administrativo?
+
+> Si resulta ser el mismo, se cierra P-09 de paso: administrar el inventario sería justamente la capacidad propia que hoy le falta al Monitor.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2.md` | Tabla de **Actores** | Precisar de qué monitor se habla. |
+| `pendientes-clarificacion.md` | **P-09** | Puede cerrarse con la respuesta. |
+
+---
+
 ## Resueltos
 
 - **Umbral de no-show** — definido en 10 minutos desde el inicio de la franja. Aplicado en UC2 FR-010; UC4 y `spec-modulo2.md` ya remiten a él. *(2026-09-03)*
@@ -261,5 +303,8 @@ Hoy el spec está escrito con la opción conservadora: no se presenta como vigen
 - **Quién sanciona** — el Módulo 2 detecta y reporta; el Módulo 3 decide y aplica. Alineados UC2, UC4, UC5 y UC9 con ese reparto; UC11 nace ya con ese reparto. *(2026-09-03)*
 - **`Consultar reportes` no la pide ninguna persona y va en sentido contrario al que se creía** — no produce reportes para nadie: **obtiene** del Módulo 3 el reporte de cumplimiento de una persona, para poder explicarle por qué no puede reservar cuando tiene una sanción. Se retiró el error `REP-001` del diccionario consolidado, porque ya no hay ningún rol al que negarle el acceso. *(2026-09-03)*
 - **Solapamiento entre `Reportar cancelación de reserva` y los avisos de UC5** (antes P-12) — resuelto en `Use Case 5 completed`: UC5 se queda solo con `RECURSO_SIN_NOVEDAD` y `RECURSO_CON_NOVEDAD`, porque notifica **en qué estado quedó el recurso después de usarlo**. Una reserva cancelada o una ausencia no generan aviso desde UC5, ya que el recurso nunca se usó; esas dos situaciones las reportan UC11 y UC9. Se movió a UC11 el edge case de cierre masivo por importación, que contradecía el escenario de prioridad académica de UC5. *(2026-09-04)*
-- **`Consultar recursos` no decía de dónde salen los recursos** — el spec ya nombraba al Módulo 1 como actor secundario, pero el diagrama no dibujaba ninguna línea entre ambos. Se agregaron en `unimag3.drawio` la asociación directa `Consultar recursos` — Módulo 1 (el catálogo y sus atributos) y el `<<include>>` hacia `Consultar disponibilidad de los recursos` (el estado en la franja), que UC1 y UC8 ya daban por supuesto. *(2026-09-04)*
+- **`Reportar fecha y hora de entrega` aplica solo a equipos** (antes P-07) — resuelto por el equipo en `arreglo de specs 7-10 y diagrama`: los espacios no se devuelven físicamente, se liberan solos al terminar la franja. Este caso de uso queda exclusivo para muebles y equipos en préstamo. *(2026-09-04)*
+- **Horario de operación y franjas que cruzan la medianoche** — resuelto por el equipo: la ventana es de 06:00 a 22:00 en hora local de Colombia (`America/Bogota`, UTC-5), no se permiten franjas nocturnas ni que crucen la medianoche. Aplicado en UC1, UC8 y `spec-modulo2.md`; UC1 lo recoge además como FR-010 y FR-011. *(2026-09-04)*
+- **Estado `FUERA_DE_SERVICIO` fuera del catálogo** (antes P-05) — el spec del Módulo 1 para `Consultar disponibilidad del recurso` confirma exactamente los cinco estados de `gestionunimag.md`, sin un sexto. Se reemplazó `FUERA_DE_SERVICIO` por `EN_MANTENIMIENTO` en UC3 y UC4. *(2026-09-04)*
+- **`Consultar recursos` no decía de dónde salen los recursos** — el spec ya nombraba al Módulo 1 como actor secundario, pero el diagrama no dibujaba ninguna línea entre ambos. Se agregaron la asociación directa `Consultar recursos` — Módulo 1 (el catálogo y sus atributos) y el `<<include>>` hacia `Consultar disponibilidad de los recursos` (el estado en la franja), que UC1 y UC8 ya daban por supuesto. El `<<include>>` lo agregó también el equipo por su cuenta en `unimag4.drawio`; la asociación directa a Módulo 1 se portó a ese diagrama. *(2026-09-04)*
 - **Enlace roto en UC4** — su sección *Casos de uso relacionados* apuntaba `Reportar cancelación de reserva` al archivo de UC5; ahora apunta a [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md), que es el caso de uso que el diagrama 3 hizo explícito. *(2026-09-04)*

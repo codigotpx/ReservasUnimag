@@ -2,7 +2,7 @@
 
 **Created**: 2026-09-04
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Reportar cancelación de reserva` (informa al Módulo 3) — óvalo nuevo en `Unimag3.png`, fuente en `unimag3.drawio`
+**Caso de uso (diagrama)**: `Reportar cancelación de reserva` (informa al Módulo 3) — óvalo introducido en el diagrama 3 y conservado en el vigente `Unimag4.png`, fuente en `unimag4.drawio`
 **Prioridad global**: P2
 
 ## Contexto

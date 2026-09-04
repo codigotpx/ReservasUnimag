@@ -2,7 +2,7 @@
 
 **Created**: 2026-08-24
 
-Este documento es el índice del módulo. La especificación detallada está dividida en **un archivo por caso de uso** del diagrama (`Unimag3.png`, fuente en `unimag3.drawio`), cada uno con su propia historia de usuario, escenarios de aceptación, requisitos funcionales, entidades y criterios de éxito, siguiendo [spec-template.md](./spec-template.md).
+Este documento es el índice del módulo. La especificación detallada está dividida en **un archivo por caso de uso** del diagrama vigente (`Unimag4.png`, fuente en `unimag4.drawio`), cada uno con su propia historia de usuario, escenarios de aceptación, requisitos funcionales, entidades y criterios de éxito, siguiendo [spec-template.md](./spec-template.md).
 
 ## Contexto
 
