@@ -6,7 +6,7 @@ Como no tengo la capacidad técnica para enviarte un archivo descargable directa
 Este proyecto define el diseño para el sistema de **Gestión de Recursos de la Universidad del Magdalena (UNIMAG)**. El objetivo es centralizar el control de los recursos físicos y los espacios académicos para que la comunidad estudiantil acceda a ellos de forma organizada, garantizando la continuidad de las clases regulares.
 
 ---
-
+****
 ### 🏫 Módulo 1: Gestión de Activos y Espacios (Inventario Físico)
 Este módulo actúa como la base de datos central que digitaliza la infraestructura física y los recursos disponibles para préstamo o apartado.
 
