@@ -9,7 +9,7 @@
 
 La Dirección de Programa carga al sistema el horario de clases del semestre, y esas clases quedan apartadas automáticamente, de modo que ningún estudiante pueda reservar un salón a la hora en que hay clase.
 
-Este es el caso de uso que le dice al sistema qué le pertenece a la actividad docente; los demás se apoyan en él. Cuando un estudiante consulta qué espacios hay libres, el sistema oculta los que tienen clase; si intenta reservar uno de ellos, se lo niega explicando que el recurso está reservado para actividad docente.
+Este es el caso de uso que le dice al sistema qué le pertenece a la actividad docente; los demás se apoyan en él. Cuando un estudiante consulta qué espacios hay libres, el sistema no deja seleccionar los que tienen clase; si intenta reservar uno de ellos, se lo niega explicando que el recurso está reservado para actividad docente.
 
 Además de la carga del semestre completo, la Dirección de Programa puede registrar una **necesidad extraordinaria**: un examen adicional, una jornada institucional, la visita de un par académico. Esas actividades pesan más que las reservas de estudiantes que ya estén confirmadas: el sistema las cancela, deja constancia del motivo y avisa a quienes las tenían.
 
@@ -79,7 +79,7 @@ Como Dirección de Programa, quiero cargar de una sola vez el archivo con las cl
 
 - **Carga tardía del horario**: si el horario se carga cuando los estudiantes ya hicieron decenas de reservas, el sistema debe mostrar primero cuántas y cuáles reservas se cancelarían, esperar la confirmación de la Dirección de Programa y luego aplicar todo junto: o se cancelan todas y se crean todos los bloqueos, o no se cambia nada. Nunca a medias.
 - **Cambio de horario a mitad de semestre**: volver a cargar un horario que ya se había cargado debe actualizar lo que existe, no repetirlo. Una misma clase no puede quedar bloqueada dos veces sobre el mismo salón.
-- **Recurso dado de baja**: si una fila del archivo nombra un recurso en `FUERA_DE_SERVICIO`, el sistema debe reportarlo como conflicto y no bloquearlo en silencio, porque esa clase necesita otro espacio.
+- **Recurso dado de baja**: si una fila del archivo nombra un recurso en `EN_MANTENIMIENTO`, el sistema debe reportarlo como conflicto y no bloquearlo en silencio, porque esa clase necesita otro espacio.
 - **Archivo vacío o sin ninguna fila válida**: la carga debe terminar sin cambiar nada y decirlo con claridad. Nunca puede mostrar un mensaje de éxito cuando no cargó ninguna clase.
 
 ## Requirements *(mandatory)*
@@ -101,7 +101,7 @@ Como Dirección de Programa, quiero cargar de una sola vez el archivo con las cl
 - **BloqueoAcadémico**: el apartado de mayor prioridad, que nace de la carga académica. Guarda de qué recurso se trata, en qué franja, para qué asignatura, de qué programa, con qué docente y si viene del horario regular o de una actividad extraordinaria.
 - **HorarioSemestral**: el conjunto de clases cargadas para un periodo académico, junto con el resultado de esa carga.
 - **Recurso**: el espacio o equipo sobre el que se aplica el bloqueo.
-- **FranjaHoraria**: la fecha con hora de inicio y hora de fin; es lo que se compara para saber si dos cosas se cruzan.
+- **FranjaHoraria**: la fecha con hora de inicio y hora de fin; es lo que se compara para saber si dos cosas se cruzan. Las clases siempre ocupan espacios y caben en un solo día, así que aquí no aparecen periodos de préstamo, que son la forma en que se ocupan los objetos.
 - **Reserva**: el apartado que hizo un estudiante y que la prioridad académica puede desplazar.
 
 ## Success Criteria *(mandatory)*

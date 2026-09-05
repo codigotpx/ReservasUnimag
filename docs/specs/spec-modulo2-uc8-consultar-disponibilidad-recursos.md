@@ -20,7 +20,7 @@ No es lo mismo que `Consultar recursos`. Aquel muestra una lista al estudiante p
 
 **Casos de uso relacionados**
 
-- `Consultar recursos` — la lista que ve el estudiante se arma preguntando la disponibilidad de cada recurso; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
+- `Consultar recursos` — **la incluye** (`<<include>>`): la lista que ve el estudiante se arma preguntando aquí la disponibilidad de cada recurso del catálogo; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
 - `Reservar recursos` — vuelve a preguntar aquí en el último momento, antes de confirmar; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Actualizar estado de los recursos` — deja escrito lo que esta consulta lee; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
 
@@ -79,25 +79,28 @@ Como sistema, quiero poder preguntar en cualquier momento si un recurso está li
 
 - **FR-001**: El sistema DEBE responder si un recurso concreto está o no disponible en una fecha y franja horaria concretas.
 - **FR-002**: El sistema DEBE considerar no disponible todo recurso que en esa franja esté `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO`.
-- **FR-003**: El sistema DEBE tratar como ocupada cualquier franja que se cruce con otra aunque sea un minuto.
+- **FR-003**: El sistema DEBE tratar como ocupada cualquier franja que se cruce con otra aunque sea un minuto. La comparación se hace contra todo lo que ocupe el recurso: bloqueos académicos, reservas de espacio y también el periodo de un préstamo abierto, que puede abarcar varios días completos.
 - **FR-004**: Cuando el recurso no esté disponible, el sistema DEBE indicar el motivo, para que quien pregunte pueda explicárselo a la persona.
 - **FR-005**: El sistema NO DEBE revelar la identidad de quien tiene reservado el recurso.
 - **FR-006**: La consulta DEBE responder con el estado del momento, sin reutilizar respuestas anteriores.
 - **FR-007**: Si el inventario del Módulo 1 no está disponible, el sistema DEBE informar que no se pudo comprobar y NO DEBE dar el recurso por disponible.
 - **FR-008**: El sistema DEBE poder responder por varios recursos de una vez, para que `Consultar recursos` pueda armar su lista sin preguntar uno por uno.
 - **FR-009**: La consulta NO DEBE cambiar nada: no aparta el recurso ni modifica su estado.
+- **FR-010**: El sistema DEBE expresar e interpretar toda fecha y hora en hora local de Colombia (`America/Bogota`, UTC-5), la zona a la que el Módulo 1 normaliza el inventario.
+- **FR-011**: Cuando el Módulo 1 devuelva los resultados paginados, el sistema DEBE recorrer todas las páginas antes de dar por completa una respuesta sobre varios recursos.
 
 ### Key Entities
 
 - **Recurso**: espacio o equipo por el que se pregunta.
-- **FranjaHoraria**: día con hora de inicio y hora de fin sobre la que se pregunta.
+- **FranjaHoraria**: día con hora de inicio y hora de fin sobre la que se pregunta; siempre es de un solo día, también cuando se pregunta por un objeto.
+- **PeriodoDePrestamo**: el tiempo continuo, de posiblemente varios días, que un objeto pasa prestado. Es una de las ocupaciones contra las que se cruza la franja preguntada.
 - **RespuestaDeDisponibilidad**: lo que devuelve la consulta. Atributos: recurso, franja, si está disponible o no, motivo cuando no lo está, fecha y hora de la respuesta.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: La consulta responde en menos de 2 segundos para un recurso y una franja.
+- **SC-001**: La consulta responde en menos de 5 segundos para un recurso y una franja, el tiempo que promete el Módulo 1 para `Consultar disponibilidad del recurso`; esta consulta no añade cómputo propio apreciable sobre esa respuesta.
 - **SC-002**: El 100 % de las respuestas negativas vienen acompañadas de un motivo; ninguna dice solo "no disponible".
 - **SC-003**: Cero casos en los que la consulta diga que un recurso está libre cuando en el inventario figura ocupado.
 - **SC-004**: Cero reservas confirmadas sobre recursos que esta consulta había reportado como ocupados.
