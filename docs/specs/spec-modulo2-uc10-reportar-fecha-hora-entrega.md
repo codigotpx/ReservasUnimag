@@ -61,7 +61,10 @@ Como sistema, quiero registrar la fecha y la hora exactas en que se devuelve un 
 ### Edge Cases
 
 - **Devolución exactamente en la hora pactada**: el criterio debe ser explícito y siempre el mismo, para que devolver a las 16:00 en punto no se cuente unas veces como puntual y otras como retraso.
-- **Devolución que nunca llega**: si el recurso no vuelve, el sistema no puede quedarse esperando en silencio; el préstamo debe seguir visible como pendiente y escalarse. [NEEDS CLARIFICATION: a partir de cuántos días un préstamo sin devolver se considera pérdida y qué hace el sistema entonces]
+- **Devolución que nunca llega (umbral de pérdida de 7 días)**: Si transcurren 7 días calendario desde la fecha y hora pactadas de devolución sin que el recurso haya sido entregado:
+  1. El préstamo se da por vencido de forma definitiva y se cierra con el estado `NO_DEVUELTO_PERDIDO`.
+  2. El recurso se retira permanentemente de la oferta de reservas (baja lógica, no eliminación de la base de datos) y se le notifica al Módulo 1 para que actualice su estado patrimonial a `DADO_DE_BAJA`.
+  3. Se escala el caso al Módulo 3 con el expediente completo (persona, recurso, placa de inventario y días de mora) para que aplique la sanción disciplinaria correspondiente e inicie el proceso administrativo de cobro por reposición.
 - **Doble registro de la misma devolución**: registrarla dos veces no puede generar dos reportes ni dos cálculos de mora.
 - **El Módulo 3 no responde**: la devolución se registra igual y el recurso se libera igual; el reporte queda pendiente y se reintenta hasta entregarse.
 - **Devolución antes de la hora de inicio**: si alguien devuelve un recurso que nunca llegó a usar, se registra igual y no cuenta como retraso.
