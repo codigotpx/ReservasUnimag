@@ -28,7 +28,7 @@ Con eso se cierra el círculo del módulo: el Módulo 2 le reporta al Módulo 3 
 - `Consultar recursos` — puede avisarle a la persona que está sancionada antes de que intente apartar algo; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
 - `Reportar no asistencia` — el camino de ida: las ausencias que este módulo reporta son parte de lo que después se lee aquí; ver [spec-modulo2-uc9-reportar-no-asistencia.md](./spec-modulo2-uc9-reportar-no-asistencia.md)
 - `Reportar fecha y hora de entrega` — igual con las devoluciones a tiempo y con retraso; ver [spec-modulo2-uc10-reportar-fecha-hora-entrega.md](./spec-modulo2-uc10-reportar-fecha-hora-entrega.md)
-- `Notificar estado de recursos al finalizar reserva` — completa el camino de ida contándole al Módulo 3 cómo terminó cada reserva; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Notificar estado de recursos al finalizar reserva` — completa el camino de ida contándole al Módulo 3 cómo terminó el recurso en cada reserva; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -38,7 +38,7 @@ Como sistema, quiero obtener del Módulo 3 el reporte de cumplimiento de una per
 
 **Why this priority**: Es P1 porque `Reservar recursos` no puede cumplir su promesa sin esto. Una de sus tres denegaciones, `RES-003 — Sanción activa`, depende enteramente de la información que se obtiene aquí, y el diccionario de errores es justamente lo que evita que la persona quede sin saber qué le pasó.
 
-**Independent Test**: Se puede probar sola, con un simulador del Módulo 3 que devuelva distintas situaciones —sin sanción, con sanción vigente, con sanción vencida, sin responder— y comprobando que el sistema interpreta cada caso correctamente. No necesita que existan reservas reales.
+**Independent Test**: Se puede probar sola, con un simulador del Módulo 3 que devuelva distintas situaciones —sin sanción, con sanción vigente, sin responder— y comprobando que el sistema interpreta cada caso correctamente. No necesita que existan reservas reales.
 
 **Acceptance Scenarios**:
 
@@ -57,23 +57,19 @@ Como sistema, quiero obtener del Módulo 3 el reporte de cumplimiento de una per
    - **When** el sistema consulta su reporte el 2026-09-03
    - **Then** obtiene que no tiene sanciones vigentes y la reserva puede continuar, sin que nadie tenga que levantarle la sanción a mano
 
-4. **Scenario**: El Módulo 3 no responde
-   - **Given** el Módulo 3 está caído temporalmente
-   - **When** el sistema intenta consultar el reporte de una persona
-   - **Then** no da por sentado que la persona está al día: informa que no se pudo comprobar su situación y la reserva no se confirma [NEEDS CLARIFICATION: confirmar con el equipo si ante una caída del Módulo 3 se bloquea la reserva o se permite y se revisa después]
-
-5. **Scenario**: Persona sin historial
+4. **Scenario**: Persona sin historial
    - **Given** un Estudiante que nunca ha reservado nada
    - **When** el sistema consulta su reporte
-   - **Then** obtiene un reporte vacío, que se interpreta como "sin sanciones", no como un error
+   - **Then** obtiene un reporte que se interpreta como "sin sanciones", no como un error
 
 ### Edge Cases
 
-- **La sanción vence en mitad de la franja pedida**: hay que definir si cuenta la situación al momento de reservar o al momento en que empieza la franja. El criterio debe ser el mismo siempre.
+- **El Módulo 3 no responde**: si por cualquier razón el Módulo 3 se cae y el sistema intenta consultar el reporte de una persona, no debe dar por sentado que la persona está al día sino informar que no se pudo comprobar su situación y no confirmar la reserva, esta se bloquea hasta que se pueda obtener la información del módulo 3.
+- **Sanciones que no aplican a lo que se está pidiendo**: las sanciones distinguen entre espacios y equipos, hay castigos que solo bloquean la reserva de espacios y otros el uso de equipos.
+- **La sanción vence en mitad de la franja pedida**: la sanción por tiempo cuenta al momento de reservar, es decir, si el usuario tiene una sanción activa y desea reservar para el momento en que esta finalice, no lo podrá hacer, si está sancionado se le debe impedir hacer reservas. El criterio debe ser el mismo siempre.
 - **Sanción que aparece justo después de consultar**: entre la consulta y la confirmación pueden pasar segundos; por eso la comprobación se hace en el momento de confirmar, no al abrir la pantalla.
 - **Respuesta del Módulo 3 incompleta**: si llega una sanción sin fecha de finalización, el sistema no puede inventarla; debe tratarla como vigente y dejar constancia de que faltó el dato.
 - **Datos de otras personas**: la consulta pide el reporte de una sola persona y nunca debe exponer el historial de nadie más.
-- **Sanciones que no aplican a lo que se está pidiendo**: según [gestionunimag.md](../gestionunimag.md), hay castigos que bloquean solo la reserva de espacios. Un bloqueo de espacios no debería impedir el préstamo de un equipo. [NEEDS CLARIFICATION: confirmar si las sanciones distinguen entre espacios y equipos]
 
 ## Requirements *(mandatory)*
 
@@ -81,20 +77,19 @@ Como sistema, quiero obtener del Módulo 3 el reporte de cumplimiento de una per
 
 - **FR-001**: El sistema DEBE obtener del Módulo 3 el reporte de cumplimiento de una persona: sanciones vigentes, ausencias y devoluciones con retraso.
 - **FR-002**: El sistema DEBE ejecutar esta consulta por sí solo, sin que ninguna persona tenga que solicitarla, y NO DEBE ofrecerla como una pantalla de consulta.
-- **FR-003**: El sistema DEBE consultar el reporte antes de confirmar una reserva, para poder aplicar la denegación `RES-003 — Sanción activa`, y también antes de aceptar la **renovación** de un préstamo, que `Reservar recursos` FR-017 deniega a quien tenga una sanción vigente.
+- **FR-003**: El sistema DEBE consultar el reporte antes de confirmar una reserva, para poder aplicar la denegación `RES-003 — Sanción activa`.
 - **FR-004**: Cuando exista una sanción vigente, el sistema DEBE obtener su motivo y su fecha de finalización, y trasladárselos a la persona en el mensaje de denegación.
 - **FR-005**: El sistema NO DEBE calcular, decidir ni almacenar sanciones por su cuenta: la única fuente válida es el Módulo 3.
 - **FR-006**: El sistema NO DEBE dar por buena una situación que no pudo comprobar; si el Módulo 3 no responde, DEBE informarlo en vez de asumir que la persona está al día.
 - **FR-007**: La consulta DEBE pedir el reporte de una sola persona y NO DEBE exponer información de terceros.
-- **FR-008**: Un reporte vacío DEBE interpretarse como "sin sanciones", no como un fallo.
+- **FR-008**: Un reporte de un estudiante que reserva por primera vez DEBE interpretarse como "sin sanciones", no como un fallo.
 - **FR-009**: El sistema DEBE dejar registro de cada consulta realizada y de su resultado, para poder auditar por qué se denegó una reserva.
 - **FR-010**: La consulta NO DEBE modificar nada en el Módulo 3: solo lee.
 
 ### Key Entities
 
-- **ReporteDeCumplimiento**: lo que devuelve el Módulo 3 sobre una persona. Atributos: persona, sanciones vigentes, ausencias acumuladas, devoluciones con retraso, fecha y hora de la consulta.
+- **ReporteDeCumplimiento**: lo que devuelve el Módulo 3 sobre una persona. Atributos: persona, sanciones vigentes, ausencias acumuladas, devoluciones con retraso.
 - **Sanción**: restricción vigente sobre una persona. Atributos: motivo, fecha de inicio, fecha de finalización, alcance.
-- **Usuario**: la persona por la que se pregunta.
 - **Denegación**: el rechazo que se produce cuando el reporte indica sanción vigente; guarda la causa consultada.
 
 ## Success Criteria *(mandatory)*
