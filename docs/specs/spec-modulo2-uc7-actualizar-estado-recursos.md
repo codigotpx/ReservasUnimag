@@ -100,7 +100,8 @@ Como sistema, quiero cambiar el estado de un recurso cada vez que su situación 
 ### Key Entities
 
 - **Recurso**: espacio o equipo del inventario; lo que cambia de estado.
-- **FranjaHoraria**: día con hora de inicio y hora de fin; el estado se guarda por franja, no para el recurso entero.
+- **FranjaHoraria**: día con hora de inicio y hora de fin; el estado de un **espacio** se guarda por franja, no para el recurso entero.
+- **PeriodoDePrestamo**: el tramo continuo en que un **objeto** está prestado. Su estado no se guarda por franjas: el objeto queda `EN_USO` de corrido durante todo el periodo y solo cambia cuando se registra la devolución.
 - **EstadoDelRecurso**: situación del recurso en una franja concreta, siempre uno de los cinco valores del inventario.
 - **CambioDeEstado**: registro de un cambio ocurrido. Atributos: recurso, franja, estado anterior, estado nuevo, motivo, fecha y hora, resultado del aviso al Módulo 1.
 - **Reserva**: origen de la mayoría de los cambios de estado.

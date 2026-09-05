@@ -85,7 +85,7 @@ Como sistema, quiero registrar la fecha y la hora exactas en que se devuelve un 
 
 ### Key Entities
 
-- **Préstamo**: entrega de un recurso a una persona por un tiempo acordado. Atributos: persona, recurso, fecha y hora de entrega, fecha y hora pactadas de devolución, fecha y hora reales de devolución, estado.
+- **Préstamo**: entrega de un recurso a una persona por un tiempo acordado. Atributos: persona, recurso, fecha y hora de entrega, fecha y hora pactadas de devolución, fecha y hora reales de devolución, estado. La fecha pactada no se pacta aquí ni la elige la persona: la calcula `Reservar recursos` al confirmar el préstamo, aplicando el plazo del tipo de recurso y fijando el vencimiento a las 22:00 del día en que se cumple (UC2 FR-012 a FR-014). Una renovación la desplaza una única vez (UC2 FR-016), así que la fecha pactada vigente es la que haya quedado tras ella. Este caso de uso solo registra la devolución real y la compara contra esa fecha.
 - **Devolución**: hecho de que el recurso vuelve. Atributos: préstamo de origen, fecha y hora reales, quién la registró, novedad si la hubo, resultado del reporte al Módulo 3.
 - **Novedad**: daño o incidencia detectada al recibir el recurso.
 - **Recurso**: el equipo prestado que vuelve al inventario.

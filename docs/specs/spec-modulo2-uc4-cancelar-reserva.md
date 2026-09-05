@@ -80,8 +80,9 @@ Como Estudiante, quiero cancelar una reserva que ya no voy a usar, para liberar 
 ### Key Entities
 
 - **Reserva**: apartado cuyo estado transita a `CANCELADA` o `CANCELADA_POR_PRIORIDAD_ACADEMICA`; conserva el motivo de cancelación.
-- **Recurso**: espacio o equipo cuya franja se libera con la cancelación.
-- **FranjaHoraria**: intervalo liberado, que vuelve a ser consultable como disponible.
+- **Recurso**: espacio o equipo que se libera con la cancelación.
+- **FranjaHoraria**: intervalo liberado cuando lo cancelado es la reserva de un espacio; vuelve a ser consultable como disponible.
+- **PeriodoDePrestamo**: lo que se libera cuando lo cancelado es el préstamo de un objeto que aún no se ha recogido. Se libera el periodo completo, no una franja suelta: el objeto vuelve a estar disponible desde ese momento y hasta el vencimiento que tenía previsto. Un objeto ya entregado no se cancela, se devuelve (`Reportar fecha y hora de entrega`).
 - **Usuario**: titular de la reserva; su cupo de préstamos vigentes se actualiza al cancelar.
 
 ## Success Criteria *(mandatory)*

@@ -68,27 +68,6 @@ El edge case **Sanción que inicia con reservas vigentes** de UC2 afirma que *"s
 
 ---
 
-## P-04 — Parámetros sin valor
-
-**Estado**: abierto. No bloquean la redacción, sí la implementación.
-
-**Qué preguntar**:
-
-- Límite máximo de préstamos simultáneos: ¿valor por defecto? ¿varía por rol (Estudiante / Monitor) o por tipo de recurso?
-- Duración máxima de una reserva: ¿cuántas horas?
-
-**Dónde aplicarlo**:
-
-| Archivo | Punto | Qué cambiar |
-|---|---|---|
-| `spec-modulo2-uc2-reservar-recursos.md` | **FR-008** | Fijar el valor por defecto y quitar el `[NEEDS CLARIFICATION]`. |
-| `spec-modulo2-uc2-reservar-recursos.md` | **FR-009** | Fijar la duración máxima y quitar el `[NEEDS CLARIFICATION]`. |
-| `spec-modulo2.md` | Punto abierto **Parámetros no definidos** | Cerrar los dos que correspondan. |
-
-> La **antelación mínima de cancelación** ya está definida en 5 minutos (UC4 FR-008), pero `spec-modulo2.md` la sigue listando como no definida. Ese punto se puede corregir sin esperar a nadie.
-
----
-
 ## P-06 — Direcciones de flecha del diagrama de casos de uso
 
 **Estado**: abierto. Afecta a cómo se redactan las relaciones en varios specs.
@@ -302,6 +281,13 @@ El spec del Módulo 1 nombra como actor a *"el monitor de recursos"*, que por el
 ---
 
 ## Resueltos
+
+- **Renovación de préstamos** (último punto de P-04, que queda cerrado) — se permite renovar **una sola vez** por préstamo, sin devolver el objeto. El plazo se suma desde el vencimiento vigente, no desde el día de la renovación, para no castigar a quien renueva con antelación, y no consume cupo nuevo de los 3 préstamos. No se renueva un préstamo ya vencido (ahí corre la mora del Módulo 3), ni el de alguien con sanción activa, ni un objeto de plazo `0` de uso en sitio, ni cuando otra persona ya tiene ese objeto apartado para una fecha que el nuevo vencimiento invadiría. Aplicado en UC2 FR-016 y FR-017, con su edge case, y reflejado en la entidad `Préstamo` de UC10 y en `spec-modulo2.md`. *(2026-09-04)*
+
+- **Duración máxima de una reserva** (parte de P-04) — un **espacio** se reserva por franjas de máximo **2 horas continuas** (UC2 FR-009); se pueden encadenar dos franjas seguidas mientras quede cupo. Un **equipo** se presta por un plazo que depende de su tipo, expresado en días hábiles, y ese plazo es un atributo que el Módulo 1 fija al crear el recurso (UC2 FR-012 y FR-014): Libro 7, Kit de dibujo 3, Videobeam 1, Microscopio 0. El Módulo 1 aceptó agregar el campo a su ficha de recurso. El vencimiento siempre se ajusta para caer dentro de la ventana de 06:00 a 22:00 (UC2 FR-013). *(2026-09-04)*
+
+- **Límite máximo de préstamos simultáneos** (parte de P-04) — definido por el equipo en **3 reservas vigentes por persona**, parametrizable. Mismo tope para Estudiante y Monitor, y cupo único: espacios y equipos cuentan juntos. Solo ocupan cupo las reservas `CONFIRMADA` cuya franja no ha terminado. Aplicado en UC2 FR-008, en su escenario de denegación `RES-002`, en la entidad Usuario y en `spec-modulo2.md`. *(2026-09-04)*
+- **Antelación mínima de cancelación** (parte de P-04) — ya estaba definida en **10 minutos** en UC4 FR-007; P-04 la citaba mal, como 5 minutos y en un FR-008 que no existe. `spec-modulo2.md` la seguía listando entre los parámetros sin definir y ya no lo hace. *(2026-09-04)*
 
 - **Umbral de no-show** — definido en 10 minutos desde el inicio de la franja. Aplicado en UC2 FR-010; UC4 y `spec-modulo2.md` ya remiten a él. *(2026-09-03)*
 - **Estado de una reserva vigente** — es `RESERVADO`, no `EN_USO`; el recurso solo pasa a `EN_USO` cuando llega la franja y la persona se presenta. Corregido en el glosario de UC3, que aún decía lo contrario. *(2026-09-03)*
