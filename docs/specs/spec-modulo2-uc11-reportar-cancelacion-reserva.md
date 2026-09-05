@@ -91,7 +91,7 @@ Como sistema, quiero reportarle al Módulo 3 cada cancelación de reserva indica
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE reportar al Módulo 3 toda cancelación de reserva que se haya ejecutado, cualquiera que sea su origen.
-- **FR-002**: Cada reporte DEBE indicar la reserva, la persona, el recurso, la franja cancelada, el origen de la cancelación, el motivo y la fecha y hora en que se ejecutó.
+- **FR-002**: Cada reporte DEBE indicar la reserva, la persona, el recurso, el tiempo que se liberó —la franja cancelada si era un espacio, o el periodo de préstamo completo si era un objeto que aún no se había recogido—, el origen de la cancelación, el motivo y la fecha y hora en que se ejecutó.
 - **FR-003**: El reporte DEBE distinguir la cancelación hecha por el titular de la cancelación automática por prioridad académica y de la originada en la indisponibilidad del recurso.
 - **FR-004**: El reporte de una cancelación del titular DEBE incluir la antelación con la que se hizo respecto al inicio de la franja.
 - **FR-005**: El sistema NO DEBE decidir ni aplicar consecuencia alguna por la cancelación; eso corresponde al Módulo 3.

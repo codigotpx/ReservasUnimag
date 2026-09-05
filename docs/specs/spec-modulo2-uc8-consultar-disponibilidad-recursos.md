@@ -60,7 +60,12 @@ Como sistema, quiero poder preguntar en cualquier momento si un recurso está li
    - **When** se consulta su disponibilidad para cualquier franja
    - **Then** el sistema responde que no está disponible e indica que está en mantenimiento
 
-5. **Scenario**: Cruce parcial de horarios
+5. **Scenario**: El objeto está prestado
+   - **Given** el "Libro de Cálculo I" se prestó el 2026-09-01 y su préstamo vence el 2026-09-10
+   - **When** se consulta su disponibilidad para el 2026-09-03 de 10:00 a 12:00, un día cualquiera dentro de ese periodo
+   - **Then** el sistema responde que no está disponible, indica que está `EN_USO` por un préstamo y dice hasta cuándo está comprometido, sin revelar quién lo tiene
+
+6. **Scenario**: Cruce parcial de horarios
    - **Given** el "Laboratorio de Redes" tiene clase de 08:00 a 10:00
    - **When** se consulta su disponibilidad de 09:30 a 10:30
    - **Then** el sistema responde que no está disponible, porque las dos franjas se cruzan aunque sea media hora
@@ -88,13 +93,14 @@ Como sistema, quiero poder preguntar en cualquier momento si un recurso está li
 - **FR-009**: La consulta NO DEBE cambiar nada: no aparta el recurso ni modifica su estado.
 - **FR-010**: El sistema DEBE expresar e interpretar toda fecha y hora en hora local de Colombia (`America/Bogota`, UTC-5), la zona a la que el Módulo 1 normaliza el inventario.
 - **FR-011**: Cuando el Módulo 1 devuelva los resultados paginados, el sistema DEBE recorrer todas las páginas antes de dar por completa una respuesta sobre varios recursos.
+- **FR-012**: Cuando el recurso no esté disponible, el sistema DEBE indicar **hasta cuándo** está comprometido: el fin de la franja que lo ocupa si es un espacio, y la fecha de vencimiento del préstamo si es un objeto. Así quien pregunta puede decidir si espera o busca otra cosa. Esa fecha no identifica a nadie, de modo que no contradice FR-005.
 
 ### Key Entities
 
 - **Recurso**: espacio o equipo por el que se pregunta.
 - **FranjaHoraria**: día con hora de inicio y hora de fin sobre la que se pregunta; siempre es de un solo día, también cuando se pregunta por un objeto.
 - **PeriodoDePrestamo**: el tiempo continuo, de posiblemente varios días, que un objeto pasa prestado. Es una de las ocupaciones contra las que se cruza la franja preguntada.
-- **RespuestaDeDisponibilidad**: lo que devuelve la consulta. Atributos: recurso, franja, si está disponible o no, motivo cuando no lo está, fecha y hora de la respuesta.
+- **RespuestaDeDisponibilidad**: lo que devuelve la consulta. Atributos: recurso, franja preguntada, si está disponible o no, motivo cuando no lo está, hasta cuándo sigue ocupado (FR-012) y fecha y hora de la respuesta.
 
 ## Success Criteria *(mandatory)*
 

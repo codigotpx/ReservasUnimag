@@ -58,7 +58,7 @@ Como sistema, quiero avisarle al Módulo 3 en qué estado quedó el recurso, par
    - **Then** el sistema no ejecuta la notificación, ya que el recurso no se llegó a utilizar
 
 3. **Scenario**: Nadie se presentó
-   - **Given** pasaron los 10 minutos de plazo sin que nadie usara el recurso
+   - **Given** el Módulo 3 reportó que nadie se presentó a usar el recurso
    - **When** la reserva se cierra por ausencia
    - **Then** el sistema no ejecuta la notificación, ya que, de nuevo, el recurso no se llegó a utilizar
 
@@ -68,7 +68,7 @@ Como sistema, quiero avisarle al Módulo 3 en qué estado quedó el recurso, par
    - **Then** el sistema le envía al Módulo 3 el aviso `RECURSO_SIN_NOVEDAD`
 
 5. **Scenario**: El equipo volvió dañado
-   - **Given** un Estudiante finaliza su reserva de la "Sala de Estudio 2" y el encargado de esta nota un daño
+   - **Given** un Estudiante devuelve el "Microscopio M-014" y quien lo recibe nota un daño
    - **When** finaliza esa reserva
    - **Then** el sistema le envía al Módulo 3 el aviso `RECURSO_CON_NOVEDAD` junto con la descripción del daño
 
@@ -87,7 +87,7 @@ Como sistema, quiero avisarle al Módulo 3 en qué estado quedó el recurso, par
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE enviarle al Módulo 3 un aviso cada vez que una reserva en la que se utilizó el recurso termina.
-- **FR-002**: Cada aviso DEBE indicar la reserva, la persona, el recurso, la franja, y la fecha y hora.
+- **FR-002**: Cada aviso DEBE indicar la reserva, la persona, el recurso, el tiempo que estuvo ocupado y la fecha y hora del aviso. En un espacio ese tiempo es la franja reservada; en un objeto son la fecha y hora de entrega, el vencimiento y la devolución real, porque un préstamo no cabe en una franja.
 - **FR-003**: El sistema NO DEBE decidir ni aplicar sanciones; solo informa el hecho, y el Módulo 3 saca las consecuencias.
 - **FR-004**: Si el Módulo 3 no está disponible, la reserva DEBE cerrarse igualmente y el aviso DEBE reintentarse hasta entregarse.
 - **FR-005**: Reenviar un aviso NO DEBE producir un segundo cierre contabilizado para la misma reserva.

@@ -81,7 +81,7 @@ Como sistema, quiero obtener del Módulo 3 el reporte de cumplimiento de una per
 
 - **FR-001**: El sistema DEBE obtener del Módulo 3 el reporte de cumplimiento de una persona: sanciones vigentes, ausencias y devoluciones con retraso.
 - **FR-002**: El sistema DEBE ejecutar esta consulta por sí solo, sin que ninguna persona tenga que solicitarla, y NO DEBE ofrecerla como una pantalla de consulta.
-- **FR-003**: El sistema DEBE consultar el reporte antes de confirmar una reserva, para poder aplicar la denegación `RES-003 — Sanción activa`.
+- **FR-003**: El sistema DEBE consultar el reporte antes de confirmar una reserva, para poder aplicar la denegación `RES-003 — Sanción activa`, y también antes de aceptar la **renovación** de un préstamo, que `Reservar recursos` FR-017 deniega a quien tenga una sanción vigente.
 - **FR-004**: Cuando exista una sanción vigente, el sistema DEBE obtener su motivo y su fecha de finalización, y trasladárselos a la persona en el mensaje de denegación.
 - **FR-005**: El sistema NO DEBE calcular, decidir ni almacenar sanciones por su cuenta: la única fuente válida es el Módulo 3.
 - **FR-006**: El sistema NO DEBE dar por buena una situación que no pudo comprobar; si el Módulo 3 no responde, DEBE informarlo en vez de asumir que la persona está al día.

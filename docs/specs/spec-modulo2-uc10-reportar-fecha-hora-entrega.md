@@ -1,4 +1,4 @@
-# Feature Specification: Reportar fecha y hora de entrega
+Lo ul# Feature Specification: Reportar fecha y hora de entrega
 
 **Created**: 2026-09-03
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
@@ -40,14 +40,14 @@ Como sistema, quiero registrar la fecha y la hora exactas en que se devuelve un 
 **Acceptance Scenarios**:
 
 1. **Scenario**: Devolución a tiempo
-   - **Given** un Estudiante tiene prestado el "Microscopio 07" con devolución pactada el 2026-09-01 a las 16:00
+   - **Given** un Estudiante tiene prestado el "Microscopio 07" con devolución pactada el 2026-09-01 a las 22:00, el cierre de la jornada de ese día
    - **When** lo devuelve a las 15:40 y queda registrada la devolución
    - **Then** el sistema guarda la fecha y hora reales, reporta al Módulo 3 que la devolución fue anterior a la hora pactada, y el recurso vuelve a estar disponible
 
 2. **Scenario**: Devolución con retraso
-   - **Given** un Estudiante tiene prestado el "Kit de dibujo 22" con devolución pactada a las 16:00
-   - **When** lo devuelve a las 18:30
-   - **Then** el sistema guarda la fecha y hora reales, reporta al Módulo 3 la devolución junto con el retraso de 2 horas y 30 minutos, y el recurso vuelve a estar disponible
+   - **Given** un Estudiante tiene prestado el "Kit de dibujo 22" con devolución pactada el 2026-09-01 a las 22:00
+   - **When** lo devuelve al día siguiente a las 10:30
+   - **Then** el sistema guarda la fecha y hora reales, reporta al Módulo 3 la devolución junto con el retraso de 12 horas y 30 minutos, y el recurso vuelve a estar disponible
 
 3. **Scenario**: Recurso devuelto con daño
    - **Given** un Estudiante devuelve el "Videobeam 12" y quien lo recibe reporta un daño
@@ -61,11 +61,11 @@ Como sistema, quiero registrar la fecha y la hora exactas en que se devuelve un 
 
 ### Edge Cases
 
-- **Devolución exactamente en la hora pactada**: el criterio debe ser explícito y siempre el mismo, para que devolver a las 16:00 en punto no se cuente unas veces como puntual y otras como retraso.
+- **Devolución exactamente en la hora pactada**: el criterio debe ser explícito y siempre el mismo, para que devolver a las 22:00 en punto —la hora de vencimiento que fija `Reservar recursos` FR-013— no se cuente unas veces como puntual y otras como retraso.
 - **Devolución que nunca llega**: si el recurso no vuelve, el sistema no puede quedarse esperando en silencio; el préstamo debe seguir visible como pendiente y escalarse. [NEEDS CLARIFICATION: a partir de cuántos días un préstamo sin devolver se considera pérdida y qué hace el sistema entonces]
 - **Doble registro de la misma devolución**: registrarla dos veces no puede generar dos reportes ni dos cálculos de mora.
 - **El Módulo 3 no responde**: la devolución se registra igual y el recurso se libera igual; el reporte queda pendiente y se reintenta hasta entregarse.
-- **Devolución antes de la hora de inicio**: si alguien devuelve un recurso que nunca llegó a usar, se registra igual y no cuenta como retraso.
+- **Devolución el mismo día de la entrega**: si alguien recoge un equipo y lo devuelve sin haberlo llegado a usar, se registra igual y no cuenta como retraso; el préstamo se cierra ahí y el cupo se libera.
 - **Espacios físicos (salones, auditorios, salas de estudio)**: Para los espacios físicos no se realiza un reporte físico de entrega o devolución. Su liberación ocurre automáticamente al cumplirse la hora de fin de la franja horaria pactada (mediante el ciclo de vida del recurso gestionado por el sistema). Por lo tanto, este caso de uso aplica de forma exclusiva a recursos muebles y equipos en préstamo físico (videobeams, microscopios, kits de dibujo, etc.).
 
 ## Requirements *(mandatory)*

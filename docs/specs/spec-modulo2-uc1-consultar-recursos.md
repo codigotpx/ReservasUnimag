@@ -76,12 +76,17 @@ Como Estudiante (o Monitor) y dirección de programa, quiero consultar el catál
    - **When** el Estudiante consulta los recursos disponibles para el 2026-09-01 de 10:00 a 12:00
    - **Then** el "Microscopio M-014" se muestra como `EN_MANTENIMIENTO` y no es seleccionable, aunque la franja esté libre
 
-6. **Scenario**: Ningún recurso seleccionable en la franja
+6. **Scenario**: Objeto prestado por varios días
+   - **Given** el "Libro de Cálculo I" se prestó el martes 2026-09-01 y su préstamo vence el jueves 2026-09-10
+   - **When** el Estudiante consulta los recursos disponibles para el jueves 2026-09-03 de 10:00 a 12:00, un día cualquiera dentro de ese periodo
+   - **Then** el "Libro de Cálculo I" se muestra como `EN_USO` y no es seleccionable, igual que si la consulta fuera del día en que se entregó o de cualquier otro día hasta su devolución
+
+7. **Scenario**: Ningún recurso seleccionable en la franja
    - **Given** todos los recursos del tipo "Laboratorio" están en `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO` en la franja consultada
    - **When** el Estudiante ejecuta la consulta filtrando por tipo "Laboratorio"
    - **Then** el sistema lista igualmente todos los laboratorios, cada uno con el estado que lo bloquea, ninguno seleccionable, junto con un mensaje que explica que no hay ninguno disponible en esa franja y la sugerencia de la siguiente franja con disponibilidad
 
-7. **Scenario**: Resultado que excede una página
+8. **Scenario**: Resultado que excede una página
    - **Given** 47 recursos del tipo "Salón" cumplen los filtros de la consulta
    - **When** el Estudiante ejecuta la consulta
    - **Then** el sistema muestra los primeros 20 recursos, indica que hay 47 en total y ofrece avanzar a la siguiente página, que trae los 20 siguientes y luego los 7 restantes, sin repetir ninguno
@@ -114,6 +119,7 @@ Como Estudiante (o Monitor) y dirección de programa, quiero consultar el catál
 - **FR-012**: El sistema DEBE listar todos los recursos que cumplen los filtros de la consulta, estén disponibles o no; ningún recurso se oculta por su estado, solo deja de ser seleccionable. Si ninguno resulta seleccionable, la lista igual se muestra acompañada de un mensaje que lo explica.
 - **FR-013**: El sistema DEBE indicar en cada página cuántos recursos hay en total para esos filtros y qué página se está viendo, y DEBE permitir avanzar y retroceder entre páginas sin repetir la consulta desde cero.
 - **FR-014**: El sistema DEBE ordenar los resultados de forma estable y determinista —por nombre del recurso y, ante nombres iguales, por su identificador del Módulo 1— para que un mismo recurso no aparezca dos veces ni se salte al pasar de página. El orden no depende del estado: un recurso `RESERVADO` no se manda al final de la lista.
+- **FR-015**: La consulta responde por la **franja preguntada**, también cuando se pregunta por un objeto: si el objeto está libre en esa franja, se muestra `DISPONIBLE`. Eso no garantiza que se pueda prestar, porque el préstamo ocupa días completos y podría chocar más adelante con otra ocupación que la franja consultada no alcanza a ver. Esa comprobación del periodo completo la hace `Reservar recursos` al confirmar, y de ahí puede salir un `RES-004`. Es la misma regla de siempre —lo que se muestra es una foto del momento y se revalida al reservar—, solo que en los objetos el desfase puede ser de días y no de minutos.
 
 ### Key Entities
 

@@ -48,12 +48,17 @@ Como Estudiante, quiero cancelar una reserva que ya no voy a usar, para liberar 
    - **When** solicita cancelarla
    - **Then** el sistema cambia la reserva a `CANCELADA`, libera la franja del recurso y descuenta el préstamo de su cupo vigente
 
-2. **Scenario**: Cancelación fuera de plazo
+2. **Scenario**: Cancelación de un objeto que aún no se ha recogido
+   - **Given** el Estudiante apartó el "Videobeam 12" para recogerlo el 2026-09-03 a las 14:30 y todavía no ha ido por él
+   - **When** solicita cancelar ese préstamo
+   - **Then** el sistema lo deja `CANCELADA`, libera el periodo completo —desde esa recogida hasta el vencimiento que tenía previsto—, descuenta el préstamo de su cupo y el videobeam vuelve a aparecer disponible para otros desde ese mismo momento
+
+3. **Scenario**: Cancelación fuera de plazo
    - **Given** se venció el plazo de cancelación (10 minutos), la reserva ya inició o finalizó
    - **When** el Estudiante intenta cancelarla
    - **Then** el sistema rechaza la operación con `CAN-001 — La reserva ya no es cancelable` e indica el plazo mínimo de antelación exigido  
 
-3. **Scenario**: Cancelación automática por prioridad académica
+4. **Scenario**: Cancelación automática por prioridad académica
    - **Given** una reserva estudiantil es desplazada por una necesidad institucional extraordinaria
    - **When** el sistema ejecuta la cancelación automática
    - **Then** la reserva queda `CANCELADA_POR_PRIORIDAD_ACADEMICA`, no se contabiliza como ausencia del estudiante, y se emite el evento correspondiente
@@ -63,19 +68,20 @@ Como Estudiante, quiero cancelar una reserva que ya no voy a usar, para liberar 
 - **Cancelación en el límite del plazo**: solicitud que llega exactamente en el instante de la antelación mínima; el criterio de borde debe ser explícito y determinista.
 - **Recurso dado de baja**: cuando un recurso pasa a `EN_MANTENIMIENTO`, sus reservas futuras deben cancelarse con motivo propio y notificarse, sin penalizar a los titulares.
 - **Doble cancelación**: una segunda solicitud sobre una reserva ya `CANCELADA` debe ser idempotente y no liberar dos veces el cupo de préstamos.
-- **No presentación**: si pasan 30 minutos desde la hora de inicio y la persona no llegó a usar el recurso, este se libera automáticamente y la ausencia se le reporta al Módulo 3, tal como se define en `Reportar no asistencia`. Esa liberación no cuenta como una cancelación hecha por el estudiante.
+- **No presentación**: pasados 10 minutos sin que la persona llegue —contados desde el inicio de la franja si es un espacio, o desde la hora de recogida si es un objeto—, el Módulo 3 puede reportar la ausencia, y con ese reporte el recurso se libera y queda la constancia, tal como se define en `Reportar no asistencia` y en `Reservar recursos` FR-010. El sistema no libera nada por su cuenta, y esa liberación no cuenta como una cancelación hecha por el estudiante.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: Los usuarios DEBEN poder cancelar sus propias reservas no iniciadas, respetando la antelación mínima configurada.
-- **FR-002**: El sistema DEBE liberar la franja del recurso y actualizar el cupo de préstamos vigentes al cancelar, ejecutando siempre `Actualizar estado de los recursos`.
+- **FR-001**: Los usuarios DEBEN poder cancelar sus propios apartados no iniciados, respetando la antelación mínima configurada. Un apartado está sin iniciar si es un **espacio** cuya franja aún no ha empezado, o un **objeto** que la persona todavía no ha recogido; en los objetos la antelación de FR-007 se mide contra la hora de recogida acordada.
+- **FR-002**: El sistema DEBE liberar el tiempo que el recurso tenía ocupado y actualizar el cupo de préstamos vigentes al cancelar, ejecutando siempre `Actualizar estado de los recursos`. En un espacio eso es la franja reservada; en un objeto es el periodo de préstamo entero, desde la recogida prevista hasta su vencimiento, no un trozo.
 - **FR-003**: El sistema DEBE impedir que un usuario cancele reservas fuera del plazo (`CAN-001`).
 - **FR-004**: El sistema DEBE soportar la cancelación automática por prioridad académica, marcando la reserva con `CANCELADA_POR_PRIORIDAD_ACADEMICA`.
 - **FR-005**: Las cancelaciones por prioridad académica NO DEBEN penalizar al estudiante ni computar como ausencia.
 - **FR-006**: El sistema DEBE mantener registro de auditoría de toda cancelación, con autor, motivo y marca de tiempo.
 - **FR-007**: La antelación mínima de cancelación DEBE ser de 10 minutos.
+- **FR-008**: El sistema NO DEBE permitir cancelar el préstamo de un **objeto que ya fue entregado**: una vez el recurso está en manos de la persona, lo que corresponde es devolverlo mediante `Reportar fecha y hora de entrega`. Al intentarlo, el sistema DEBE explicarlo y ofrecer el registro de devolución en su lugar.
 
 ### Key Entities
 

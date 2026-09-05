@@ -21,30 +21,26 @@ La contradicción interna de UC2 quedó resuelta: el edge case y FR-010 ahora di
 | Archivo | Punto | Qué cambiar |
 |---|---|---|
 | `spec-modulo2-uc9-reportar-no-asistencia.md` | Contexto | Fijar la regla que aplicará el Módulo 3, si se decide dejarla escrita aquí como referencia. |
-| `spec-modulo2-uc4-cancelar-reserva.md` | Edge case **No presentación** | Quitar su `[NEEDS CLARIFICATION: cuánto dura la sanción y cuántas ausencias hacen falta]`. |
 | `spec-modulo2.md` | Punto abierto **Umbral de no-show** | Cerrar la parte del encadenamiento con sanciones. |
 
 > Esta regla es del **Módulo 3**, no del 2. Puede que haya que preguntársela al equipo de ese módulo, no al de este.
 
-> El umbral de tiempo ya está definido: **10 minutos** desde el inicio de la franja (UC2 FR-010). Lo único abierto es la relación ausencia → sanción.
+> El umbral de tiempo ya está definido: **10 minutos**, contados desde el inicio de la franja en un espacio y desde la hora de recogida en un objeto (UC2 FR-010, UC4 y UC9 FR-001). Lo único abierto es la relación ausencia → sanción. El edge case de UC4 ya no lleva marca de clarificación: se corrigió su umbral, que decía 30 minutos y contradecía al resto del módulo.
 
 ---
 
-## P-02 — ¿Cómo se registra que la persona se presentó?
+## P-02 — ¿Cómo se registra que la persona sí se presentó?
 
-**Estado**: abierto. Hueco de requisito en UC2.
+**Estado**: abierto solo a medias. La **no** presentación ya está resuelta: la constata el Módulo 3 y nos la reporta, y sin ese reporte no hay ausencia (UC9 FR-001, UC2 FR-010). Lo que sigue sin definirse es el camino contrario, el de quien sí llega: qué acto marca el inicio de uso y hace que el recurso pase de `RESERVADO` a `EN_USO`.
 
-El escenario 1 dice que el recurso pasa a `EN_USO` *"cuando la persona se presenta"*, y FR-010 se dispara *"sin que se registre el uso"*. Ningún requisito define qué cuenta como presentarse ni por qué medio se registra (código en el sitio, confirmación en la app, validación de un monitor, lector de carné…). Sin eso, ni la transición `RESERVADO` → `EN_USO` ni el no-show son implementables.
-
-**Qué preguntar**: ¿qué acción concreta marca el inicio de uso, y quién la ejecuta — el propio estudiante, un monitor, o un dispositivo?
+**Qué preguntar**: cuando alguien llega a usar un salón o a recoger un equipo, ¿qué lo registra — el propio estudiante desde la app, alguien en el punto de préstamo, un lector de carné? ¿Y ese registro lo recibe el Módulo 2 directamente, o también viene del Módulo 3, que es quien comprueba la asistencia?
 
 **Dónde aplicarlo**:
 
 | Archivo | Punto | Qué cambiar |
 |---|---|---|
-| `spec-modulo2-uc2-reservar-recursos.md` | **Functional Requirements** | Añadir un FR nuevo que defina el registro de uso y la transición `RESERVADO` → `EN_USO`. |
-| `spec-modulo2-uc2-reservar-recursos.md` | Escenario 1 y edge case de no-show | Reemplazar *"la persona se presenta"* por el mecanismo real. |
-| `spec-modulo2-uc1-consultar-recursos.md` | Estados del recurso | Verificar que la transición quede consistente con el catálogo de cinco estados. |
+| `spec-modulo2-uc2-reservar-recursos.md` | **Functional Requirements** | Añadir el FR que describa el registro de presentación y de entrega, ahora que se sabe quién lo hace. |
+| `spec-modulo2-uc9-reportar-no-asistencia.md` | **FR-001** | Precisar por qué medio llega el reporte del monitor. |
 
 ---
 
@@ -94,7 +90,7 @@ La flecha `Consultar recursos <<include>> Consultar reportes` **sí está bien**
 
 ## P-08 — ¿Qué pasa con un préstamo que nunca se devuelve?
 
-**Estado**: abierto.
+**Estado**: abierto, pero ya menos. El comportamiento del recurso sí quedó definido: UC7 FR-011 y su edge case dicen que un préstamo vencido y no devuelto **sigue `EN_USO`**, que el paso del tiempo no lo libera y que solo la devolución registrada lo devuelve a `DISPONIBLE`. Lo que falta es el otro lado: a partir de cuándo se da por perdido y qué se hace entonces.
 
 **Qué preguntar**: ¿a partir de cuántos días un préstamo sin devolver se considera pérdida, y qué hace el sistema entonces — lo escala, genera un cobro, lo saca del inventario?
 
@@ -109,7 +105,7 @@ La flecha `Consultar recursos <<include>> Consultar reportes` **sí está bien**
 
 ## P-09 — El Monitor se quedó sin capacidad propia
 
-**Estado**: abierto. Apareció al ajustar los specs al diagrama.
+**Estado**: abierto. Apareció al ajustar los specs al diagrama. La comprobación de asistencia, que podía haber sido su capacidad propia, resultó ser del Módulo 3, así que al Monitor solo le queda como candidato el registro de entregas y devoluciones de equipos (UC10).
 
 El Monitor es una especialización de Estudiante: hereda todo lo suyo. Lo único que lo distinguía dentro del Módulo 2 era **consultar reportes**, y esa consulta ya no la hace ninguna persona: la ejecuta el sistema y el resultado va al Módulo 3. Tal como quedan el diagrama y los specs, el Monitor no hace nada que un Estudiante no pueda hacer, así que como actor separado ya no aporta.
 
@@ -186,7 +182,7 @@ La matriz de [gestionunimag.md](../gestionunimag.md) dice que la no asistencia p
 
 El diagrama ya deja explícito que `Consultar recursos` depende del Módulo 1: de allí salen el catálogo, los atributos y el estado de cada recurso. Si ese módulo está caído, el Módulo 2 no tiene de dónde armar la lista. Hay dos caminos: no mostrar nada y decir que el servicio no está disponible, o mostrar la última información conocida advirtiendo que puede estar vieja.
 
-Hoy el spec está escrito con la opción conservadora: no se presenta como vigente una lista que no se pudo comprobar (UC1 FR-008).
+Hoy el spec está escrito con la opción conservadora: no se presenta como vigente una lista que no se pudo comprobar (UC1 FR-008), y su edge case ya **no lleva marca de clarificación**, así que en la práctica el Módulo 2 está decidido. Lo que queda es confirmarlo con el equipo, no reescribirlo.
 
 **Qué preguntar**: ¿la consulta se cae con el Módulo 1, o sigue mostrando la última foto conocida con una advertencia?
 
@@ -223,11 +219,15 @@ Su edge case de *"fecha/hora que ya pasó → fecha inválida"* indica que sí a
 
 ---
 
-## P-16 — El aforo no viene en la respuesta del Módulo 1
+## P-16 — Datos que necesitamos del Módulo 1 y su consulta no devuelve
 
-**Estado**: abierto. Es la razón por la que `Consultar recursos` necesita su propia línea al Módulo 1.
+**Estado**: abierto, a la espera de su respuesta. Ya se les envió la solicitud. Es la razón por la que `Consultar recursos` necesita su propia línea al Módulo 1.
 
 Nuestro UC1 FR-001 permite filtrar *"para espacios, por aforo mínimo"*, y el escenario 1 muestra el recurso junto con su aforo máximo. Pero `Consultar disponibilidad del recurso` del Módulo 1 solo filtra por **categoría** (FR-003) y solo devuelve *"el estado de disponibilidad actual"*. Su entidad `Espacio` sí tiene `aforo maximo`, `equipamiento`, `ubicacion` y `facultad`, pero esa operación no los expone.
+
+Al concretar el préstamo de objetos apareció un segundo dato que tampoco tienen: el **plazo máximo de préstamo por tipo de recurso**, que UC2 FR-012 define como atributo del recurso —un número en días hábiles, no una fecha— y que el Módulo 1 aceptó agregar a la creación de recurso. Hasta que exista, FR-012 no se puede implementar.
+
+La lista completa de lo que les pedimos en la respuesta: identificador, nombre y tipo; aforo máximo, equipamiento fijo, facultad y ubicación de los espacios; placa, estado físico y ubicación de los objetos; el plazo máximo de préstamo; el motivo cuando el recurso no está disponible; el total de resultados; y las horas en `America/Bogota`. Aparte, poder filtrar por aforo mínimo y preguntar por varios recursos de una vez (UC8 FR-008).
 
 **Qué preguntar**: ¿extienden `Consultar disponibilidad del recurso` para devolver los atributos del catálogo y filtrar por aforo, o el Módulo 1 expone una **operación aparte** de consulta de catálogo?
 
@@ -281,6 +281,13 @@ El spec del Módulo 1 nombra como actor a *"el monitor de recursos"*, que por el
 ---
 
 ## Resueltos
+
+- **La ausencia la reporta el Módulo 3, no la detecta un reloj** (parte de P-02) — el Módulo 2 no declara ausencias por su cuenta: el Módulo 3 constata que el titular no llegó y se lo reporta, y ese aviso es lo que libera el recurso y deja la constancia. Cambia el sentido del flujo: UC9 ya no reporta hacia el Módulo 3, sino que recibe de él. El plazo de 10 minutos sigue vigente como criterio de admisión: un reporte anticipado se rechaza. Si el Módulo 3 está caído no llegan reportes y los recursos siguen apartados hasta el fin de su franja, porque el Módulo 2 no suple esa función. Se añadió la anulación de un reporte enviado por error. Reescrito UC9 (contexto, actores, historia, escenarios, FR-001, FR-002, FR-004, FR-008, FR-011, FR-012, entidad `Ausencia` y SC-001, que ahora se mide desde la llegada del reporte) y alineados UC2 FR-010 y su tabla de actores, UC4, UC5 y UC7. *(2026-09-04)*
+
+- **Un espacio se aparta por franjas y un objeto por periodos** — es el cambio de fondo que trajo el préstamo por días. `FranjaHoraria` queda acotada a un mismo día y a los espacios (2 horas máximo); nace `PeriodoDePrestamo` para los objetos, que va de la recogida al vencimiento y puede durar días. Lo que se **pregunta** sigue siendo siempre una franja de un solo día; lo que **ocupa** puede ser una franja o un periodo, y el cruce se calcula igual contra ambos. Aplicado en los once specs: UC1 (FR-003, FR-015 y escenario del objeto prestado), UC2 (FR-001, FR-004, FR-010, FR-012 a FR-017, entidades y escenarios), UC3 (FR-010: la prioridad académica desplaza un objeto apartado pero **no** uno ya entregado, que se reporta como choque), UC4 (FR-001, FR-002, FR-008 y escenario de cancelación de objeto no recogido), UC5 (FR-002), UC6 (FR-003, que ahora cubre la renovación), UC7 (FR-002, FR-006, FR-010, FR-011 y escenario de devolución), UC8 (FR-012 y escenario del objeto prestado), UC9 (FR-001, FR-002, FR-004), UC10 (escenarios alineados con el vencimiento a las 22:00) y UC11 (FR-002). *(2026-09-04)*
+- **Umbral de no-show mal copiado en UC4** — su edge case decía **30 minutos** mientras UC2, UC5, UC9 y `spec-modulo2.md` decían 10. Se corrigió a 10 y se precisó desde dónde se cuentan según el tipo de recurso. *(2026-09-04)*
+- **Paginación de `Consultar recursos`** — páginas de **20 recursos**, sin paginar cuando hay 20 o menos; cada página informa el total y en cuál va, y el orden es estable y determinista (nombre, y el identificador del Módulo 1 como desempate) para que nada se duplique ni se salte al pasar de página. El tamaño lo decide el Módulo 2 y no depende de cómo el Módulo 1 entregue el inventario. UC1 FR-009, FR-013 y FR-014. *(2026-09-04)*
+- **Los recursos ocupados se muestran, no se ocultan** — la consulta lista todo lo que cumple los filtros y marca con su estado lo que no se puede seleccionar; si no queda ninguno seleccionable, la lista se muestra igual con un mensaje que lo explica. El escenario "sin resultados" de UC1, que devolvía una lista vacía, contradecía a los demás y se reescribió. UC1 FR-012. *(2026-09-04)*
 
 - **Renovación de préstamos** (último punto de P-04, que queda cerrado) — se permite renovar **una sola vez** por préstamo, sin devolver el objeto. El plazo se suma desde el vencimiento vigente, no desde el día de la renovación, para no castigar a quien renueva con antelación, y no consume cupo nuevo de los 3 préstamos. No se renueva un préstamo ya vencido (ahí corre la mora del Módulo 3), ni el de alguien con sanción activa, ni un objeto de plazo `0` de uso en sitio, ni cuando otra persona ya tiene ese objeto apartado para una fecha que el nuevo vencimiento invadiría. Aplicado en UC2 FR-016 y FR-017, con su edge case, y reflejado en la entidad `Préstamo` de UC10 y en `spec-modulo2.md`. *(2026-09-04)*
 
