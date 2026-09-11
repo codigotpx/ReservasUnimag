@@ -17,7 +17,7 @@ estudiantil.
 | Documento | Contenido |
 |---|---|
 | [docs/modulo2.md](docs/modulo2.md) | Resumen funcional del módulo. |
-| [docs/Unimag.drawio2.png](docs/Unimag.drawio2.png) | Diagrama de casos de uso. |
+| [docs/unimag5.png](docs/unimag5.png) | Diagrama de casos de uso. |
 | [docs/specs/](docs/specs/) | Especificaciones detalladas, una por caso de uso. |
 | [docs/specs/spec-template.md](docs/specs/spec-template.md) | Plantilla base de las especificaciones. |
 
@@ -83,7 +83,7 @@ En Windows, usar `mvnw.cmd` en lugar de `./mvnw`.
 ```
 docs/
   modulo2.md              Resumen funcional del módulo
-  Unimag.drawio2.png      Diagrama de casos de uso
+  unimag5.png             Diagrama de casos de uso
   specs/                  Especificaciones por caso de uso
 src/
   main/java/edu/unimagdalena/reservasunimag/
