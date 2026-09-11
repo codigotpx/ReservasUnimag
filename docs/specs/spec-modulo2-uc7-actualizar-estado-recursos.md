@@ -102,7 +102,7 @@ Como sistema, quiero cambiar el estado de un recurso cada vez que su situación 
 - **FR-008**: Repetir el mismo aviso NO DEBE producir un segundo cambio de estado.
 - **FR-009**: El sistema DEBE guardar un registro de cada cambio de estado con el recurso, la franja, el estado anterior, el estado nuevo, el motivo y la fecha y hora.
 - **FR-010**: Al terminar la franja, un **espacio** DEBE volver a `DISPONIBLE` por sí solo, salvo que exista otra reserva o un bloqueo académico encima.
-- **FR-011**: Un **activo** prestado NO DEBE volver a `DISPONIBLE` por el paso del tiempo. Sigue `EN_USO` hasta que se registre su devolución mediante `Reportar fecha y hora de entrega`, incluso después de vencido el plazo: mientras el recurso no vuelva físicamente, el inventario tiene que seguir diciendo que está fuera. Es la diferencia de fondo con un espacio, que se desocupa solo cuando pasa la hora.
+- **FR-011**: Un **activo** prestado NO DEBE volver a `DISPONIBLE` por el paso del tiempo. Sigue `EN_USO` hasta que se registre su devolución en `Reportar información de la reserva`, incluso después de vencido el plazo: mientras el recurso no vuelva físicamente, el inventario tiene que seguir diciendo que está fuera. Es la diferencia de fondo con un espacio, que se desocupa solo cuando pasa la hora.
 
 ### Key Entities
 

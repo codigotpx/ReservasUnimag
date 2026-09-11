@@ -1,15 +1,19 @@
-Lo ul# Feature Specification: Reportar fecha y hora de entrega
+# Feature Specification: Reportar información de la reserva
 
 **Created**: 2026-09-03
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Reportar fecha y hora de entrega` (informa al Módulo 3)
+**Caso de uso (diagrama)**: `Reportar información de la reserva` (informa al Módulo 3)
 **Prioridad global**: P3
 
 ## Contexto
 
-Cuando lo que se apartó es un activo prestado —un microscopio, un kit de dibujo, un videobeam— no basta con saber que se lo llevaron: hay que saber cuándo lo devolvieron. Este caso de uso registra ese momento y se lo reporta al Módulo 3, que compara la hora real de devolución contra la hora que estaba pactada y decide si fue una entrega a tiempo o hubo mora.
+El Módulo 3 no hace reservas ni las ve: las hace este módulo. Si nosotros no se la entregamos, no sabe qué se apartó, quién lo apartó, para qué franja o periodo, ni a qué hora se devolvió; y sin esos datos no puede sancionar a nadie ni cerrar su check-out. Este caso de uso es el que le pasa esa información.
 
-Igual que con las ausencias, el reparto es claro: el Módulo 2 registra y reporta los hechos, el Módulo 3 saca las consecuencias. Según [gestionunimag.md](../gestionunimag.md), una entrega a tiempo sube el "score" de confianza de la persona y un retraso genera suspensión temporal de reservas, pero esas dos cosas las aplica el Módulo 3.
+El grueso de lo que necesita viene de los préstamos de activos —un microscopio, un kit de dibujo, un videobeam—: no basta con saber que se lo llevaron, hay que saber cuándo lo devolvieron. El sistema registra ese momento y se lo reporta junto con la hora que estaba pactada; es el Módulo 3 el que compara las dos y decide si fue una entrega a tiempo o hubo mora.
+
+Aunque el nombre hable de la reserva en general, lo que aquí se reporta es la de un préstamo de activo. Un espacio no se devuelve: se libera solo al terminar su franja, y de su cierre le habla al Módulo 3 `Notificar estado de recursos al finalizar reserva`.
+
+El reparto es el de siempre: el Módulo 2 registra y reporta los hechos, el Módulo 3 saca las consecuencias. Lo que cambia frente a `Recibir reporte de no asistencia` es la dirección, y por un motivo de fondo: la ausencia nos la reportan ellos, porque solo ellos pueden constatar en el sitio que la persona no llegó; la información de la reserva se la reportamos nosotros, porque solo nosotros la tenemos. Según [gestionunimag.md](../gestionunimag.md), una entrega a tiempo sube el "score" de confianza de la persona y un retraso genera suspensión temporal de reservas, pero esas dos cosas las aplica el Módulo 3.
 
 **Actores**
 
@@ -23,7 +27,7 @@ Igual que con las ausencias, el reparto es claro: el Módulo 2 registra y report
 
 - `Reservar recursos` — define la franja y con ella la hora pactada de devolución; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Actualizar estado de los recursos` — al registrarse la devolución, el recurso vuelve a estar disponible; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
-- `Reportar no asistencia` — el caso contrario: la persona nunca llegó a llevarse el recurso; ver [spec-modulo2-uc9-reportar-no-asistencia.md](./spec-modulo2-uc9-reportar-no-asistencia.md)
+- `Recibir reporte de no asistencia` — el caso contrario: la persona nunca llegó a llevarse el recurso; ver [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](./spec-modulo2-uc9-recibir-reporte-no-asistencia.md)
 - `Reportar cancelación de reserva` — el tercer reporte de la familia hacia el Módulo 3: la reserva del activo se deshizo antes de la entrega; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
 - `Consultar reportes` — el camino de vuelta: las moras que aquí se reportan son parte de lo que el Módulo 3 devuelve después como sanción; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
 
@@ -85,6 +89,7 @@ Como sistema, quiero registrar la fecha y la hora exactas en que se devuelve un 
 - **FR-008**: Si el Módulo 3 no está disponible, la devolución DEBE quedar registrada y el reporte DEBE reintentarse hasta entregarse.
 - **FR-009**: El sistema DEBE mostrar como pendientes los préstamos cuya hora pactada ya pasó y que aún no han sido devueltos.
 - **FR-010**: El sistema DEBE guardar quién registró la devolución y cuándo, para poder auditarla.
+- **FR-011**: Cada reporte DEBE incluir los datos de la reserva que le dan sentido al hecho: identificador de la reserva, persona, recurso, y la franja horaria o el periodo de préstamo que se apartó. Sin ellos el Módulo 3 no sabe qué se reservó ni a qué hora, y no puede aplicar ninguna sanción por más que le llegue la hora de devolución.
 
 ### Key Entities
 

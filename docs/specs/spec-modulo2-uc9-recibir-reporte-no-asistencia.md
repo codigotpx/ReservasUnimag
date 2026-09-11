@@ -1,13 +1,13 @@
-# Feature Specification: Reportar no asistencia
+# Feature Specification: Recibir reporte de no asistencia
 
 **Created**: 2026-09-03
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Reportar no asistencia` — continuación opcional de `Reservar recursos` (`<<extend>>`), que informa al Módulo 3
+**Caso de uso (diagrama)**: `Recibir reporte de no asistencia` — continuación opcional de `Reservar recursos` (`<<extend>>`); la flecha va del Módulo 3 hacia este caso de uso, porque el reporte lo emite él
 **Prioridad global**: P2
 
 ## Contexto
 
-Cuando alguien aparta un salón y no aparece, ese espacio queda muerto: nadie más pudo usarlo porque figuraba ocupado. Este caso de uso se encarga de dejar constancia de esa ausencia, liberar el recurso y avisarle al Módulo 3, que es el que lleva la matriz de cumplimiento y aplica las sanciones.
+Cuando alguien aparta un salón y no aparece, ese espacio queda muerto: nadie más pudo usarlo porque figuraba ocupado. Este caso de uso recibe del Módulo 3 el aviso de esa ausencia, deja constancia de ella y libera el recurso. El Módulo 3 es el que lleva la matriz de cumplimiento y el que aplica la sanción; nosotros cambiamos el estado de la reserva y devolvemos el recurso a la oferta.
 
 **La ausencia no la descubre el sistema solo: nos la reporta el Módulo 3.** Es él quien lleva el control de uso y comprueba en el sitio si la persona apareció; cuando constata que no llegó, nos lo informa, y es ese reporte —no un reloj— lo que dispara todo lo demás. Tiene sentido, porque desde una base de datos nadie puede saber si alguien entró a una sala o fue a recoger un libro.
 
@@ -15,7 +15,7 @@ El criterio sí está fijado: **10 minutos** sin que la persona aparezca, contad
 
 La división de trabajo queda así: el Módulo 3 constata la ausencia y aplica la sanción; el Módulo 2 recibe el aviso, libera el recurso y deja la constancia.
 
-Sobre el nombre del caso de uso: en el diagrama es `Reportar no asistencia` porque describe el hecho que entra al módulo, no la dirección del mensaje. Lo que se reporta viene del Módulo 3 hacia nosotros. Según [gestionunimag.md](../gestionunimag.md), la consecuencia prevista para una no asistencia a un espacio es el bloqueo de reservas de espacios por una semana, pero quien la aplica es el Módulo 3, no este módulo.
+El caso de uso se llamaba antes `Reportar no asistencia`, y ese nombre sugería lo contrario de lo que pasa: daba a entender que la ausencia la reportábamos nosotros. No es así, y por eso se renombró. Según [gestionunimag.md](../gestionunimag.md), la consecuencia prevista para una no asistencia a un espacio es el bloqueo de reservas de espacios por una semana, pero quien la aplica es el Módulo 3, no este módulo.
 
 **Actores**
 

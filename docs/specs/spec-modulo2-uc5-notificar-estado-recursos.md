@@ -1,4 +1,4 @@
-# Feature Specification: Notificar estado de recursos al finalizar reserva
+  # Feature Specification: Notificar estado de recursos al finalizar reserva
 
 **Created**: 2026-08-24
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
@@ -23,9 +23,9 @@ Conviene no confundirlo con `Actualizar estado de los recursos`, que es distinto
 **Casos de uso relacionados**
 
 - `Reservar recursos` — crea las reservas cuyo cierre se informa aquí; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
-- `Reportar fecha y hora de entrega` — índica la fecha y hora en la que se entregó un recurso, marcando la finalización de la reserva; ver [spec-modulo2-uc10-reportar-fecha-hora-entrega.md](./spec-modulo2-uc10-reportar-fecha-hora-entrega.md)
+- `Reportar información de la reserva` — le entrega al Módulo 3 los datos del préstamo, incluida la fecha y hora de devolución, que es lo que marca la finalización de la reserva de un activo; ver [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md)
 - `Reportar cancelación de reserva` — se lleva las cancelaciones: por eso aquí una reserva cancelada ya no genera aviso; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
-- `Reportar no asistencia` — se lleva las ausencias, por la misma razón: sin uso del recurso no hay estado final que notificar; ver [spec-modulo2-uc9-reportar-no-asistencia.md](./spec-modulo2-uc9-reportar-no-asistencia.md)
+- `Recibir reporte de no asistencia` — se lleva las ausencias, por la misma razón: sin uso del recurso no hay estado final que notificar; ver [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](./spec-modulo2-uc9-recibir-reporte-no-asistencia.md)
 - `Consultar reportes` — el camino de vuelta: con todo lo que se le informa en "notificar estado de recursos al finalizar reserva", el Módulo 3 arma las sanciones que después se consultan; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
 
 **Catálogo de avisos**

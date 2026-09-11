@@ -26,8 +26,8 @@ Con eso se cierra el círculo del módulo: el Módulo 2 le reporta al Módulo 3 
 
 - `Reservar recursos` — usa lo que se obtiene aquí para denegar con el error `RES-003 — Sanción activa` e informar la fecha en que termina; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Consultar recursos` — puede avisarle a la persona que está sancionada antes de que intente apartar algo; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
-- `Reportar no asistencia` — el camino de ida: las ausencias que este módulo reporta son parte de lo que después se lee aquí; ver [spec-modulo2-uc9-reportar-no-asistencia.md](./spec-modulo2-uc9-reportar-no-asistencia.md)
-- `Reportar fecha y hora de entrega` — igual con las devoluciones a tiempo y con retraso; ver [spec-modulo2-uc10-reportar-fecha-hora-entrega.md](./spec-modulo2-uc10-reportar-fecha-hora-entrega.md)
+- `Recibir reporte de no asistencia` — las ausencias que el Módulo 3 nos reporta ahí son parte de lo que después alimenta las sanciones que se leen aquí; ver [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](./spec-modulo2-uc9-recibir-reporte-no-asistencia.md)
+- `Reportar información de la reserva` — igual con las devoluciones a tiempo y con retraso; ver [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md)
 - `Notificar estado de recursos al finalizar reserva` — completa el camino de ida contándole al Módulo 3 cómo terminó el recurso en cada reserva; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
 
 ## User Scenarios & Testing *(mandatory)*

@@ -16,7 +16,7 @@ Motor de reglas de negocio encargado de gestionar el uso de los recursos físico
 | Monitor | Primario (humano) | Especialización de Estudiante: hereda todas sus capacidades. |
 | Dirección de Programa | Primario (humano) | Importa la carga académica semestral y consulta el catálogo de recursos. |
 | Módulo 1 | Secundario (sistema) | Inventario físico: aporta el estado real de los recursos y recibe cada cambio de estado. |
-| Módulo 3 | Secundario (sistema) | Control de uso, sanciones y analítica: recibe las ausencias, las cancelaciones, las devoluciones y el cierre de cada reserva, y **provee de vuelta** el reporte de cumplimiento con las sanciones vigentes. Es quien decide y aplica las sanciones. |
+| Módulo 3 | Secundario (sistema) | Control de uso, sanciones y analítica: **nos reporta** las ausencias, **recibe** la información de las reservas, las cancelaciones, las devoluciones y el cierre de cada reserva, y **provee de vuelta** el reporte de cumplimiento con las sanciones vigentes. Es quien decide y aplica las sanciones. |
 
 ## Trazabilidad diagrama → specs
 
@@ -30,15 +30,15 @@ Motor de reglas de negocio encargado de gestionar el uso de los recursos físico
 | Consultar reportes `<<include>>` | P1 | [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md) |
 | Actualizar estado de los recursos `<<include>>` | P1 | [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md) |
 | Consultar disponibilidad de los recursos | P1 | [spec-modulo2-uc8-consultar-disponibilidad-recursos.md](./spec-modulo2-uc8-consultar-disponibilidad-recursos.md) |
-| Reportar no asistencia | P2 | [spec-modulo2-uc9-reportar-no-asistencia.md](./spec-modulo2-uc9-reportar-no-asistencia.md) |
-| Reportar fecha y hora de entrega | P3 | [spec-modulo2-uc10-reportar-fecha-hora-entrega.md](./spec-modulo2-uc10-reportar-fecha-hora-entrega.md) |
+| Recibir reporte de no asistencia | P2 | [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](./spec-modulo2-uc9-recibir-reporte-no-asistencia.md) |
+| Reportar información de la reserva | P3 | [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md) |
 | Reportar cancelación de reserva | P2 | [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md) |
 
 ## Orden de entrega sugerido
 
 1. **P1 (MVP)**: Consultar recursos + Reservar recursos, con Consultar disponibilidad de los recursos, Actualizar estado de los recursos y Consultar reportes — consultar y apartar, el núcleo demostrable. Estos tres últimos no se ven por fuera, pero sin ellos el sistema muestra información falsa o deniega sin poder explicar por qué.
-2. **P2**: Importar horarios semestrales + Cancelar reserva + Reportar cancelación de reserva + Reportar no asistencia — sostenibilidad de la carga académica, cierre del ciclo de vida de la reserva y control de las reservas fantasma. `Reportar cancelación de reserva` va pegado a `Cancelar reserva`: sin él, el Módulo 3 no puede distinguir a quien liberó a tiempo de quien no apareció.
-3. **P3**: Notificar estado de recursos al finalizar reserva + Reportar fecha y hora de entrega — lo que termina de alimentar al Módulo 3 con el historial que dejan los anteriores.
+2. **P2**: Importar horarios semestrales + Cancelar reserva + Reportar cancelación de reserva + Recibir reporte de no asistencia — sostenibilidad de la carga académica, cierre del ciclo de vida de la reserva y control de las reservas fantasma. `Reportar cancelación de reserva` va pegado a `Cancelar reserva`: sin él, el Módulo 3 no puede distinguir a quien liberó a tiempo de quien no apareció.
+3. **P3**: Notificar estado de recursos al finalizar reserva + Reportar información de la reserva — lo que termina de alimentar al Módulo 3 con el historial que dejan los anteriores.
 
 ## Diccionario de errores consolidado
 
