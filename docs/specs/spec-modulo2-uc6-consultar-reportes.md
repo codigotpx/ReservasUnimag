@@ -28,7 +28,7 @@ Con eso se cierra el círculo del módulo: el Módulo 2 le reporta al Módulo 3 
 - `Consultar recursos` — puede avisarle a la persona que está sancionada antes de que intente apartar algo; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
 - `Recibir reporte de no asistencia` — las ausencias que el Módulo 3 nos reporta ahí son parte de lo que después alimenta las sanciones que se leen aquí; ver [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](./spec-modulo2-uc9-recibir-reporte-no-asistencia.md)
 - `Reportar información de la reserva` — igual con las devoluciones a tiempo y con retraso; ver [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md)
-- `Notificar estado de recursos al finalizar reserva` — completa el camino de ida contándole al Módulo 3 cómo terminó el recurso en cada reserva; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Reportar información de la reserva` — completa el camino de ida contándole al Módulo 3 qué se apartó y cómo terminó; ver [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md)
 
 ## User Scenarios & Testing *(mandatory)*
 

@@ -59,7 +59,6 @@ El edge case **Sanción que inicia con reservas vigentes** de UC2 afirma que *"s
 | `spec-modulo2-uc2-reservar-recursos.md` | Edge case **Sanción que inicia con reservas vigentes** | Confirmar o corregir la afirmación. |
 | `spec-modulo2-uc2-reservar-recursos.md` | **Functional Requirements** | Si se cancelan, añadir el FR que lo exija. |
 | `spec-modulo2-uc4-cancelar-reserva.md` | Estados de cancelación | Puede necesitar un motivo de cancelación propio, como ya existe `CANCELADA_POR_PRIORIDAD_ACADEMICA`. |
-| `spec-modulo2-uc5-notificar-estado-recursos.md` | Catálogo de eventos | Si hay cancelación automática, debe emitir evento hacia el Módulo 1. |
 | `spec-modulo2.md` | Punto abierto **Política de sanción retroactiva** | Cerrarlo. |
 
 ---
@@ -280,7 +279,40 @@ El spec del Módulo 1 nombra como actor a *"el monitor de recursos"*, que por el
 
 ---
 
+## P-13 — El cierre de la reserva de un espacio no se le informa a nadie
+
+**Estado**: abierto. Apareció al eliminar UC5.
+
+`Notificar estado de recursos al finalizar reserva` era el único caso de uso que le contaba al Módulo 3 que una reserva de **espacio** había terminado y en qué estado quedó el salón. `Reportar información de la reserva`, que es quien hereda esa conversación, tiene un edge case que lo limita **en exclusiva a los activos en préstamo físico**, porque un espacio no se devuelve: se libera solo al terminar su franja.
+
+Con UC5 borrado, entonces, si alguien aparta un salón y lo usa con normalidad, el Módulo 3 nunca se entera de que esa reserva existió ni de cómo terminó. Y sin esos datos no puede alimentar la analítica de uso ni el "score" de confianza que pide la matriz de [gestionunimag.md](../gestionunimag.md).
+
+**Qué preguntar**: ¿`Reportar información de la reserva` cubre también el cierre de las reservas de espacio, y hay que quitarle la exclusividad de activos? Es lo que sugiere el diagrama nuevo, donde cuelga de `Reservar recursos` como `<<include>>`: si es include, ocurre en **toda** reserva, no solo en los préstamos.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2-uc10-reportar-informacion-reserva.md` | Edge case **Espacios físicos** | Quitar la exclusividad de activos, o dejar dicho quién informa el cierre de un espacio. |
+| `spec-modulo2-uc10-reportar-informacion-reserva.md` | **FR-001 a FR-011** | Casi todos hablan de la devolución; habría que separar lo que aplica a toda reserva de lo que aplica solo al préstamo. |
+
+---
+
+## P-14 — ¿En qué momento ocurre `Reportar información de la reserva`?
+
+**Estado**: abierto. Apareció al leer el diagrama nuevo contra el spec.
+
+En el diagrama el óvalo cuelga de `Reservar recursos` con un `<<include>>`, y un `<<include>>` significa que el caso incluido se ejecuta **siempre, como parte del flujo del caso base**. Leído así, el reporte sale en el momento de reservar: le decimos al Módulo 3 qué se apartó, quién y para cuándo.
+
+Pero el spec está escrito para el otro momento: diez de sus once requisitos hablan de la **devolución** —registrar la hora real, compararla con la pactada, la mora, la novedad, los préstamos pendientes—, y eso pasa días después y puede no pasar nunca, si la reserva se cancela o nadie se presenta. Un `<<include>>` desde `Reservar recursos` no modela "esto ocurre al final del préstamo".
+
+**Qué preguntar**: ¿el reporte sale al reservar, al devolver, o son dos envíos distintos dentro del mismo caso de uso? Si son dos, el `<<include>>` cubre el primero y hay que dibujar de otra forma el segundo.
+
+---
+
 ## Resueltos
+
+- **Se elimina `Notificar estado de recursos al finalizar reserva` (UC5)** — el equipo lo borró del diagrama. Lo que hacía —contarle al Módulo 3 cómo terminó una reserva— queda cubierto por `Reportar información de la reserva`, que con su nombre nuevo ya es el canal por el que le pasamos al Módulo 3 los datos de la reserva. De paso desaparece la duplicación que tenían los dos con la novedad, que ambos reportaban. Se borró su spec y se reengancharon las referencias de UC2, UC3, UC6 y UC11, más el índice de `spec-modulo2.md`. Quedan dos cabos sueltos marcados con `NEEDS CLARIFICATION`, ver P-13 y P-14. *(2026-09-11)*
 
 - **`Reportar no asistencia` y `Reportar fecha y hora de entrega` se renombran** — los dos nombres empezaban por "Reportar" y daban a entender lo mismo, cuando son casos opuestos. La **no asistencia no la reportamos nosotros**: el Módulo 3 la constata en el sitio y nos la notifica para que cambiemos el estado de la reserva, así que pasa a llamarse **`Recibir reporte de no asistencia`**. Su flecha en el diagrama ya estaba bien dibujada (sale del Módulo 3 hacia el óvalo); lo único que engañaba era el nombre. El otro **sí sale de nosotros hacia ellos**, y su alcance es más ancho que una fecha de entrega: el Módulo 3 no hace reservas, así que sin lo que le mandamos no sabe qué se apartó, quién lo apartó ni a qué hora, y sin eso no puede sancionar ni cerrar su check-out. Pasa a llamarse **`Reportar información de la reserva`** y se le agregó FR-011, que fija los datos de la reserva que el reporte debe llevar. Aplicado en el diagrama, en los dos specs (renombrados también sus archivos) y en las referencias cruzadas de UC2, UC4, UC5, UC6, UC7, UC11, `spec-modulo2.md` y este documento. *(2026-09-11)*
 

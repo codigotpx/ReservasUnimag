@@ -26,7 +26,6 @@ Motor de reglas de negocio encargado de gestionar el uso de los recursos físico
 | Reservar recursos `<<extend>>` | P1 | [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md) |
 | Importar horarios semestrales | P2 | [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md) |
 | Cancelar reserva `<<extend>>` | P2 | [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md) |
-| Notificar estado de recursos al finalizar reserva | P3 | [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md) |
 | Consultar reportes `<<include>>` | P1 | [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md) |
 | Actualizar estado de los recursos `<<include>>` | P1 | [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md) |
 | Consultar disponibilidad de los recursos | P1 | [spec-modulo2-uc8-consultar-disponibilidad-recursos.md](./spec-modulo2-uc8-consultar-disponibilidad-recursos.md) |
@@ -38,7 +37,7 @@ Motor de reglas de negocio encargado de gestionar el uso de los recursos físico
 
 1. **P1 (MVP)**: Consultar recursos + Reservar recursos, con Consultar disponibilidad de los recursos, Actualizar estado de los recursos y Consultar reportes — consultar y apartar, el núcleo demostrable. Estos tres últimos no se ven por fuera, pero sin ellos el sistema muestra información falsa o deniega sin poder explicar por qué.
 2. **P2**: Importar horarios semestrales + Cancelar reserva + Reportar cancelación de reserva + Recibir reporte de no asistencia — sostenibilidad de la carga académica, cierre del ciclo de vida de la reserva y control de las reservas fantasma. `Reportar cancelación de reserva` va pegado a `Cancelar reserva`: sin él, el Módulo 3 no puede distinguir a quien liberó a tiempo de quien no apareció.
-3. **P3**: Notificar estado de recursos al finalizar reserva + Reportar información de la reserva — lo que termina de alimentar al Módulo 3 con el historial que dejan los anteriores.
+3. **P3**: Reportar información de la reserva — lo que termina de alimentar al Módulo 3 con el historial que dejan los anteriores.
 
 ## Diccionario de errores consolidado
 

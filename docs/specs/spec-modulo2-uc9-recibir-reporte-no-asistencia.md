@@ -2,7 +2,7 @@
 
 **Created**: 2026-09-03
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Recibir reporte de no asistencia` — continuación opcional de `Reservar recursos` (`<<extend>>`); la flecha va del Módulo 3 hacia este caso de uso, porque el reporte lo emite él
+**Caso de uso (diagrama)**: `Recibir reporte de no asistencia` — la flecha va del Módulo 3 hacia este caso de uso, porque el reporte lo emite él. [NEEDS CLARIFICATION: el `<<extend>>` hacia `Reservar recursos` ya no está dibujado en el diagrama vigente.]
 **Prioridad global**: P2
 
 ## Contexto

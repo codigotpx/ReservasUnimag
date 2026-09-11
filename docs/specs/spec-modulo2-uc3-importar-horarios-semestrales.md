@@ -39,7 +39,7 @@ Además de la carga del semestre completo, la Dirección de Programa puede regis
 - `Reservar recursos` — cuando un estudiante intenta apartar un recurso con clase, esa reserva se rechaza con el error `RES-001`: el recurso está reservado para actividad docente; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Cancelar reserva` — cuando una actividad extraordinaria desplaza reservas de estudiantes, esas reservas terminan cancelándose por esta vía, sin que el estudiante haya hecho nada; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
 - `Actualizar estado de los recursos` — marcar un bloqueo académico es un cambio de estado: el recurso queda bloqueado en esa franja y el Módulo 1 se entera, **sin que nadie tenga que pedirlo**; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
-- `Notificar estado de recursos al finalizar reserva` — cuando esta carga desplaza reservas de estudiantes, el cierre de cada una se le informa al Módulo 3; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
+- `Reportar cancelación de reserva` — cuando esta carga desplaza reservas de estudiantes, cada cancelación se le informa al Módulo 3 desde ahí; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
 
 ## User Scenarios & Testing *(mandatory)*
 

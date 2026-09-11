@@ -26,11 +26,15 @@ estudiantil.
 | # | Caso de uso | Prioridad | Especificación |
 |---|---|---|---|
 | UC1 | Consultar recursos | P1 | [spec-modulo2-uc1-consultar-recursos.md](docs/specs/spec-modulo2-uc1-consultar-recursos.md) |
-| UC2 | Reservar recursos `<<extend>>` | P1 | pendiente de publicar |
-| UC3 | Importar horarios semestrales | P2 | pendiente de publicar |
-| UC4 | Cancelar reserva `<<extend>>` | P2 | pendiente de publicar |
-| UC5 | Notificar estado de recursos `<<include>>` | P3 | pendiente de publicar |
-| UC6 | Consultar reportes `<<include>>` | P3 | pendiente de publicar |
+| UC2 | Reservar recursos `<<extend>>` | P1 | [spec-modulo2-uc2-reservar-recursos.md](docs/specs/spec-modulo2-uc2-reservar-recursos.md) |
+| UC3 | Importar horarios semestrales | P2 | [spec-modulo2-uc3-importar-horarios-semestrales.md](docs/specs/spec-modulo2-uc3-importar-horarios-semestrales.md) |
+| UC4 | Cancelar reserva `<<extend>>` | P2 | [spec-modulo2-uc4-cancelar-reserva.md](docs/specs/spec-modulo2-uc4-cancelar-reserva.md) |
+| UC6 | Consultar reportes `<<include>>` | P1 | [spec-modulo2-uc6-consultar-reportes.md](docs/specs/spec-modulo2-uc6-consultar-reportes.md) |
+| UC7 | Actualizar estado de los recursos `<<include>>` | P1 | [spec-modulo2-uc7-actualizar-estado-recursos.md](docs/specs/spec-modulo2-uc7-actualizar-estado-recursos.md) |
+| UC8 | Consultar disponibilidad de los recursos | P1 | [spec-modulo2-uc8-consultar-disponibilidad-recursos.md](docs/specs/spec-modulo2-uc8-consultar-disponibilidad-recursos.md) |
+| UC9 | Recibir reporte de no asistencia | P2 | [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](docs/specs/spec-modulo2-uc9-recibir-reporte-no-asistencia.md) |
+| UC10 | Reportar información de la reserva `<<include>>` | P3 | [spec-modulo2-uc10-reportar-informacion-reserva.md](docs/specs/spec-modulo2-uc10-reportar-informacion-reserva.md) |
+| UC11 | Reportar cancelación de reserva `<<include>>` | P2 | [spec-modulo2-uc11-reportar-cancelacion-reserva.md](docs/specs/spec-modulo2-uc11-reportar-cancelacion-reserva.md) |
 
 ## Actores
 

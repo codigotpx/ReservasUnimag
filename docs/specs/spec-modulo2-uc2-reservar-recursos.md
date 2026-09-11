@@ -26,7 +26,6 @@ Antes de confirmar, el sistema revisa las reglas que deciden si puede apartarlo 
 - `Actualizar estado de los recursos` — **paso que ocurre siempre por dentro**: al confirmar la reserva, el recurso cambia de estado y el Módulo 1 se entera; no se puede saltar; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
 - `Consultar disponibilidad de los recursos` — la comprobación que se hace en el último momento, antes de confirmar; ver [spec-modulo2-uc8-consultar-disponibilidad-recursos.md](./spec-modulo2-uc8-consultar-disponibilidad-recursos.md)
 - `Consultar reportes` — de ahí sale la información de sanciones que sustenta la denegación `RES-003`; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
-- `Notificar estado de recursos al finalizar reserva` — le cuenta al Módulo 3 cómo terminó la reserva; ver [spec-modulo2-uc5-notificar-estado-recursos.md](./spec-modulo2-uc5-notificar-estado-recursos.md)
 - `Importar horarios semestrales` — origen de las denegaciones `RES-001`; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
 
 **Diccionario de errores**

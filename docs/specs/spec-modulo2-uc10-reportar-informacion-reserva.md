@@ -2,7 +2,7 @@
 
 **Created**: 2026-09-03
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Reportar información de la reserva` (informa al Módulo 3)
+**Caso de uso (diagrama)**: `Reportar información de la reserva` — `<<include>>` de `Reservar recursos`, que informa al Módulo 3
 **Prioridad global**: P3
 
 ## Contexto
@@ -11,7 +11,7 @@ El Módulo 3 no hace reservas ni las ve: las hace este módulo. Si nosotros no s
 
 El grueso de lo que necesita viene de los préstamos de activos —un microscopio, un kit de dibujo, un videobeam—: no basta con saber que se lo llevaron, hay que saber cuándo lo devolvieron. El sistema registra ese momento y se lo reporta junto con la hora que estaba pactada; es el Módulo 3 el que compara las dos y decide si fue una entrega a tiempo o hubo mora.
 
-Aunque el nombre hable de la reserva en general, lo que aquí se reporta es la de un préstamo de activo. Un espacio no se devuelve: se libera solo al terminar su franja, y de su cierre le habla al Módulo 3 `Notificar estado de recursos al finalizar reserva`.
+Aunque el nombre hable de la reserva en general, lo que aquí se reporta es la de un préstamo de activo. Un espacio no se devuelve: se libera solo al terminar su franja. [NEEDS CLARIFICATION: con `Notificar estado de recursos al finalizar reserva` eliminado, ningún caso de uso le informa al Módulo 3 el cierre de la reserva de un espacio.]
 
 El reparto es el de siempre: el Módulo 2 registra y reporta los hechos, el Módulo 3 saca las consecuencias. Lo que cambia frente a `Recibir reporte de no asistencia` es la dirección, y por un motivo de fondo: la ausencia nos la reportan ellos, porque solo ellos pueden constatar en el sitio que la persona no llegó; la información de la reserva se la reportamos nosotros, porque solo nosotros la tenemos. Según [gestionunimag.md](../gestionunimag.md), una entrega a tiempo sube el "score" de confianza de la persona y un retraso genera suspensión temporal de reservas, pero esas dos cosas las aplica el Módulo 3.
 
