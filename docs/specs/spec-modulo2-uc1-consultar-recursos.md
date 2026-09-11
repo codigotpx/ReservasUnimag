@@ -8,7 +8,7 @@
 
 ## Contexto
 
-Punto de entrada del Módulo 2. Permite al Estudiante (Monitor, que hereda sus capacidades) y dirección de programa ver el catálogo de recursos físicos de la universidad —salones, laboratorios, salas de estudio y equipos— y saber cuáles están realmente disponibles en una fecha y franja horaria.
+Punto de entrada del Módulo 2. Permite al Estudiante (Monitor, que hereda sus capacidades) y dirección de programa ver el catálogo de recursos físicos de la universidad —espacios como salones, laboratorios y salas de estudio, y activos como libros, microscopios o videobeams— y saber cuáles están realmente disponibles en una fecha y franja horaria.
 
 Es el único caso de uso del módulo que no arranca desde ningún otro: el estudiante puede entrar, mirar qué hay libre y salir sin hacer nada más. Desde aquí puede continuar hacia `Reservar recursos` si decide apartar algo.
 
@@ -76,7 +76,7 @@ Como Estudiante (o Monitor) y dirección de programa, quiero consultar el catál
    - **When** el Estudiante consulta los recursos disponibles para el 2026-09-01 de 10:00 a 12:00
    - **Then** el "Microscopio M-014" se muestra como `EN_MANTENIMIENTO` y no es seleccionable, aunque la franja esté libre
 
-6. **Scenario**: Objeto prestado por varios días
+6. **Scenario**: Activo prestado por varios días
    - **Given** el "Libro de Cálculo I" se prestó el martes 2026-09-01 y su préstamo vence el jueves 2026-09-10
    - **When** el Estudiante consulta los recursos disponibles para el jueves 2026-09-03 de 10:00 a 12:00, un día cualquiera dentro de ese periodo
    - **Then** el "Libro de Cálculo I" se muestra como `EN_USO` y no es seleccionable, igual que si la consulta fuera del día en que se entregó o de cualquier otro día hasta su devolución
@@ -107,7 +107,7 @@ Como Estudiante (o Monitor) y dirección de programa, quiero consultar el catál
 
 - **FR-001**: El sistema DEBE permitir consultar los recursos filtrando por fecha, franja horaria, tipo de recurso y, para espacios, por aforo mínimo.
 - **FR-002**: El sistema DEBE excluir de la selección estudiantil todo recurso cuyo estado en la franja consultada sea `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO`.
-- **FR-003**: El sistema DEBE calcular la disponibilidad como la ausencia de intersección con cualquier bloqueo académico, reserva vigente o préstamo abierto sobre el mismo recurso. Un objeto prestado está ocupado durante todo su periodo de préstamo, de principio a fin, aunque la franja consultada caiga en mitad de él o en un día distinto al de la entrega.
+- **FR-003**: El sistema DEBE calcular la disponibilidad como la ausencia de intersección con cualquier bloqueo académico, reserva vigente o préstamo abierto sobre el mismo recurso. Un activo prestado está ocupado durante todo su periodo de préstamo, de principio a fin, aunque la franja consultada caiga en mitad de él o en un día distinto al de la entrega.
 - **FR-004**: El sistema DEBE indicar, para cada recurso no disponible, el estado que motiva su exclusión.
 - **FR-005**: El sistema DEBE aplicar al rol Monitor todas las capacidades de consulta del rol Estudiante.
 - **FR-006**: El sistema DEBE obtener del Módulo 1 el catálogo de recursos y sus atributos; el Módulo 2 NO DEBE mantener una copia propia como fuente de verdad.
@@ -119,15 +119,15 @@ Como Estudiante (o Monitor) y dirección de programa, quiero consultar el catál
 - **FR-012**: El sistema DEBE listar todos los recursos que cumplen los filtros de la consulta, estén disponibles o no; ningún recurso se oculta por su estado, solo deja de ser seleccionable. Si ninguno resulta seleccionable, la lista igual se muestra acompañada de un mensaje que lo explica.
 - **FR-013**: El sistema DEBE indicar en cada página cuántos recursos hay en total para esos filtros y qué página se está viendo, y DEBE permitir avanzar y retroceder entre páginas sin repetir la consulta desde cero.
 - **FR-014**: El sistema DEBE ordenar los resultados de forma estable y determinista —por nombre del recurso y, ante nombres iguales, por su identificador del Módulo 1— para que un mismo recurso no aparezca dos veces ni se salte al pasar de página. El orden no depende del estado: un recurso `RESERVADO` no se manda al final de la lista.
-- **FR-015**: La consulta responde por la **franja preguntada**, también cuando se pregunta por un objeto: si el objeto está libre en esa franja, se muestra `DISPONIBLE`. Eso no garantiza que se pueda prestar, porque el préstamo ocupa días completos y podría chocar más adelante con otra ocupación que la franja consultada no alcanza a ver. Esa comprobación del periodo completo la hace `Reservar recursos` al confirmar, y de ahí puede salir un `RES-004`. Es la misma regla de siempre —lo que se muestra es una foto del momento y se revalida al reservar—, solo que en los objetos el desfase puede ser de días y no de minutos.
+- **FR-015**: La consulta responde por la **franja preguntada**, también cuando se pregunta por un activo: si el activo está libre en esa franja, se muestra `DISPONIBLE`. Eso no garantiza que se pueda prestar, porque el préstamo ocupa días completos y podría chocar más adelante con otra ocupación que la franja consultada no alcanza a ver. Esa comprobación del periodo completo la hace `Reservar recursos` al confirmar, y de ahí puede salir un `RES-004`. Es la misma regla de siempre —lo que se muestra es una foto del momento y se revalida al reservar—, solo que en los activos el desfase puede ser de días y no de minutos.
 
 ### Key Entities
 
-- **Recurso**: espacio o equipo reservable. Conforme a la tipificación del Módulo 1, separa dos categorías con atributos propios:
+- **Recurso**: espacio o activo reservable. Conforme a la tipificación del Módulo 1, separa dos categorías con atributos propios:
   - **Espacio (Aforo)** —p. ej. Salón, Auditorio, Laboratorio, Sala de estudio—: identificador (ID de salón/auditorio), nombre, aforo máximo, equipamiento fijo (proyector, aire acondicionado, sillas), facultad a la que pertenece y ubicación.
-  - **Recurso físico (Mueble/Equipo)** —p. ej. Libro, Microscopio, Kit de dibujo, Videobeam—: identificador (placa de inventario), nombre, tipo, estado físico y ubicación. No tiene capacidad.
+  - **Activo** —p. ej. Libro, Microscopio, Kit de dibujo, Videobeam—: identificador (placa de inventario), nombre, tipo, estado físico y ubicación. No tiene capacidad.
 - **FranjaHoraria**: intervalo con fecha, hora de inicio y hora de fin, siempre dentro de un mismo día. Es lo que la persona indica al consultar, y también como se apartan los **espacios**.
-- **PeriodoDePrestamo**: lo que ocupa un **objeto** mientras está prestado. No es una franja, porque va de la fecha y hora en que se recoge hasta su vencimiento, que puede caer días después. Se compara contra la franja consultada igual que una reserva.
+- **PeriodoDePrestamo**: lo que ocupa un **activo** mientras está prestado. No es una franja, porque va de la fecha y hora en que se recoge hasta su vencimiento, que puede caer días después. Se compara contra la franja consultada igual que una reserva.
 - **Reserva**: apartado vigente que hace que un recurso figure como `RESERVADO` en una franja.
 - **BloqueoAcadémico**: ocupación de máxima prioridad que hace que un recurso figure como `BLOQUEO_ACADEMICO` en una franja.
 - **Mantenimiento**: estado operativo por el que un recurso se encuentra en reparación y figura como `EN_MANTENIMIENTO` en una franja.

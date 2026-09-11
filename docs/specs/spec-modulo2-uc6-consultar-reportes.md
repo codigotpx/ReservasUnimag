@@ -65,7 +65,7 @@ Como sistema, quiero obtener del Módulo 3 el reporte de cumplimiento de una per
 ### Edge Cases
 
 - **El Módulo 3 no responde**: si por cualquier razón el Módulo 3 se cae y el sistema intenta consultar el reporte de una persona, no debe dar por sentado que la persona está al día sino informar que no se pudo comprobar su situación y no confirmar la reserva, esta se bloquea hasta que se pueda obtener la información del módulo 3.
-- **Sanciones que no aplican a lo que se está pidiendo**: las sanciones distinguen entre espacios y equipos, hay castigos que solo bloquean la reserva de espacios y otros el uso de equipos.
+- **Sanciones que no aplican a lo que se está pidiendo**: las sanciones distinguen entre espacios y activos, hay castigos que solo bloquean la reserva de espacios y otros el uso de activos.
 - **La sanción vence en mitad de la franja pedida**: la sanción por tiempo cuenta al momento de reservar, es decir, si el usuario tiene una sanción activa y desea reservar para el momento en que esta finalice, no lo podrá hacer, si está sancionado se le debe impedir hacer reservas. El criterio debe ser el mismo siempre.
 - **Sanción que aparece justo después de consultar**: entre la consulta y la confirmación pueden pasar segundos; por eso la comprobación se hace en el momento de confirmar, no al abrir la pantalla.
 - **Respuesta del Módulo 3 incompleta**: si llega una sanción sin fecha de finalización, el sistema no puede inventarla; debe tratarla como vigente y dejar constancia de que faltó el dato.

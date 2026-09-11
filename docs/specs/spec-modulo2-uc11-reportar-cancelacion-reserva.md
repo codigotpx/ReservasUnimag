@@ -82,7 +82,7 @@ Como sistema, quiero reportarle al Módulo 3 cada cancelación de reserva indica
 - **Doble cancelación**: una segunda solicitud sobre una reserva ya cancelada es idempotente y no puede generar un segundo reporte.
 - **Cancelación y ausencia sobre la misma reserva**: son excluyentes. Si la reserva se canceló, no puede reportarse además una ausencia por ella; el criterio manda sobre `Reportar no asistencia`.
 - **Cancelación masiva por importación de horarios**: una carga que desplaza decenas de reservas genera un reporte por cada una, sin agruparlas de forma que se pierda a quién le tocó.
-- **Cancelación de un préstamo ya entregado**: si el equipo ya está en manos de la persona, lo que corresponde no es una cancelación sino una devolución; ese caso lo cubre `Reportar fecha y hora de entrega`.
+- **Cancelación de un préstamo ya entregado**: si el activo ya está en manos de la persona, lo que corresponde no es una cancelación sino una devolución; ese caso lo cubre `Reportar fecha y hora de entrega`.
 - **Orden de los reportes**: si sobre el mismo recurso se cancelan dos reservas seguidas, los reportes deben llegar al Módulo 3 en el orden en que ocurrieron.
 - **Antelación en la cancelación automática**: cuando cancela el sistema, la antelación no dice nada de la persona; el reporte no debe permitir que el Módulo 3 la lea como mérito ni como falta.
 
@@ -91,7 +91,7 @@ Como sistema, quiero reportarle al Módulo 3 cada cancelación de reserva indica
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE reportar al Módulo 3 toda cancelación de reserva que se haya ejecutado, cualquiera que sea su origen.
-- **FR-002**: Cada reporte DEBE indicar la reserva, la persona, el recurso, el tiempo que se liberó —la franja cancelada si era un espacio, o el periodo de préstamo completo si era un objeto que aún no se había recogido—, el origen de la cancelación, el motivo y la fecha y hora en que se ejecutó.
+- **FR-002**: Cada reporte DEBE indicar la reserva, la persona, el recurso, el tiempo que se liberó —la franja cancelada si era un espacio, o el periodo de préstamo completo si era un activo que aún no se había recogido—, el origen de la cancelación, el motivo y la fecha y hora en que se ejecutó.
 - **FR-003**: El reporte DEBE distinguir la cancelación hecha por el titular de la cancelación automática por prioridad académica y de la originada en la indisponibilidad del recurso.
 - **FR-004**: El reporte de una cancelación del titular DEBE incluir la antelación con la que se hizo respecto al inicio de la franja.
 - **FR-005**: El sistema NO DEBE decidir ni aplicar consecuencia alguna por la cancelación; eso corresponde al Módulo 3.
@@ -106,7 +106,7 @@ Como sistema, quiero reportarle al Módulo 3 cada cancelación de reserva indica
 
 - **ReporteDeCancelación**: constancia de que una reserva se deshizo y aviso correspondiente al Módulo 3. Atributos: reserva de origen, persona, recurso, franja, origen de la cancelación, motivo, antelación, fecha y hora de ejecución, resultado del envío.
 - **Reserva**: el apartado que se cancela; aporta su estado final (`CANCELADA` o `CANCELADA_POR_PRIORIDAD_ACADEMICA`) y el motivo.
-- **Recurso**: el espacio o equipo cuya franja vuelve a quedar libre.
+- **Recurso**: el espacio o activo cuya franja vuelve a quedar libre.
 - **Usuario**: el titular de la reserva cancelada, a quien el Módulo 3 le anota el hecho.
 
 ## Success Criteria *(mandatory)*

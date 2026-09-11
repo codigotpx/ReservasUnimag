@@ -11,7 +11,7 @@ Cuando alguien aparta un salón y no aparece, ese espacio queda muerto: nadie m�
 
 **La ausencia no la descubre el sistema solo: nos la reporta el Módulo 3.** Es él quien lleva el control de uso y comprueba en el sitio si la persona apareció; cuando constata que no llegó, nos lo informa, y es ese reporte —no un reloj— lo que dispara todo lo demás. Tiene sentido, porque desde una base de datos nadie puede saber si alguien entró a una sala o fue a recoger un libro.
 
-El criterio sí está fijado: **10 minutos** sin que la persona aparezca, contados desde el inicio de la franja cuando se apartó un espacio, y desde la hora de recogida acordada cuando lo apartado es un objeto. Pasado ese plazo el Módulo 3 puede reportar la ausencia; mientras no llegue ese reporte, el recurso sigue apartado a nombre de su titular.
+El criterio sí está fijado: **10 minutos** sin que la persona aparezca, contados desde el inicio de la franja cuando se apartó un espacio, y desde la hora de recogida acordada cuando lo apartado es un activo. Pasado ese plazo el Módulo 3 puede reportar la ausencia; mientras no llegue ese reporte, el recurso sigue apartado a nombre de su titular.
 
 La división de trabajo queda así: el Módulo 3 constata la ausencia y aplica la sanción; el Módulo 2 recibe el aviso, libera el recurso y deja la constancia.
 
@@ -79,30 +79,30 @@ Como sistema, quiero recibir del Módulo 3 el aviso de que una persona no se pre
 - **Reporte repetido**: una misma ausencia no puede reportarse dos veces, para que la persona no reciba dos sanciones por el mismo hecho.
 - **Recurso caído durante la franja**: si el recurso pasó a mantenimiento y por eso la persona no pudo usarlo, no debe contarse como ausencia suya.
 - **Reserva de varias horas**: la ausencia se mide desde el inicio de la franja, no desde cada hora dentro de ella; una reserva de 10:00 a 14:00 genera como máximo una ausencia.
-- **Objeto que nadie recoge**: quien aparta un libro para el jueves a las 14:30 y no aparece genera una sola ausencia a las 14:40, igual que con un salón, y el libro queda libre para los demás desde ese instante. No se espera al vencimiento del préstamo para darlo por ausente.
+- **Activo que nadie recoge**: quien aparta un libro para el jueves a las 14:30 y no aparece genera una sola ausencia a las 14:40, igual que con un salón, y el libro queda libre para los demás desde ese instante. No se espera al vencimiento del préstamo para darlo por ausente.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE registrar una ausencia cuando el **Módulo 3** le reporte que el titular no se presentó. El sistema NO DEBE generar ausencias por su cuenta: sin ese reporte no hay ausencia.
-- **FR-002**: El sistema DEBE dejar constancia de cada ausencia recibida indicando la persona, el recurso, el tiempo que tenía apartado —la franja si es un espacio, la hora de recogida y el vencimiento previsto si es un objeto— y la fecha y hora del reporte, y DEBE confirmarle al Módulo 3 que la procesó.
+- **FR-002**: El sistema DEBE dejar constancia de cada ausencia recibida indicando la persona, el recurso, el tiempo que tenía apartado —la franja si es un espacio, la hora de recogida y el vencimiento previsto si es un activo— y la fecha y hora del reporte, y DEBE confirmarle al Módulo 3 que la procesó.
 - **FR-003**: El sistema NO DEBE aplicar la sanción; esa decisión y su aplicación corresponden al Módulo 3.
-- **FR-004**: El sistema DEBE liberar el recurso al registrar la ausencia reportada: un **espacio** queda disponible para el resto de su franja, y en un **objeto** se cancela el periodo de préstamo completo, de modo que vuelve a estar disponible desde ese momento y no solo durante unos minutos.
+- **FR-004**: El sistema DEBE liberar el recurso al registrar la ausencia reportada: un **espacio** queda disponible para el resto de su franja, y en un **activo** se cancela el periodo de préstamo completo, de modo que vuelve a estar disponible desde ese momento y no solo durante unos minutos.
 - **FR-005**: El sistema NO DEBE generar ausencia cuando la reserva fue cancelada a tiempo por su titular.
 - **FR-006**: El sistema NO DEBE generar ausencia cuando la reserva fue cancelada automáticamente por prioridad académica.
 - **FR-007**: Una misma reserva NO DEBE generar más de una ausencia.
 - **FR-008**: Si el Módulo 3 no está disponible no llegan reportes, y el Módulo 2 NO DEBE suplir esa función declarando ausencias por su cuenta: los recursos siguen apartados hasta que termine su franja. Cuando el Módulo 3 se restablezca, el sistema DEBE aceptar los reportes atrasados y registrarlos, aunque ya no quede nada que liberar.
 - **FR-009**: El sistema DEBE guardar el historial de ausencias para que alimente los reportes de cumplimiento.
 - **FR-010**: El sistema DEBE informar a la persona que se le registró una ausencia y por qué reserva.
-- **FR-011**: El sistema DEBE aceptar ese reporte únicamente a partir de los **10 minutos** siguientes al inicio de la franja, si lo apartado es un espacio, o a la hora de recogida acordada, si es un objeto. Antes de ese plazo la persona todavía está a tiempo de llegar, y un reporte anticipado DEBE rechazarse indicando desde cuándo se admite.
+- **FR-011**: El sistema DEBE aceptar ese reporte únicamente a partir de los **10 minutos** siguientes al inicio de la franja, si lo apartado es un espacio, o a la hora de recogida acordada, si es un activo. Antes de ese plazo la persona todavía está a tiempo de llegar, y un reporte anticipado DEBE rechazarse indicando desde cuándo se admite.
 - **FR-012**: El sistema DEBE permitir que el Módulo 3 anule un reporte de ausencia enviado por error, dejando constancia de la anulación y de su fecha y hora. Anular no le devuelve el recurso al titular si otra persona ya lo tomó.
 
 ### Key Entities
 
-- **Ausencia**: constancia de que alguien no usó lo que apartó. Atributos: persona, recurso, el tiempo apartado (franja de un espacio, u hora de recogida y vencimiento previsto de un objeto), reserva de origen, fecha y hora del reporte recibido del Módulo 3, y si fue anulado.
+- **Ausencia**: constancia de que alguien no usó lo que apartó. Atributos: persona, recurso, el tiempo apartado (franja de un espacio, u hora de recogida y vencimiento previsto de un activo), reserva de origen, fecha y hora del reporte recibido del Módulo 3, y si fue anulado.
 - **Reserva**: el apartado que quedó sin usar.
-- **Recurso**: el espacio o equipo que quedó bloqueado sin necesidad.
+- **Recurso**: el espacio o activo que quedó bloqueado sin necesidad.
 - **Usuario**: la persona a la que se le anota la ausencia.
 
 ## Success Criteria *(mandatory)*

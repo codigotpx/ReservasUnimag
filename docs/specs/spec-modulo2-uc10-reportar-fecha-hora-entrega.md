@@ -7,7 +7,7 @@ Lo ul# Feature Specification: Reportar fecha y hora de entrega
 
 ## Contexto
 
-Cuando lo que se apartó es un equipo prestado —un microscopio, un kit de dibujo, un videobeam— no basta con saber que se lo llevaron: hay que saber cuándo lo devolvieron. Este caso de uso registra ese momento y se lo reporta al Módulo 3, que compara la hora real de devolución contra la hora que estaba pactada y decide si fue una entrega a tiempo o hubo mora.
+Cuando lo que se apartó es un activo prestado —un microscopio, un kit de dibujo, un videobeam— no basta con saber que se lo llevaron: hay que saber cuándo lo devolvieron. Este caso de uso registra ese momento y se lo reporta al Módulo 3, que compara la hora real de devolución contra la hora que estaba pactada y decide si fue una entrega a tiempo o hubo mora.
 
 Igual que con las ausencias, el reparto es claro: el Módulo 2 registra y reporta los hechos, el Módulo 3 saca las consecuencias. Según [gestionunimag.md](../gestionunimag.md), una entrega a tiempo sube el "score" de confianza de la persona y un retraso genera suspensión temporal de reservas, pero esas dos cosas las aplica el Módulo 3.
 
@@ -24,7 +24,7 @@ Igual que con las ausencias, el reparto es claro: el Módulo 2 registra y report
 - `Reservar recursos` — define la franja y con ella la hora pactada de devolución; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Actualizar estado de los recursos` — al registrarse la devolución, el recurso vuelve a estar disponible; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
 - `Reportar no asistencia` — el caso contrario: la persona nunca llegó a llevarse el recurso; ver [spec-modulo2-uc9-reportar-no-asistencia.md](./spec-modulo2-uc9-reportar-no-asistencia.md)
-- `Reportar cancelación de reserva` — el tercer reporte de la familia hacia el Módulo 3: la reserva del equipo se deshizo antes de la entrega; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
+- `Reportar cancelación de reserva` — el tercer reporte de la familia hacia el Módulo 3: la reserva del activo se deshizo antes de la entrega; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
 - `Consultar reportes` — el camino de vuelta: las moras que aquí se reportan son parte de lo que el Módulo 3 devuelve después como sanción; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
 
 ## User Scenarios & Testing *(mandatory)*
@@ -33,7 +33,7 @@ Igual que con las ausencias, el reparto es claro: el Módulo 2 registra y report
 
 Como sistema, quiero registrar la fecha y la hora exactas en que se devuelve un recurso prestado y reportárselas al Módulo 3, para que la universidad pueda distinguir a quien cumple de quien se retrasa y para que el recurso vuelva a estar disponible en cuanto regresa.
 
-**Why this priority**: Es P3 porque el núcleo del módulo —consultar y reservar— funciona sin ella, y porque afecta sobre todo a los equipos en préstamo, no a los espacios. Pero sin este registro el Módulo 3 no puede calcular la mora, y toda la matriz de sanciones por retraso se queda sin datos.
+**Why this priority**: Es P3 porque el núcleo del módulo —consultar y reservar— funciona sin ella, y porque afecta sobre todo a los activos en préstamo, no a los espacios. Pero sin este registro el Módulo 3 no puede calcular la mora, y toda la matriz de sanciones por retraso se queda sin datos.
 
 **Independent Test**: Se puede probar sola registrando la devolución de un préstamo y verificando que quedó guardada la fecha y hora, que se envió al Módulo 3 y que el recurso volvió a estar disponible. No necesita que las sanciones ni los reportes estén implementados.
 
@@ -68,8 +68,8 @@ Como sistema, quiero registrar la fecha y la hora exactas en que se devuelve un 
   3. Se escala el caso al Módulo 3 con el expediente completo (persona, recurso, placa de inventario y días de mora) para que aplique la sanción disciplinaria correspondiente e inicie el proceso administrativo de cobro por reposición.
 - **Doble registro de la misma devolución**: registrarla dos veces no puede generar dos reportes ni dos cálculos de mora.
 - **El Módulo 3 no responde**: la devolución se registra igual y el recurso se libera igual; el reporte queda pendiente y se reintenta hasta entregarse.
-- **Devolución el mismo día de la entrega**: si alguien recoge un equipo y lo devuelve sin haberlo llegado a usar, se registra igual y no cuenta como retraso; el préstamo se cierra ahí y el cupo se libera.
-- **Espacios físicos (salones, auditorios, salas de estudio)**: Para los espacios físicos no se realiza un reporte físico de entrega o devolución. Su liberación ocurre automáticamente al cumplirse la hora de fin de la franja horaria pactada (mediante el ciclo de vida del recurso gestionado por el sistema). Por lo tanto, este caso de uso aplica de forma exclusiva a recursos muebles y equipos en préstamo físico (videobeams, microscopios, kits de dibujo, etc.).
+- **Devolución el mismo día de la entrega**: si alguien recoge un activo y lo devuelve sin haberlo llegado a usar, se registra igual y no cuenta como retraso; el préstamo se cierra ahí y el cupo se libera.
+- **Espacios físicos (salones, auditorios, salas de estudio)**: Para los espacios físicos no se realiza un reporte físico de entrega o devolución. Su liberación ocurre automáticamente al cumplirse la hora de fin de la franja horaria pactada (mediante el ciclo de vida del recurso gestionado por el sistema). Por lo tanto, este caso de uso aplica de forma exclusiva a activos en préstamo físico (videobeams, microscopios, kits de dibujo, etc.).
 
 ## Requirements *(mandatory)*
 
@@ -91,7 +91,7 @@ Como sistema, quiero registrar la fecha y la hora exactas en que se devuelve un 
 - **Préstamo**: entrega de un recurso a una persona por un tiempo acordado. Atributos: persona, recurso, fecha y hora de entrega, fecha y hora pactadas de devolución, fecha y hora reales de devolución, estado. La fecha pactada no se pacta aquí ni la elige la persona: la calcula `Reservar recursos` al confirmar el préstamo, aplicando el plazo del tipo de recurso y fijando el vencimiento a las 22:00 del día en que se cumple (UC2 FR-012 a FR-014). Una renovación la desplaza una única vez (UC2 FR-016), así que la fecha pactada vigente es la que haya quedado tras ella. Este caso de uso solo registra la devolución real y la compara contra esa fecha.
 - **Devolución**: hecho de que el recurso vuelve. Atributos: préstamo de origen, fecha y hora reales, quién la registró, novedad si la hubo, resultado del reporte al Módulo 3.
 - **Novedad**: daño o incidencia detectada al recibir el recurso.
-- **Recurso**: el equipo prestado que vuelve al inventario.
+- **Recurso**: el activo prestado que vuelve al inventario.
 - **Usuario**: la persona responsable del préstamo.
 
 ## Success Criteria *(mandatory)*

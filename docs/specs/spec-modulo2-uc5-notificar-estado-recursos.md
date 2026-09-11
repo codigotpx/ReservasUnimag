@@ -67,7 +67,7 @@ Como sistema, quiero avisarle al Módulo 3 en qué estado quedó el recurso, par
    - **When** se cierra esa reserva
    - **Then** el sistema le envía al Módulo 3 el aviso `RECURSO_SIN_NOVEDAD`
 
-5. **Scenario**: El equipo volvió dañado
+5. **Scenario**: El activo volvió dañado
    - **Given** un Estudiante devuelve el "Microscopio M-014" y quien lo recibe nota un daño
    - **When** finaliza esa reserva
    - **Then** el sistema le envía al Módulo 3 el aviso `RECURSO_CON_NOVEDAD` junto con la descripción del daño
@@ -87,7 +87,7 @@ Como sistema, quiero avisarle al Módulo 3 en qué estado quedó el recurso, par
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE enviarle al Módulo 3 un aviso cada vez que una reserva en la que se utilizó el recurso termina.
-- **FR-002**: Cada aviso DEBE indicar la reserva, la persona, el recurso, el tiempo que estuvo ocupado y la fecha y hora del aviso. En un espacio ese tiempo es la franja reservada; en un objeto son la fecha y hora de entrega, el vencimiento y la devolución real, porque un préstamo no cabe en una franja.
+- **FR-002**: Cada aviso DEBE indicar la reserva, la persona, el recurso, el tiempo que estuvo ocupado y la fecha y hora del aviso. En un espacio ese tiempo es la franja reservada; en un activo son la fecha y hora de entrega, el vencimiento y la devolución real, porque un préstamo no cabe en una franja.
 - **FR-003**: El sistema NO DEBE decidir ni aplicar sanciones; solo informa el hecho, y el Módulo 3 saca las consecuencias.
 - **FR-004**: Si el Módulo 3 no está disponible, la reserva DEBE cerrarse igualmente y el aviso DEBE reintentarse hasta entregarse.
 - **FR-005**: Reenviar un aviso NO DEBE producir un segundo cierre contabilizado para la misma reserva.
@@ -98,7 +98,7 @@ Como sistema, quiero avisarle al Módulo 3 en qué estado quedó el recurso, par
 
 - **AvisoDeCierre**: mensaje que se le manda al Módulo 3 cuando una reserva termina. Atributos: aviso, reserva, persona, recurso, franja, fecha y hora, resultado del envío.
 - **Reserva**: el apartado que termina y da origen al aviso.
-- **Recurso**: el espacio o equipo cuyo estado final se informa.
+- **Recurso**: el espacio o activo cuyo estado final se informa.
 - **Usuario**: la persona titular de la reserva que se cierra.
 
 ## Success Criteria *(mandatory)*

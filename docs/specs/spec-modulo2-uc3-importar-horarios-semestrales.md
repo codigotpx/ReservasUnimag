@@ -17,7 +17,7 @@ Además de la carga del semestre completo, la Dirección de Programa puede regis
 
 | Palabra | Qué significa aquí |
 |---|---|
-| **Recurso** | Cualquier espacio o equipo que se pueda apartar: salón, laboratorio, sala de estudio, auditorio, videobeam. |
+| **Recurso** | Cualquier espacio o activo que se pueda apartar: salón, laboratorio, sala de estudio, auditorio, videobeam. |
 | **Franja horaria** | Un día con una hora de inicio y una de fin. Por ejemplo: 10 de septiembre, de 14:00 a 16:00. |
 | **Bloqueo académico** | Marca que pone el sistema sobre un recurso en una franja para indicar que allí hay clase o actividad docente. Mientras esté puesta, ningún estudiante puede apartar ese recurso en esa franja. El sistema la registra con el estado `BLOQUEO_ACADEMICO`. |
 | **Reserva estudiantil** | Apartado hecho por un estudiante o monitor. Pesa menos que un bloqueo académico. Una reserva vigente deja el recurso en estado `RESERVADO`; solo pasa a `EN_USO` cuando llega la franja y la persona se presenta. |
@@ -79,7 +79,7 @@ Como Dirección de Programa, quiero cargar de una sola vez el archivo con las cl
 
 - **Carga tardía del horario**: si el horario se carga cuando los estudiantes ya hicieron decenas de reservas, el sistema debe mostrar primero cuántas y cuáles reservas se cancelarían, esperar la confirmación de la Dirección de Programa y luego aplicar todo junto: o se cancelan todas y se crean todos los bloqueos, o no se cambia nada. Nunca a medias.
 - **Cambio de horario a mitad de semestre**: volver a cargar un horario que ya se había cargado debe actualizar lo que existe, no repetirlo. Una misma clase no puede quedar bloqueada dos veces sobre el mismo salón.
-- **Clase que necesita un equipo ya prestado**: una clase que reserva un videobeam que un estudiante se llevó ayer por dos días no puede simplemente quitárselo; el sistema avisa del choque y son las personas responsables quienes deciden si se le pide de vuelta o la clase usa otro equipo (FR-010).
+- **Clase que necesita un activo ya prestado**: una clase que reserva un videobeam que un estudiante se llevó ayer por dos días no puede simplemente quitárselo; el sistema avisa del choque y son las personas responsables quienes deciden si se le pide de vuelta o la clase usa otro activo (FR-010).
 - **Recurso dado de baja**: si una fila del archivo nombra un recurso en `EN_MANTENIMIENTO`, el sistema debe reportarlo como conflicto y no bloquearlo en silencio, porque esa clase necesita otro espacio.
 - **Archivo vacío o sin ninguna fila válida**: la carga debe terminar sin cambiar nada y decirlo con claridad. Nunca puede mostrar un mensaje de éxito cuando no cargó ninguna clase.
 
@@ -96,16 +96,16 @@ Como Dirección de Programa, quiero cargar de una sola vez el archivo con las cl
 - **FR-007**: Volver a cargar un horario ya cargado NO DEBE generar bloqueos repetidos de las mismas clases.
 - **FR-008**: Antes de aplicar una carga o una actividad extraordinaria que afecte reservas ya confirmadas, el sistema DEBE mostrar cuántas y cuáles se cancelarían, y aplicar el cambio completo o no aplicarlo en absoluto.
 - **FR-009**: El sistema DEBE guardar constancia de cada bloqueo académico creado, con quién lo creó y en qué fecha y hora.
-- **FR-010**: Cuando el bloqueo académico caiga sobre un **objeto** (videobeam, microscopio, kit) el sistema DEBE distinguir dos situaciones, porque un objeto no se libera con solo cancelar un registro:
-  - Si el objeto está **apartado pero todavía no se ha recogido**, se cancela el préstamo como cualquier reserva, con el motivo `CANCELADA_POR_PRIORIDAD_ACADEMICA`, y el objeto queda libre para la clase.
-  - Si el objeto **ya está en manos de la persona**, el sistema NO DEBE cancelar el préstamo por su cuenta: lo reporta como choque para que lo resuelvan las personas responsables, igual que hace FR-006 cuando dos clases se pisan. La prioridad académica desplaza lo que aún no ha salido del inventario; lo que ya salió hay que pedirlo de vuelta, y eso no lo puede hacer el sistema solo.
+- **FR-010**: Cuando el bloqueo académico caiga sobre un **activo** (videobeam, microscopio, kit) el sistema DEBE distinguir dos situaciones, porque un activo no se libera con solo cancelar un registro:
+  - Si el activo está **apartado pero todavía no se ha recogido**, se cancela el préstamo como cualquier reserva, con el motivo `CANCELADA_POR_PRIORIDAD_ACADEMICA`, y el activo queda libre para la clase.
+  - Si el activo **ya está en manos de la persona**, el sistema NO DEBE cancelar el préstamo por su cuenta: lo reporta como choque para que lo resuelvan las personas responsables, igual que hace FR-006 cuando dos clases se pisan. La prioridad académica desplaza lo que aún no ha salido del inventario; lo que ya salió hay que pedirlo de vuelta, y eso no lo puede hacer el sistema solo.
 
 ### Key Entities
 
 - **BloqueoAcadémico**: el apartado de mayor prioridad, que nace de la carga académica. Guarda de qué recurso se trata, en qué franja, para qué asignatura, de qué programa, con qué docente y si viene del horario regular o de una actividad extraordinaria.
 - **HorarioSemestral**: el conjunto de clases cargadas para un periodo académico, junto con el resultado de esa carga.
-- **Recurso**: el espacio o equipo sobre el que se aplica el bloqueo. Un espacio se bloquea por franjas; un equipo puede estar ocupado por un periodo de préstamo de varios días, y ahí el bloqueo se resuelve como dice FR-010.
-- **FranjaHoraria**: la fecha con hora de inicio y hora de fin; es lo que se compara para saber si dos cosas se cruzan. Las clases siempre ocupan espacios y caben en un solo día, así que aquí no aparecen periodos de préstamo, que son la forma en que se ocupan los objetos.
+- **Recurso**: el espacio o activo sobre el que se aplica el bloqueo. Un espacio se bloquea por franjas; un activo puede estar ocupado por un periodo de préstamo de varios días, y ahí el bloqueo se resuelve como dice FR-010.
+- **FranjaHoraria**: la fecha con hora de inicio y hora de fin; es lo que se compara para saber si dos cosas se cruzan. Las clases siempre ocupan espacios y caben en un solo día, así que aquí no aparecen periodos de préstamo, que son la forma en que se ocupan los activos.
 - **Reserva**: el apartado que hizo un estudiante y que la prioridad académica puede desplazar.
 
 ## Success Criteria *(mandatory)*

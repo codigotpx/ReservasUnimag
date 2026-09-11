@@ -69,7 +69,7 @@ Como sistema, quiero cambiar el estado de un recurso cada vez que su situación 
    - **When** llegan las 16:00 y no hay otra reserva encima
    - **Then** el recurso vuelve a `DISPONIBLE` sin que nadie tenga que hacer nada
 
-5. **Scenario**: Se devuelve un objeto prestado
+5. **Scenario**: Se devuelve un activo prestado
    - **Given** el "Libro de Cálculo I" está `EN_USO` desde que se prestó, y su plazo venció ayer sin que nadie lo devolviera
    - **When** la persona lo devuelve hoy y queda registrada la devolución
    - **Then** el recurso vuelve a `DISPONIBLE` en ese momento y el Módulo 1 recibe el cambio; antes de esa devolución, y aunque el plazo estuviera vencido, el recurso nunca dejó de estar `EN_USO`
@@ -86,14 +86,14 @@ Como sistema, quiero cambiar el estado de un recurso cada vez que su situación 
 - **El Módulo 1 no responde**: la reserva o la cancelación se completan igual; el aviso queda pendiente y se vuelve a intentar hasta que llegue, sin dejar al inventario desactualizado en silencio.
 - **Aviso repetido**: si un mismo cambio se reintenta, el recurso no debe terminar contado dos veces ni cambiar de estado dos veces.
 - **Franja que ya pasó**: un cambio que llega tarde, referido a una franja que ya terminó, no debe reabrir ni volver a ocupar el recurso; se registra y se descarta.
-- **Préstamo vencido y no devuelto**: que se cumpla la fecha de vencimiento no dispara ningún cambio de estado. El objeto sigue `EN_USO` y el inventario lo refleja así; quien calcula la mora es el Módulo 3, y el único hecho que devuelve el recurso a `DISPONIBLE` es la devolución registrada.
+- **Préstamo vencido y no devuelto**: que se cumpla la fecha de vencimiento no dispara ningún cambio de estado. El activo sigue `EN_USO` y el inventario lo refleja así; quien calcula la mora es el Módulo 3, y el único hecho que devuelve el recurso a `DISPONIBLE` es la devolución registrada.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE cambiar el estado del recurso cada vez que una reserva se confirma, se cancela, empieza a usarse o termina.
-- **FR-002**: El cambio de estado DEBE afectar únicamente al tiempo involucrado, sin alterar la disponibilidad del recurso fuera de él: la franja horaria cuando se trata de un espacio, y el periodo de préstamo completo cuando se trata de un objeto, que queda ocupado de principio a fin sin liberarse por las noches.
+- **FR-002**: El cambio de estado DEBE afectar únicamente al tiempo involucrado, sin alterar la disponibilidad del recurso fuera de él: la franja horaria cuando se trata de un espacio, y el periodo de préstamo completo cuando se trata de un activo, que queda ocupado de principio a fin sin liberarse por las noches.
 - **FR-003**: El sistema DEBE usar solo los cinco estados del inventario: `DISPONIBLE`, `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` y `EN_MANTENIMIENTO`.
 - **FR-004**: El sistema DEBE informar al Módulo 1 de cada cambio de estado, indicando el recurso, la franja, el estado nuevo y el motivo del cambio.
 - **FR-005**: El sistema NO DEBE sacar de `EN_MANTENIMIENTO` a un recurso por efecto de una reserva o una cancelación.
@@ -102,13 +102,13 @@ Como sistema, quiero cambiar el estado de un recurso cada vez que su situación 
 - **FR-008**: Repetir el mismo aviso NO DEBE producir un segundo cambio de estado.
 - **FR-009**: El sistema DEBE guardar un registro de cada cambio de estado con el recurso, la franja, el estado anterior, el estado nuevo, el motivo y la fecha y hora.
 - **FR-010**: Al terminar la franja, un **espacio** DEBE volver a `DISPONIBLE` por sí solo, salvo que exista otra reserva o un bloqueo académico encima.
-- **FR-011**: Un **objeto** prestado NO DEBE volver a `DISPONIBLE` por el paso del tiempo. Sigue `EN_USO` hasta que se registre su devolución mediante `Reportar fecha y hora de entrega`, incluso después de vencido el plazo: mientras el recurso no vuelva físicamente, el inventario tiene que seguir diciendo que está fuera. Es la diferencia de fondo con un espacio, que se desocupa solo cuando pasa la hora.
+- **FR-011**: Un **activo** prestado NO DEBE volver a `DISPONIBLE` por el paso del tiempo. Sigue `EN_USO` hasta que se registre su devolución mediante `Reportar fecha y hora de entrega`, incluso después de vencido el plazo: mientras el recurso no vuelva físicamente, el inventario tiene que seguir diciendo que está fuera. Es la diferencia de fondo con un espacio, que se desocupa solo cuando pasa la hora.
 
 ### Key Entities
 
-- **Recurso**: espacio o equipo del inventario; lo que cambia de estado.
+- **Recurso**: espacio o activo del inventario; lo que cambia de estado.
 - **FranjaHoraria**: día con hora de inicio y hora de fin; el estado de un **espacio** se guarda por franja, no para el recurso entero.
-- **PeriodoDePrestamo**: el tramo continuo en que un **objeto** está prestado. Su estado no se guarda por franjas: el objeto queda `EN_USO` de corrido durante todo el periodo y solo cambia cuando se registra la devolución.
+- **PeriodoDePrestamo**: el tramo continuo en que un **activo** está prestado. Su estado no se guarda por franjas: el activo queda `EN_USO` de corrido durante todo el periodo y solo cambia cuando se registra la devolución.
 - **EstadoDelRecurso**: situación del recurso en una franja concreta, siempre uno de los cinco valores del inventario.
 - **CambioDeEstado**: registro de un cambio ocurrido. Atributos: recurso, franja, estado anterior, estado nuevo, motivo, fecha y hora, resultado del aviso al Módulo 1.
 - **Reserva**: origen de la mayoría de los cambios de estado.
