@@ -82,7 +82,7 @@ La flecha `Consultar recursos <<include>> Consultar reportes` **sí está bien**
 
 **Qué preguntar**: ¿`Importar horarios semestrales` `<<include>>` → `Reservar recursos` se invierte, o los specs deben describirla tal como está dibujada?
 
-**Dónde aplicarlo**: `unimag5.drawio` y la sección **Casos de uso relacionados** de UC1, UC2, UC3 y UC4.
+**Dónde aplicarlo**: `unimag.drawio` y la sección **Casos de uso relacionados** de UC1, UC2, UC3 y UC4.
 
 > Menor, en el mismo diagrama: la flecha `Reportar no asistencia` → `Reservar recursos` está dibujada con puntos sueltos en vez de anclada a los dos óvalos. Se ve bien, pero se descoloca si alguien mueve un óvalo. Conviene reengancharla en draw.io.
 
@@ -115,7 +115,7 @@ El Monitor es una especialización de Estudiante: hereda todo lo suyo. Lo único
 
 | Archivo | Punto | Qué cambiar |
 |---|---|---|
-| `unimag5.drawio` | Actor **Monitor** | Dibujarle una línea propia al caso de uso que lo distinga, o eliminarlo como actor separado. |
+| `unimag.drawio` | Actor **Monitor** | Dibujarle una línea propia al caso de uso que lo distinga, o eliminarlo como actor separado. |
 | `spec-modulo2.md` | Tabla de **Actores** | Describir su capacidad propia. |
 | `spec-modulo2-uc10-reportar-fecha-hora-entrega.md` | Tabla de **Actores** | Confirmar o quitar la fila que le atribuye el registro de devoluciones. |
 
@@ -238,7 +238,7 @@ La lista completa de lo que les pedimos en la respuesta: identificador, nombre y
 | Archivo | Punto | Qué cambiar |
 |---|---|---|
 | `spec-modulo2-uc1-consultar-recursos.md` | Contexto, **FR-001** y **FR-006** | Nombrar la operación real del Módulo 1 de la que sale el catálogo. |
-| `unimag5.drawio` | Asociación `Consultar recursos` — Módulo 1 | Confirmar que representa una operación distinta de `Consultar disponibilidad`. |
+| `unimag.drawio` | Asociación `Consultar recursos` — Módulo 1 | Confirmar que representa una operación distinta de `Consultar disponibilidad`. |
 
 ---
 
