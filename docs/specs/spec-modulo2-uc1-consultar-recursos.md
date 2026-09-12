@@ -34,7 +34,7 @@ Lo que el estudiante ve es una foto del momento: la disponibilidad se vuelve a c
 
 - `Reservar recursos` — **continuación opcional de esta consulta** (`<<extend>>`, siendo esta el caso base): el estudiante puede quedarse solo mirando, o seguir y apartar uno de los recursos que encontró libres; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Consultar disponibilidad de los recursos` — **paso que ocurre siempre por dentro** (`<<include>>`): responde, recurso por recurso, si está libre en la franja pedida; es con lo que se arma esta lista y no se puede saltar; ver [spec-modulo2-uc8-consultar-disponibilidad-recursos.md](./spec-modulo2-uc8-consultar-disponibilidad-recursos.md)
-- `Consultar reportes` — obtiene del Módulo 3 si la persona está sancionada, para poder avisárselo antes de que intente apartar algo; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
+- `Consultar sanciones` — obtiene del Módulo 3 si la persona está sancionada, para poder avisárselo antes de que intente apartar algo; ver [spec-modulo2-uc6-consultar-sanciones.md](./spec-modulo2-uc6-consultar-sanciones.md)
 - `Importar horarios semestrales` — fuente de los estados `BLOQUEO_ACADEMICO` que esta consulta debe respetar; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
 
 **Estados del recurso (Módulo 1)**: conforme a [gestionunimag.md](../gestionunimag.md), el inventario gestiona cinco estados: `DISPONIBLE`, `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` y `EN_MANTENIMIENTO`. Esta consulta respeta ese catálogo.

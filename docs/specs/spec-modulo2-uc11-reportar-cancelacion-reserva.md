@@ -32,7 +32,7 @@ Hay dos orígenes de cancelación y el reporte tiene que distinguirlos, porque t
 - `Cancelar reserva` — es lo que dispara este reporte, tanto la cancelación del titular como la automática por prioridad; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
 - `Recibir reporte de no asistencia` — el cierre contrario: la reserva no se canceló, simplemente nadie llegó; ver [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](./spec-modulo2-uc9-recibir-reporte-no-asistencia.md)
 - `Actualizar estado de los recursos` — libera la franja al cancelar y avisa al Módulo 1; es el camino paralelo hacia el otro módulo; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
-- `Consultar reportes` — el camino de vuelta: lo que aquí se reporta es parte de lo que el Módulo 3 devuelve después como cumplimiento o sanción; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
+- `Consultar sanciones` — el camino de vuelta: lo que aquí se reporta es parte de lo que el Módulo 3 devuelve después como cumplimiento o sanción; ver [spec-modulo2-uc6-consultar-sanciones.md](./spec-modulo2-uc6-consultar-sanciones.md)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -81,7 +81,7 @@ Como sistema, quiero reportarle al Módulo 3 cada cancelación de reserva indica
 - **Doble cancelación**: una segunda solicitud sobre una reserva ya cancelada es idempotente y no puede generar un segundo reporte.
 - **Cancelación y ausencia sobre la misma reserva**: son excluyentes. Si la reserva se canceló, no puede reportarse además una ausencia por ella; el criterio manda sobre `Recibir reporte de no asistencia`.
 - **Cancelación masiva por importación de horarios**: una carga que desplaza decenas de reservas genera un reporte por cada una, sin agruparlas de forma que se pierda a quién le tocó.
-- **Cancelación de un préstamo ya entregado**: si el activo ya está en manos de la persona, lo que corresponde no es una cancelación sino una devolución; ese caso lo cubre `Reportar información de la reserva`.
+- **Cancelación de un préstamo ya entregado**: si el activo ya está en manos de la persona, lo que corresponde no es una cancelación sino una devolución; ese caso lo cubre `Recibir check-out`.
 - **Orden de los reportes**: si sobre el mismo recurso se cancelan dos reservas seguidas, los reportes deben llegar al Módulo 3 en el orden en que ocurrieron.
 - **Antelación en la cancelación automática**: cuando cancela el sistema, la antelación no dice nada de la persona; el reporte no debe permitir que el Módulo 3 la lea como mérito ni como falta.
 

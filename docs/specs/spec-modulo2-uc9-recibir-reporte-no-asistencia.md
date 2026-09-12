@@ -2,7 +2,7 @@
 
 **Created**: 2026-09-03
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Recibir reporte de no asistencia` — la flecha va del Módulo 3 hacia este caso de uso, porque el reporte lo emite él. [NEEDS CLARIFICATION: el `<<extend>>` hacia `Reservar recursos` ya no está dibujado en el diagrama vigente.]
+**Caso de uso (diagrama)**: `Recibir reporte de no asistencia` — continuación opcional de `Reservar recursos` (`<<extend>>`); la flecha con el Módulo 3 va de él hacia este caso de uso, porque el reporte lo emite él
 **Prioridad global**: P2
 
 ## Contexto
@@ -30,7 +30,7 @@ El caso de uso se llamaba antes `Reportar no asistencia`, y ese nombre sugería 
 - `Cancelar reserva` — cancelar a tiempo es justamente la forma de evitar este reporte; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
 - `Actualizar estado de los recursos` — libera el recurso en cuanto se confirma la ausencia; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
 - `Reportar cancelación de reserva` — el cierre contrario: la persona sí avisó, y por eso no se le reporta ninguna ausencia; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
-- `Consultar reportes` — el camino de vuelta: las ausencias que aquí se reportan son parte de lo que el Módulo 3 devuelve después como sanción; ver [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md)
+- `Consultar sanciones` — el camino de vuelta: las ausencias que aquí se reportan son parte de lo que el Módulo 3 devuelve después como sanción; ver [spec-modulo2-uc6-consultar-sanciones.md](./spec-modulo2-uc6-consultar-sanciones.md)
 
 ## User Scenarios & Testing *(mandatory)*
 

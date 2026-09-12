@@ -1,8 +1,8 @@
-# Feature Specification: Consultar reportes
+# Feature Specification: Consultar sanciones
 
 **Created**: 2026-08-24
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Consultar reportes` (lo ejecuta el propio sistema; le pide la información al Módulo 3)
+**Caso de uso (diagrama)**: `Consultar sanciones` — `<<include>>` de `Consultar recursos`; lo ejecuta el propio sistema y le pide la información al Módulo 3
 **Prioridad global**: P1
 
 ## Contexto
@@ -11,7 +11,7 @@ Este caso de uso **obtiene** el reporte de cumplimiento de una persona desde el 
 
 Existe por una razón muy concreta: cuando alguien intenta reservar y no puede, el sistema tiene que poder decirle exactamente qué se lo impide. Si el motivo es una sanción, esa información no vive en el Módulo 2 —aquí no se sanciona a nadie— sino en el Módulo 3, que es el que lleva la matriz de cumplimiento. Por eso hay que ir a buscarla.
 
-Con eso se cierra el círculo del módulo: el Módulo 2 le reporta al Módulo 3 las ausencias, las devoluciones y el cierre de cada reserva; el Módulo 3 con eso arma el cumplimiento y decide las sanciones; y el Módulo 2 vuelve a leerlas aquí para poder explicárselas a la persona en el momento en que intenta reservar.
+Con eso se cierra el círculo del módulo: el Módulo 2 le reporta al Módulo 3 qué se apartó y las cancelaciones; el Módulo 3 pone de su lado lo que solo él ve —las ausencias que constata y los check-out que recibe—, arma con todo eso el cumplimiento y decide las sanciones; y el Módulo 2 vuelve a leerlas aquí para poder explicárselas a la persona en el momento en que intenta reservar.
 
 **Ninguna persona ejecuta este caso de uso.** Ni el Estudiante, ni el Monitor, ni la Dirección de Programa entran a consultar reportes: lo hace el sistema, por dentro, y lo único que la persona llega a ver es el motivo por el que no pudo reservar.
 

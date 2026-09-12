@@ -16,7 +16,7 @@ Motor de reglas de negocio encargado de gestionar el uso de los recursos físico
 | Monitor | Primario (humano) | Especialización de Estudiante: hereda todas sus capacidades. |
 | Dirección de Programa | Primario (humano) | Importa la carga académica semestral y consulta el catálogo de recursos. |
 | Módulo 1 | Secundario (sistema) | Inventario físico: aporta el estado real de los recursos y recibe cada cambio de estado. |
-| Módulo 3 | Secundario (sistema) | Control de uso, sanciones y analítica: **nos reporta** las ausencias, **recibe** la información de las reservas, las cancelaciones, las devoluciones y el cierre de cada reserva, y **provee de vuelta** el reporte de cumplimiento con las sanciones vigentes. Es quien decide y aplica las sanciones. |
+| Módulo 3 | Secundario (sistema) | Control de uso, sanciones y analítica: **recibe** de nosotros la ficha de cada reserva confirmada y las cancelaciones; **nos reporta** lo que solo él ve, las ausencias que constata y el check-out de cada activo que vuelve; y **provee de vuelta** el reporte de cumplimiento con las sanciones vigentes. Es quien decide y aplica las sanciones. |
 
 ## Trazabilidad diagrama → specs
 
@@ -26,18 +26,19 @@ Motor de reglas de negocio encargado de gestionar el uso de los recursos físico
 | Reservar recursos `<<extend>>` | P1 | [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md) |
 | Importar horarios semestrales | P2 | [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md) |
 | Cancelar reserva `<<extend>>` | P2 | [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md) |
-| Consultar reportes `<<include>>` | P1 | [spec-modulo2-uc6-consultar-reportes.md](./spec-modulo2-uc6-consultar-reportes.md) |
+| Consultar sanciones `<<include>>` | P1 | [spec-modulo2-uc6-consultar-sanciones.md](./spec-modulo2-uc6-consultar-sanciones.md) |
 | Actualizar estado de los recursos `<<include>>` | P1 | [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md) |
 | Consultar disponibilidad de los recursos | P1 | [spec-modulo2-uc8-consultar-disponibilidad-recursos.md](./spec-modulo2-uc8-consultar-disponibilidad-recursos.md) |
 | Recibir reporte de no asistencia | P2 | [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](./spec-modulo2-uc9-recibir-reporte-no-asistencia.md) |
-| Reportar información de la reserva | P3 | [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md) |
-| Reportar cancelación de reserva | P2 | [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md) |
+| Reportar información de la reserva `<<include>>` | P3 | [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md) |
+| Reportar cancelación de reserva `<<include>>` | P2 | [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md) |
+| Recibir check-out | P3 | [spec-modulo2-uc12-recibir-check-out.md](./spec-modulo2-uc12-recibir-check-out.md) |
 
 ## Orden de entrega sugerido
 
-1. **P1 (MVP)**: Consultar recursos + Reservar recursos, con Consultar disponibilidad de los recursos, Actualizar estado de los recursos y Consultar reportes — consultar y apartar, el núcleo demostrable. Estos tres últimos no se ven por fuera, pero sin ellos el sistema muestra información falsa o deniega sin poder explicar por qué.
+1. **P1 (MVP)**: Consultar recursos + Reservar recursos, con Consultar disponibilidad de los recursos, Actualizar estado de los recursos y Consultar sanciones — consultar y apartar, el núcleo demostrable. Estos tres últimos no se ven por fuera, pero sin ellos el sistema muestra información falsa o deniega sin poder explicar por qué.
 2. **P2**: Importar horarios semestrales + Cancelar reserva + Reportar cancelación de reserva + Recibir reporte de no asistencia — sostenibilidad de la carga académica, cierre del ciclo de vida de la reserva y control de las reservas fantasma. `Reportar cancelación de reserva` va pegado a `Cancelar reserva`: sin él, el Módulo 3 no puede distinguir a quien liberó a tiempo de quien no apareció.
-3. **P3**: Reportar información de la reserva — lo que termina de alimentar al Módulo 3 con el historial que dejan los anteriores.
+3. **P3**: Reportar información de la reserva + Recibir check-out — la conversación completa con el Módulo 3: le mandamos la ficha de lo que se aparta y recibimos de vuelta el cierre de cada préstamo. Sin `Recibir check-out` ningún activo prestado vuelve nunca a estar disponible.
 
 ## Diccionario de errores consolidado
 

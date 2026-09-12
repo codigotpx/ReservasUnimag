@@ -81,14 +81,14 @@ Como Estudiante, quiero cancelar una reserva que ya no voy a usar, para liberar 
 - **FR-005**: Las cancelaciones por prioridad académica NO DEBEN penalizar al estudiante ni computar como ausencia.
 - **FR-006**: El sistema DEBE mantener registro de auditoría de toda cancelación, con autor, motivo y marca de tiempo.
 - **FR-007**: La antelación mínima de cancelación DEBE ser de 10 minutos.
-- **FR-008**: El sistema NO DEBE permitir cancelar el préstamo de un **activo que ya fue entregado**: una vez el recurso está en manos de la persona, lo que corresponde es devolverlo y registrarlo en `Reportar información de la reserva`. Al intentarlo, el sistema DEBE explicarlo y ofrecer el registro de devolución en su lugar.
+- **FR-008**: El sistema NO DEBE permitir cancelar el préstamo de un **activo que ya fue entregado**: una vez el recurso está en manos de la persona, lo que corresponde es devolverlo, y ese cierre entra por `Recibir check-out`. Al intentarlo, el sistema DEBE explicarlo y explicar que el cierre llegará por `Recibir check-out` cuando el recurso vuelva.
 
 ### Key Entities
 
 - **Reserva**: apartado cuyo estado transita a `CANCELADA` o `CANCELADA_POR_PRIORIDAD_ACADEMICA`; conserva el motivo de cancelación.
 - **Recurso**: espacio o activo que se libera con la cancelación.
 - **FranjaHoraria**: intervalo liberado cuando lo cancelado es la reserva de un espacio; vuelve a ser consultable como disponible.
-- **PeriodoDePrestamo**: lo que se libera cuando lo cancelado es el préstamo de un activo que aún no se ha recogido. Se libera el periodo completo, no una franja suelta: el activo vuelve a estar disponible desde ese momento y hasta el vencimiento que tenía previsto. Un activo ya entregado no se cancela, se devuelve (`Reportar información de la reserva`).
+- **PeriodoDePrestamo**: lo que se libera cuando lo cancelado es el préstamo de un activo que aún no se ha recogido. Se libera el periodo completo, no una franja suelta: el activo vuelve a estar disponible desde ese momento y hasta el vencimiento que tenía previsto. Un activo ya entregado no se cancela, se devuelve, y su cierre entra por `Recibir check-out`.
 - **Usuario**: titular de la reserva; su cupo de préstamos vigentes se actualiza al cancelar.
 
 ## Success Criteria *(mandatory)*
