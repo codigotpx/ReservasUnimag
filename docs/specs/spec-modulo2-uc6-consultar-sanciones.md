@@ -27,8 +27,9 @@ Con eso se cierra el círculo del módulo: el Módulo 2 le reporta al Módulo 3 
 - `Reservar recursos` — usa lo que se obtiene aquí para denegar con el error `RES-003 — Sanción activa` e informar la fecha en que termina; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Consultar recursos` — puede avisarle a la persona que está sancionada antes de que intente apartar algo; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
 - `Recibir reporte de no asistencia` — las ausencias que el Módulo 3 nos reporta ahí son parte de lo que después alimenta las sanciones que se leen aquí; ver [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](./spec-modulo2-uc9-recibir-reporte-no-asistencia.md)
-- `Reportar información de la reserva` — igual con las devoluciones a tiempo y con retraso; ver [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md)
-- `Reportar información de la reserva` — completa el camino de ida contándole al Módulo 3 qué se apartó y cómo terminó; ver [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md)
+- `Reportar información de la reserva` — el camino de ida: le cuenta al Módulo 3 qué se apartó, quién lo apartó y hasta cuándo; ver [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md)
+- `Reportar cancelación de reserva` — igual con las cancelaciones, distinguiendo las que no son culpa de la persona; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
+- `Recibir check-out` — por ahí entran las devoluciones a tiempo y con retraso que constata el Módulo 3, y la mora que calcula es parte de lo que se lee aquí; ver [spec-modulo2-uc12-recibir-check-out.md](./spec-modulo2-uc12-recibir-check-out.md)
 
 ## User Scenarios & Testing *(mandatory)*
 

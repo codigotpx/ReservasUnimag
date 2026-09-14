@@ -25,6 +25,7 @@ Este caso de uso no informa cómo termina la reserva, y no le falta nada por eso
 **Casos de uso relacionados**
 
 - `Reservar recursos` — **caso base al que incluye** (`<<include>>`): sin reserva confirmada no hay nada que informar, y toda reserva confirmada se informa; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
+- `Importar horarios semestrales` — incluye a `Reservar recursos`, y por eso cada bloqueo académico también genera ficha, marcada con origen académico; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
 - `Recibir reporte de no asistencia` — la respuesta del Módulo 3 cuando comprueba, sobre la ficha que le mandamos, que el titular no apareció; ver [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](./spec-modulo2-uc9-recibir-reporte-no-asistencia.md)
 - `Recibir check-out` — la otra respuesta: el recurso volvió, y el Módulo 3 lo compara contra la fecha de vencimiento que le dimos aquí; ver [spec-modulo2-uc12-recibir-check-out.md](./spec-modulo2-uc12-recibir-check-out.md)
 - `Reportar cancelación de reserva` — lo que sale hacia el Módulo 3 cuando la reserva informada aquí se deshace; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
@@ -62,39 +63,46 @@ Como sistema, quiero enviarle al Módulo 3 la ficha de cada reserva en cuanto se
    - **When** un Estudiante confirma una reserva
    - **Then** la reserva se confirma igual y el recurso queda apartado igual; la ficha queda pendiente y se reintenta hasta entregarse
 
+5. **Scenario**: Bloqueo académico que entra por la carga del semestre
+   - **Given** la Dirección de Programa carga el horario 2026-2 y el "Salón 201" queda en `BLOQUEO_ACADEMICO` el lunes 2026-09-14 de 08:00 a 10:00 para Cálculo I
+   - **When** se crea el bloqueo
+   - **Then** el sistema le envía al Módulo 3 la ficha con el recurso, la franja, la asignatura, el programa y el docente, marcada con origen académico y sin titular sancionable
+
 ### Edge Cases
 
 - **Reserva denegada**: si la reserva no llega a confirmarse —por conflicto académico, cupo o sanción— no hay ficha que enviar. Solo se informa lo que quedó `CONFIRMADA`.
 - **Fichas repetidas**: si un envío se reintenta, el Módulo 3 no puede terminar contando dos veces la misma reserva ni vigilando dos veces al mismo titular.
 - **Reserva que cambia después de informada**: una renovación mueve el vencimiento, y una cancelación la deshace. Lo primero se informa desde aquí; lo segundo, desde `Reportar cancelación de reserva`. La ficha enviada nunca se corrige en silencio.
-- **Reserva de origen académico**: los bloqueos que entran por `Importar horarios semestrales` no tienen titular estudiantil ni pueden generar sanción. [NEEDS CLARIFICATION: ¿el Módulo 3 quiere estas reservas en su vigilancia, o solo las estudiantiles?]
+- **Reserva de origen académico**: en el diagrama, `Importar horarios semestrales` incluye a `Reservar recursos`, así que cada bloqueo académico pasa por reservar y, con eso, también por este caso de uso: su ficha sale igual que la de cualquier reserva. Lo que cambia es lo que lleva: no tiene titular estudiantil sino la asignatura, el programa y el docente de la clase, y va marcada con origen académico para que el Módulo 3 no le atribuya ausencias ni sanciones a nadie. Volver a cargar el mismo horario no crea bloqueos repetidos (UC3 FR-007) y tampoco debe repetir fichas (FR-006).
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE enviarle al Módulo 3 la ficha de cada reserva en el momento en que queda confirmada, como parte del flujo de `Reservar recursos`.
-- **FR-002**: Cada ficha DEBE indicar el identificador de la reserva, su titular, el recurso apartado y el tiempo que ocupa: la franja horaria cuando es un espacio, y el periodo de préstamo con su fecha y hora de vencimiento cuando es un activo.
+- **FR-002**: Cada ficha DEBE indicar el identificador de la reserva, su titular (o, si es un bloqueo académico, lo que pide FR-009), el recurso apartado y el tiempo que ocupa: la franja horaria cuando es un espacio, y el periodo de préstamo con su fecha y hora de vencimiento cuando es un activo.
 - **FR-003**: El sistema DEBE informar el vencimiento nuevo cuando un préstamo se renueve, porque es la fecha contra la que el Módulo 3 mide el retraso.
 - **FR-004**: El sistema NO DEBE decidir ni aplicar sanciones; solo entrega la información, y el Módulo 3 saca las consecuencias.
 - **FR-005**: Si el Módulo 3 no está disponible, la reserva DEBE confirmarse igualmente y la ficha DEBE reintentarse hasta entregarse.
 - **FR-006**: Reenviar una ficha NO DEBE producir una segunda reserva contabilizada para el Módulo 3.
 - **FR-007**: El sistema DEBE conservar el registro de cada ficha enviada y de si llegó o no.
 - **FR-008**: El sistema NO DEBE enviar ficha de una reserva que no llegó a confirmarse.
+- **FR-009**: El sistema DEBE enviar también la ficha de cada bloqueo académico que entre por `Importar horarios semestrales`. Esa ficha DEBE ir marcada con origen académico, llevar la asignatura, el programa y el docente en lugar del titular, e indicar que no es sancionable.
 
 ### Key Entities
 
-- **FichaDeReserva**: lo que se le manda al Módulo 3 cuando una reserva se confirma. Atributos: reserva, titular, recurso, franja horaria o periodo de préstamo, fecha y hora del envío, resultado del envío.
+- **FichaDeReserva**: lo que se le manda al Módulo 3 cuando una reserva se confirma. Atributos: reserva, origen (estudiantil o académico), titular —o asignatura, programa y docente si el origen es académico—, recurso, franja horaria o periodo de préstamo, fecha y hora del envío, resultado del envío.
 - **Reserva**: el apartado confirmado que da origen a la ficha.
 - **PeriodoDePrestamo**: lo que se informa cuando el recurso es un activo, con su fecha y hora de vencimiento; es la referencia contra la que el Módulo 3 mide el check-out.
-- **Usuario**: el titular de la reserva, sobre el que el Módulo 3 lleva el cumplimiento.
+- **Usuario**: el titular de una reserva estudiantil, siempre un Estudiante o Monitor, sobre el que el Módulo 3 lleva el cumplimiento. Los bloqueos académicos no tienen Usuario titular.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: El 100 % de las reservas confirmadas quedan informadas al Módulo 3 con su titular, su recurso y su tiempo apartado.
+- **SC-001**: El 100 % de las reservas confirmadas, incluidos los bloqueos académicos, quedan informadas al Módulo 3 con su titular —o su asignatura, programa y docente—, su recurso y su tiempo apartado.
 - **SC-002**: La ficha sale en menos de 5 segundos desde que la reserva queda confirmada.
 - **SC-003**: Cero reservas contabilizadas dos veces por un reenvío.
 - **SC-004**: Cero fichas perdidas ante una caída del Módulo 3 de hasta 30 minutos.
 - **SC-005**: Cero reservas denegadas informadas como si fueran confirmadas.
+- **SC-006**: Cero fichas de origen académico que el Módulo 3 pueda tomar por reservas sancionables.

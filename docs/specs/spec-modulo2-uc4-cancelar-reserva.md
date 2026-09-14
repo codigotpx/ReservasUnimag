@@ -15,15 +15,14 @@ Cierra el ciclo de vida de la reserva. Permite al Estudiante liberar a tiempo un
 |---|---|---|
 | Estudiante | Primario | Cancela sus propias reservas. |
 | Monitor | Primario | Especialización de Estudiante: hereda esta capacidad. |
-| Módulo 1 | Secundario | Recibe el estado actualizado del recurso cuando la franja se libera. |
-| Módulo 3 | Secundario | Recibe el aviso de cómo terminó la reserva. |
+| Módulo 3 | Secundario | Recibe, a través de `Reportar cancelación de reserva`, cada cancelación con su origen. |
 
 **Casos de uso relacionados**
 
 - `Reservar recursos` — crea las reservas que aquí se cancelan; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Importar horarios semestrales` — origen de la cancelación automática por prioridad; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
-- `Actualizar estado de los recursos` — **paso que ocurre siempre por dentro**: al cancelar, la franja se libera y el Módulo 1 se entera; no se puede saltar; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
-- `Reportar cancelación de reserva` — le cuenta al Módulo 3 que la reserva se cerró por cancelación y no por incumplimiento; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
+- `Actualizar estado de los recursos` — **paso que ocurre siempre por dentro**: al cancelar, la franja o el periodo se libera en el calendario del Módulo 2; no se puede saltar; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
+- `Reportar cancelación de reserva` — **paso que ocurre siempre por dentro** (`<<include>>`): le cuenta al Módulo 3 que la reserva se cerró por cancelación y no por incumplimiento; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
 
 **Diccionario de errores**
 
@@ -66,7 +65,7 @@ Como Estudiante, quiero cancelar una reserva que ya no voy a usar, para liberar 
 ### Edge Cases
 
 - **Cancelación en el límite del plazo**: solicitud que llega exactamente en el instante de la antelación mínima; el criterio de borde debe ser explícito y determinista.
-- **Recurso dado de baja**: cuando un recurso pasa a `EN_MANTENIMIENTO`, sus reservas futuras deben cancelarse con motivo propio y notificarse, sin penalizar a los titulares.
+- **Recurso dado de baja**: cuando un recurso pasa a `EN_MANTENIMIENTO`, sus reservas futuras deben cancelarse con el motivo `CANCELADA_POR_RECURSO_NO_DISPONIBLE` (FR-010) y reportarse al Módulo 3, sin penalizar a los titulares.
 - **Doble cancelación**: una segunda solicitud sobre una reserva ya `CANCELADA` debe ser idempotente y no liberar dos veces el cupo de préstamos.
 - **No presentación**: pasados 10 minutos sin que la persona llegue —contados desde el inicio de la franja si es un espacio, o desde la hora de recogida si es un activo—, el Módulo 3 puede reportar la ausencia, y con ese reporte el recurso se libera y queda la constancia, tal como se define en `Recibir reporte de no asistencia` y en `Reservar recursos` FR-010. El sistema no libera nada por su cuenta, y esa liberación no cuenta como una cancelación hecha por el estudiante.
 
@@ -82,10 +81,12 @@ Como Estudiante, quiero cancelar una reserva que ya no voy a usar, para liberar 
 - **FR-006**: El sistema DEBE mantener registro de auditoría de toda cancelación, con autor, motivo y marca de tiempo.
 - **FR-007**: La antelación mínima de cancelación DEBE ser de 10 minutos.
 - **FR-008**: El sistema NO DEBE permitir cancelar el préstamo de un **activo que ya fue entregado**: una vez el recurso está en manos de la persona, lo que corresponde es devolverlo, y ese cierre entra por `Recibir check-out`. Al intentarlo, el sistema DEBE explicarlo y explicar que el cierre llegará por `Recibir check-out` cuando el recurso vuelva.
+- **FR-009**: Al ejecutar una cancelación, cualquiera que sea su origen, el sistema DEBE ejecutar siempre `Reportar cancelación de reserva`, sin posibilidad de omitirlo.
+- **FR-010**: Cuando el Módulo 1 informe que un recurso pasó a `EN_MANTENIMIENTO`, el sistema DEBE cancelar sus reservas futuras marcándolas con `CANCELADA_POR_RECURSO_NO_DISPONIBLE`, sin penalizar a sus titulares.
 
 ### Key Entities
 
-- **Reserva**: apartado cuyo estado transita a `CANCELADA` o `CANCELADA_POR_PRIORIDAD_ACADEMICA`; conserva el motivo de cancelación.
+- **Reserva**: apartado cuyo estado transita a `CANCELADA`, `CANCELADA_POR_PRIORIDAD_ACADEMICA` o `CANCELADA_POR_RECURSO_NO_DISPONIBLE`; conserva el motivo de cancelación.
 - **Recurso**: espacio o activo que se libera con la cancelación.
 - **FranjaHoraria**: intervalo liberado cuando lo cancelado es la reserva de un espacio; vuelve a ser consultable como disponible.
 - **PeriodoDePrestamo**: lo que se libera cuando lo cancelado es el préstamo de un activo que aún no se ha recogido. Se libera el periodo completo, no una franja suelta: el activo vuelve a estar disponible desde ese momento y hasta el vencimiento que tenía previsto. Un activo ya entregado no se cancela, se devuelve, y su cierre entra por `Recibir check-out`.

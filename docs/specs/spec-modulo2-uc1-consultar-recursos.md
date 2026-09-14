@@ -12,12 +12,12 @@ Punto de entrada del Módulo 2. Permite al Estudiante (Monitor, que hereda sus c
 
 Es el único caso de uso del módulo que no arranca desde ningún otro: el estudiante puede entrar, mirar qué hay libre y salir sin hacer nada más. Desde aquí puede continuar hacia `Reservar recursos` si decide apartar algo.
 
-Ahora bien, el Módulo 2 no es dueño de nada de lo que muestra. Conforme a [gestionunimag.md](../gestionunimag.md), el Módulo 1 *"actúa como la base de datos central que digitaliza la infraestructura física"*: allí viven tanto el **catálogo** —qué recursos existen, de qué tipo son, su aforo, su equipamiento fijo, su facultad y su ubicación— como el **estado** de cada uno. Esta consulta le pide las dos cosas:
+Lo que muestra tiene dos dueños. El Módulo 1 *"actúa como la base de datos central que digitaliza la infraestructura física"*: allí viven el **catálogo** —qué recursos existen, de qué tipo son, su aforo, su equipamiento fijo, su facultad y su ubicación— y el **estado operativo** de cada recurso (`DISPONIBLE`, `EN_USO`, `EN_MANTENIMIENTO`). Las **reservas, los préstamos y los bloqueos académicos** son del Módulo 2, que los guarda en su propia base. Esta consulta junta las dos cosas:
 
 | Qué necesita | De dónde sale |
 |---|---|
 | El catálogo y los atributos de cada recurso | Directamente del Módulo 1; sin él esta consulta no puede mostrar ni una fila. |
-| Si el recurso está libre en la franja pedida | De `Consultar disponibilidad de los recursos`, que a su vez lee el inventario del Módulo 1. |
+| Si el recurso está libre en la franja pedida | De `Consultar disponibilidad de los recursos`, que cruza el estado operativo del Módulo 1 con las reservas, préstamos y bloqueos que guarda el Módulo 2. |
 
 Lo que el estudiante ve es una foto del momento: la disponibilidad se vuelve a comprobar al confirmar una reserva, porque entre mirar y decidir alguien más pudo haberse adelantado.
 
@@ -28,16 +28,17 @@ Lo que el estudiante ve es una foto del momento: la disponibilidad se vuelve a c
 | Estudiante | Primario | Consulta el catálogo filtrando por fecha, franja y tipo de recurso. |
 | Monitor | Primario | Especialización de Estudiante: hereda esta capacidad. |
 | Dirección de Programa | Primario | Consulta el catálogo para ver la ocupación real de la infraestructura. |
-| Módulo 1 | Secundario | Dueño del inventario: aporta el catálogo de recursos con sus atributos y el estado real de cada uno. |
+| Módulo 1 | Secundario | Dueño del inventario: aporta el catálogo de recursos con sus atributos y el estado operativo de cada uno. |
+| Módulo 3 | Secundario | Provee, a través de `Consultar sanciones`, si la persona que consulta tiene una sanción vigente. |
 
 **Casos de uso relacionados**
 
 - `Reservar recursos` — **continuación opcional de esta consulta** (`<<extend>>`, siendo esta el caso base): el estudiante puede quedarse solo mirando, o seguir y apartar uno de los recursos que encontró libres; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Consultar disponibilidad de los recursos` — **paso que ocurre siempre por dentro** (`<<include>>`): responde, recurso por recurso, si está libre en la franja pedida; es con lo que se arma esta lista y no se puede saltar; ver [spec-modulo2-uc8-consultar-disponibilidad-recursos.md](./spec-modulo2-uc8-consultar-disponibilidad-recursos.md)
-- `Consultar sanciones` — obtiene del Módulo 3 si la persona está sancionada, para poder avisárselo antes de que intente apartar algo; ver [spec-modulo2-uc6-consultar-sanciones.md](./spec-modulo2-uc6-consultar-sanciones.md)
+- `Consultar sanciones` — **paso que ocurre siempre por dentro** (`<<include>>`): obtiene del Módulo 3 si la persona está sancionada, para poder avisárselo antes de que intente apartar algo; ver [spec-modulo2-uc6-consultar-sanciones.md](./spec-modulo2-uc6-consultar-sanciones.md)
 - `Importar horarios semestrales` — fuente de los estados `BLOQUEO_ACADEMICO` que esta consulta debe respetar; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
 
-**Estados del recurso (Módulo 1)**: conforme a [gestionunimag.md](../gestionunimag.md), el inventario gestiona cinco estados: `DISPONIBLE`, `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` y `EN_MANTENIMIENTO`. Esta consulta respeta ese catálogo.
+**Estados que se muestran**: cada recurso aparece con uno de cinco estados, que no vienen todos del mismo lugar (ver el reparto de estados en [spec-modulo2.md](./spec-modulo2.md)). `DISPONIBLE`, `EN_USO` y `EN_MANTENIMIENTO` son el estado operativo que informa el Módulo 1. `RESERVADO`, `BLOQUEO_ACADEMICO` y la ocupación de un activo durante su periodo de préstamo los calcula el Módulo 2 con sus propios datos. Si en una franja aplica más de uno, se muestra el de mayor prioridad: `EN_MANTENIMIENTO`, luego `BLOQUEO_ACADEMICO`, luego `EN_USO` o `RESERVADO`, y por último `DISPONIBLE`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -120,6 +121,7 @@ Como Estudiante (o Monitor) y dirección de programa, quiero consultar el catál
 - **FR-013**: El sistema DEBE indicar en cada página cuántos recursos hay en total para esos filtros y qué página se está viendo, y DEBE permitir avanzar y retroceder entre páginas sin repetir la consulta desde cero.
 - **FR-014**: El sistema DEBE ordenar los resultados de forma estable y determinista —por nombre del recurso y, ante nombres iguales, por su identificador del Módulo 1— para que un mismo recurso no aparezca dos veces ni se salte al pasar de página. El orden no depende del estado: un recurso `RESERVADO` no se manda al final de la lista.
 - **FR-015**: La consulta responde por la **franja preguntada**, también cuando se pregunta por un activo: si el activo está libre en esa franja, se muestra `DISPONIBLE`. Eso no garantiza que se pueda prestar, porque el préstamo ocupa días completos y podría chocar más adelante con otra ocupación que la franja consultada no alcanza a ver. Esa comprobación del periodo completo la hace `Reservar recursos` al confirmar, y de ahí puede salir un `RES-004`. Es la misma regla de siempre —lo que se muestra es una foto del momento y se revalida al reservar—, solo que en los activos el desfase puede ser de días y no de minutos.
+- **FR-016**: El sistema DEBE ejecutar `Consultar sanciones` como parte de cada consulta, para poder avisarle a la persona que tiene una sanción vigente antes de que intente apartar algo. Esa comprobación no reemplaza la que `Reservar recursos` repite al confirmar.
 
 ### Key Entities
 
@@ -128,9 +130,9 @@ Como Estudiante (o Monitor) y dirección de programa, quiero consultar el catál
   - **Activo** —p. ej. Libro, Microscopio, Kit de dibujo, Videobeam—: identificador (placa de inventario), nombre, tipo, estado físico y ubicación. No tiene capacidad.
 - **FranjaHoraria**: intervalo con fecha, hora de inicio y hora de fin, siempre dentro de un mismo día. Es lo que la persona indica al consultar, y también como se apartan los **espacios**.
 - **PeriodoDePrestamo**: lo que ocupa un **activo** mientras está prestado. No es una franja, porque va de la fecha y hora en que se recoge hasta su vencimiento, que puede caer días después. Se compara contra la franja consultada igual que una reserva.
-- **Reserva**: apartado vigente que hace que un recurso figure como `RESERVADO` en una franja.
-- **BloqueoAcadémico**: ocupación de máxima prioridad que hace que un recurso figure como `BLOQUEO_ACADEMICO` en una franja.
-- **Mantenimiento**: estado operativo por el que un recurso se encuentra en reparación y figura como `EN_MANTENIMIENTO` en una franja.
+- **Reserva**: apartado vigente, guardado por el Módulo 2, que hace que un recurso figure como `RESERVADO` en una franja.
+- **BloqueoAcadémico**: ocupación de máxima prioridad, guardada por el Módulo 2, que hace que un recurso figure como `BLOQUEO_ACADEMICO` en una franja.
+- **Mantenimiento**: estado operativo que informa el Módulo 1 cuando un recurso está en reparación, y que lo hace figurar como `EN_MANTENIMIENTO`.
 
 ## Success Criteria *(mandatory)*
 

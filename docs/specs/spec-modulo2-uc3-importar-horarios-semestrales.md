@@ -31,14 +31,16 @@ Además de la carga del semestre completo, la Dirección de Programa puede regis
 | Actor | Tipo | Participación |
 |---|---|---|
 | Dirección de Programa | Primario | Carga el horario del semestre y registra las actividades extraordinarias. |
-| Módulo 1 | Secundario | Recibe los avisos de qué recursos quedaron bloqueados y qué reservas se cancelaron, para informar a los estudiantes afectados. |
+| Módulo 1 | Secundario | Aporta el catálogo y el estado operativo con que se valida cada fila; por ejemplo, avisa si el recurso está `EN_MANTENIMIENTO`. Los bloqueos académicos y las cancelaciones los guarda el Módulo 2, y no se le envían. |
+| Módulo 3 | Secundario | Recibe, a través de `Reservar recursos`, la ficha de cada bloqueo académico, y las cancelaciones de las reservas desplazadas. |
 
 **Casos de uso relacionados**
 
 - `Consultar recursos` — usa los bloqueos que aquí se crean para no mostrar como libre un salón que tiene clase; ver [spec-modulo2-uc1-consultar-recursos.md](./spec-modulo2-uc1-consultar-recursos.md)
-- `Reservar recursos` — cuando un estudiante intenta apartar un recurso con clase, esa reserva se rechaza con el error `RES-001`: el recurso está reservado para actividad docente; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
+- `Reservar recursos` — **este caso de uso lo incluye** (`<<include>>`): cada clase importada entra como una reserva de origen académico, y por eso pasa también por `Actualizar estado de los recursos` y `Reportar información de la reserva`. El estudiante que después intente apartar ese recurso en esa franja recibe el error `RES-001`: el recurso está reservado para actividad docente; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Cancelar reserva` — cuando una actividad extraordinaria desplaza reservas de estudiantes, esas reservas terminan cancelándose por esta vía, sin que el estudiante haya hecho nada; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
-- `Actualizar estado de los recursos` — marcar un bloqueo académico es un cambio de estado: el recurso queda bloqueado en esa franja y el Módulo 1 se entera, **sin que nadie tenga que pedirlo**; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
+- `Actualizar estado de los recursos` — marcar un bloqueo académico es un cambio de estado, y llega ahí a través de `Reservar recursos`: el recurso queda bloqueado en esa franja en el calendario del Módulo 2, **sin que nadie tenga que pedirlo**; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
+- `Reportar información de la reserva` — también a través de `Reservar recursos`, cada bloqueo académico le llega al Módulo 3 como una ficha marcada con origen académico; ver [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md)
 - `Reportar cancelación de reserva` — cuando esta carga desplaza reservas de estudiantes, cada cancelación se le informa al Módulo 3 desde ahí; ver [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md)
 
 ## User Scenarios & Testing *(mandatory)*
@@ -105,7 +107,7 @@ Como Dirección de Programa, quiero cargar de una sola vez el archivo con las cl
 - **BloqueoAcadémico**: el apartado de mayor prioridad, que nace de la carga académica. Guarda de qué recurso se trata, en qué franja, para qué asignatura, de qué programa, con qué docente y si viene del horario regular o de una actividad extraordinaria.
 - **HorarioSemestral**: el conjunto de clases cargadas para un periodo académico, junto con el resultado de esa carga.
 - **Recurso**: el espacio o activo sobre el que se aplica el bloqueo. Un espacio se bloquea por franjas; un activo puede estar ocupado por un periodo de préstamo de varios días, y ahí el bloqueo se resuelve como dice FR-010.
-- **FranjaHoraria**: la fecha con hora de inicio y hora de fin; es lo que se compara para saber si dos cosas se cruzan. Las clases siempre ocupan espacios y caben en un solo día, así que aquí no aparecen periodos de préstamo, que son la forma en que se ocupan los activos.
+- **FranjaHoraria**: la fecha con hora de inicio y hora de fin; es lo que se compara para saber si dos cosas se cruzan. Una clase siempre cabe en un solo día, así que aquí no aparecen periodos de préstamo; cuando lo que la clase necesita es un activo, el choque con un préstamo se resuelve como dice FR-010.
 - **Reserva**: el apartado que hizo un estudiante y que la prioridad académica puede desplazar.
 
 ## Success Criteria *(mandatory)*

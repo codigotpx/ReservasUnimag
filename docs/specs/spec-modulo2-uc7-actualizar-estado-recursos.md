@@ -2,14 +2,16 @@
 
 **Created**: 2026-09-03
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Actualizar estado de los recursos` (paso que ocurre siempre por dentro de `Reservar recursos` y de `Cancelar reserva`)
+**Caso de uso (diagrama)**: `Actualizar estado de los recursos` (paso que ocurre siempre por dentro —`<<include>>`— de `Reservar recursos`, `Cancelar reserva`, `Recibir reporte de no asistencia` y `Recibir check-out`)
 **Prioridad global**: P1
 
 ## Contexto
 
 Es el paso que mantiene el inventario diciendo la verdad. Cada vez que algo le pasa a una reserva —nace, se cancela, empieza, termina— el recurso involucrado tiene que cambiar de estado, y ese cambio se le informa al Módulo 1, que es el dueño del inventario físico de la universidad.
 
-Nadie lo pide por separado: ocurre por dentro de `Reservar recursos` y de `Cancelar reserva`, y ninguno de los dos puede saltárselo. Si este paso falla, el resto del sistema empieza a mostrar salones libres que en realidad están ocupados, que es exactamente el problema que el proyecto quiere resolver.
+Nadie lo pide por separado: ocurre por dentro de `Reservar recursos`, `Cancelar reserva`, `Recibir reporte de no asistencia` y `Recibir check-out`, y ninguno de los cuatro puede saltárselo. Si este paso falla, el resto del sistema empieza a mostrar salones libres que en realidad están ocupados, que es exactamente el problema que el proyecto quiere resolver.
+
+> [NEEDS CLARIFICATION: con el reparto de estados aclarado en clase (ver [spec-modulo2.md](./spec-modulo2.md)), `RESERVADO` y `BLOQUEO_ACADEMICO` ya no se le envían al Módulo 1, y los cambios físicos (`EN_USO`, `DISPONIBLE`, `EN_MANTENIMIENTO`) los constata el Módulo 3, que podría reportárselos directo. Falta confirmar si este caso de uso le sigue avisando algo al Módulo 1 o solo actualiza el estado que guarda el Módulo 2 (ver P-20 en [pendientes-clarificacion.md](./pendientes-clarificacion.md)). Hasta entonces, lo que este spec dice sobre avisarle al Módulo 1 no está vigente.]
 
 **Actores**
 
@@ -22,7 +24,9 @@ Nadie lo pide por separado: ocurre por dentro de `Reservar recursos` y de `Cance
 
 - `Reservar recursos` — lo ejecuta siempre al confirmar una reserva; ver [spec-modulo2-uc2-reservar-recursos.md](./spec-modulo2-uc2-reservar-recursos.md)
 - `Cancelar reserva` — lo ejecuta siempre al liberar una franja; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
-- `Importar horarios semestrales` — marca los espacios con bloqueo académico; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
+- `Recibir reporte de no asistencia` — lo ejecuta siempre al registrar la ausencia que reporta el Módulo 3, para liberar el recurso; ver [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](./spec-modulo2-uc9-recibir-reporte-no-asistencia.md)
+- `Recibir check-out` — lo ejecuta siempre al cerrar un préstamo, para desocupar su periodo; ver [spec-modulo2-uc12-recibir-check-out.md](./spec-modulo2-uc12-recibir-check-out.md)
+- `Importar horarios semestrales` — sus bloqueos académicos llegan aquí a través de `Reservar recursos`, que Importar incluye; ver [spec-modulo2-uc3-importar-horarios-semestrales.md](./spec-modulo2-uc3-importar-horarios-semestrales.md)
 - `Consultar disponibilidad de los recursos` — lee lo que este caso de uso deja escrito; ver [spec-modulo2-uc8-consultar-disponibilidad-recursos.md](./spec-modulo2-uc8-consultar-disponibilidad-recursos.md)
 
 **Estados del recurso**

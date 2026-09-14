@@ -1,6 +1,3 @@
-Como no tengo la capacidad técnica para enviarte un archivo descargable directamente a tu dispositivo, he preparado el contenido completo del proyecto **UNIMAG-RECURSOS** en formato Markdown. Puedes copiar el siguiente bloque de texto y guardarlo en un archivo con extensión `.md` en tu equipo.
-
-```markdown
 # UNIMAG: Gestión Integral de Activos y Espacios Universitarios
 
 Este proyecto define el diseño para el sistema de **Gestión de Recursos de la Universidad del Magdalena (UNIMAG)**. El objetivo es centralizar el control de los recursos físicos y los espacios académicos para que la comunidad estudiantil acceda a ellos de forma organizada, garantizando la continuidad de las clases regulares.
@@ -58,4 +55,3 @@ Aplica penalizaciones automáticas para garantizar la rotación de los recursos:
 ---
 
 **Resultado esperado:** El software desarrollado debe permitir cargar el calendario semestral de clases, facilitar la búsqueda de equipos disponibles y automatizar las sanciones por incumplimiento en las entregas.
-```

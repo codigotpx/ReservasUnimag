@@ -2,12 +2,12 @@
 
 **Created**: 2026-09-03
 **Módulo**: 2 — Operación de Reservas y Priorización Académica
-**Caso de uso (diagrama)**: `Consultar disponibilidad de los recursos` (comprobación puntual, apoyada en el inventario del Módulo 1)
+**Caso de uso (diagrama)**: `Consultar disponibilidad de los recursos` (comprobación puntual: cruza el estado operativo del Módulo 1 con la ocupación que guarda el Módulo 2)
 **Prioridad global**: P1
 
 ## Contexto
 
-Es la pregunta corta: *¿este recurso concreto está libre en esta franja concreta, sí o no?* Se apoya en el inventario del Módulo 1 y responde en el momento, sin ninguna foto guardada de antes.
+Es la pregunta corta: *¿este recurso concreto está libre en esta franja concreta, sí o no?* Para responder junta dos fuentes: el estado operativo del recurso, que le pregunta en el momento al Módulo 1, y la ocupación de la franja —reservas, préstamos y bloqueos académicos—, que está en la base del propio Módulo 2. No usa ninguna foto guardada de antes.
 
 No es lo mismo que `Consultar recursos`. Aquel muestra una lista al estudiante para que mire qué hay; este responde por un solo recurso y una sola franja, y es la comprobación que se hace justo antes de confirmar una reserva. Esa diferencia importa: entre que el estudiante ve la lista y decide apartar algo, otra persona puede haberse adelantado. Por eso la lista sirve para orientarse y esta comprobación sirve para decidir.
 
@@ -15,7 +15,7 @@ No es lo mismo que `Consultar recursos`. Aquel muestra una lista al estudiante p
 
 | Actor | Tipo | Participación |
 |---|---|---|
-| Módulo 1 | Secundario | Aporta el estado real del recurso en el inventario. |
+| Módulo 1 | Secundario | Aporta el estado operativo del recurso: `DISPONIBLE`, `EN_USO` o `EN_MANTENIMIENTO`. La ocupación por reservas y bloqueos no se le pregunta, porque es del Módulo 2. |
 | Estudiante / Monitor | Indirectos | No la piden a mano; ocurre por dentro cuando consultan o reservan. |
 
 **Casos de uso relacionados**
@@ -26,7 +26,7 @@ No es lo mismo que `Consultar recursos`. Aquel muestra una lista al estudiante p
 
 **Qué cuenta como "no disponible"**
 
-Un recurso no está disponible en una franja si en esa franja está `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO`. Basta con que se crucen un minuto para que cuente como ocupado.
+Un recurso no está disponible en una franja si en esa franja está `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO`. Basta con que se crucen un minuto para que cuente como ocupado. `EN_MANTENIMIENTO` sale del Módulo 1; `RESERVADO`, `BLOQUEO_ACADEMICO` y la ocupación por un préstamo abierto salen de la base del Módulo 2 (ver el reparto de estados en [spec-modulo2.md](./spec-modulo2.md)).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -84,7 +84,7 @@ Como sistema, quiero poder preguntar en cualquier momento si un recurso está li
 
 - **FR-001**: El sistema DEBE responder si un recurso concreto está o no disponible en una fecha y franja horaria concretas.
 - **FR-002**: El sistema DEBE considerar no disponible todo recurso que en esa franja esté `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO`.
-- **FR-003**: El sistema DEBE tratar como ocupada cualquier franja que se cruce con otra aunque sea un minuto. La comparación se hace contra todo lo que ocupe el recurso: bloqueos académicos, reservas de espacio y también el periodo de un préstamo abierto, que puede abarcar varios días completos.
+- **FR-003**: El sistema DEBE tratar como ocupada cualquier franja que se cruce con otra aunque sea un minuto. La comparación se hace contra todo lo que ocupe el recurso: bloqueos académicos, reservas de espacio y también el periodo de un préstamo abierto, que puede abarcar varios días completos. Ese cruce lo calcula el Módulo 2 sobre su propia base: el Módulo 1 no guarda reservas ni bloqueos.
 - **FR-004**: Cuando el recurso no esté disponible, el sistema DEBE indicar el motivo, para que quien pregunte pueda explicárselo a la persona.
 - **FR-005**: El sistema NO DEBE revelar la identidad de quien tiene reservado el recurso.
 - **FR-006**: La consulta DEBE responder con el estado del momento, sin reutilizar respuestas anteriores.
@@ -106,7 +106,7 @@ Como sistema, quiero poder preguntar en cualquier momento si un recurso está li
 
 ### Measurable Outcomes
 
-- **SC-001**: La consulta responde en menos de 5 segundos para un recurso y una franja, el tiempo que promete el Módulo 1 para `Consultar disponibilidad del recurso`; esta consulta no añade cómputo propio apreciable sobre esa respuesta.
+- **SC-001**: La consulta responde en menos de 5 segundos para un recurso y una franja, el tiempo que promete el Módulo 1 para `Consultar disponibilidad del recurso`; el cruce con las reservas y bloqueos se hace en la base del Módulo 2 y no debe añadir un tiempo apreciable sobre esa respuesta.
 - **SC-002**: El 100 % de las respuestas negativas vienen acompañadas de un motivo; ninguna dice solo "no disponible".
 - **SC-003**: Cero casos en los que la consulta diga que un recurso está libre cuando en el inventario figura ocupado.
 - **SC-004**: Cero reservas confirmadas sobre recursos que esta consulta había reportado como ocupados.

@@ -75,7 +75,7 @@ Como sistema, quiero recibir del Módulo 3 el aviso de que una persona no se pre
 - **Llega después de que se reportó la ausencia**: si aparece cuando el reporte ya entró, la ausencia no se deshace sola; el recurso ya volvió a estar disponible para otros y puede que alguien más lo haya tomado.
 - **Reporte equivocado**: detrás del aviso del Módulo 3 hay una comprobación humana, así que cabe el error. El Módulo 3 debe poder anular un reporte que envió, y el Módulo 2 debe deshacer la constancia; anularlo no devuelve automáticamente el recurso a su titular si otra persona ya lo tomó.
 - **Reporte que llega tarde**: si el aviso entra cuando la franja ya terminó, la constancia se registra igual para el historial, pero no hay nada que liberar: el recurso ya se había desocupado solo al acabar su franja.
-- **El Módulo 3 no responde**: la ausencia se registra igualmente y el recurso se libera igual; el reporte queda pendiente y se reintenta hasta entregarse.
+- **El Módulo 3 no responde**: el reporte entra desde el Módulo 3, así que de nuestro lado no hay nada que reintentar. Mientras esté caído no llegan ausencias y los recursos siguen apartados hasta que termine su franja; cuando se restablezca, los reportes atrasados se registran igual (FR-008).
 - **Reporte repetido**: una misma ausencia no puede reportarse dos veces, para que la persona no reciba dos sanciones por el mismo hecho.
 - **Recurso caído durante la franja**: si el recurso pasó a mantenimiento y por eso la persona no pudo usarlo, no debe contarse como ausencia suya.
 - **Reserva de varias horas**: la ausencia se mide desde el inicio de la franja, no desde cada hora dentro de ella; una reserva de 10:00 a 14:00 genera como máximo una ausencia.
@@ -113,4 +113,4 @@ Como sistema, quiero recibir del Módulo 3 el aviso de que una persona no se pre
 - **SC-002**: Cero ausencias reportadas dos veces sobre la misma reserva.
 - **SC-003**: Cero ausencias atribuidas a personas cuya reserva fue cancelada por prioridad académica o por mantenimiento del recurso.
 - **SC-004**: Reducción del 40 % en las franjas apartadas y no usadas durante el primer semestre de operación.
-- **SC-005**: Cero reportes perdidos ante una caída del Módulo 3 de hasta 30 minutos.
+- **SC-005**: El 100 % de los reportes atrasados que el Módulo 3 envíe al restablecerse tras una caída quedan registrados, aunque ya no haya recurso que liberar.

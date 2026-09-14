@@ -9,14 +9,15 @@
 
 Cuando alguien deshace una reserva, ese hecho no puede quedarse dentro del Módulo 2. El Módulo 3 lleva la matriz de cumplimiento de cada persona y necesita saber que esa franja se cerró **porque se canceló**, no porque nadie se presentó. Es la diferencia entre alguien que avisó a tiempo y liberó el recurso para otros, y alguien que lo dejó bloqueado sin usar.
 
-Este caso de uso cierra la familia de reportes hacia el Módulo 3, junto a `Reportar información de la reserva`: los dos describen cómo terminó algo y ninguno de los dos sanciona. `Recibir reporte de no asistencia` completa el cuadro por el otro lado, porque ahí el mensaje viaja al revés: la ausencia nos la reporta el Módulo 3. El reparto es el mismo de siempre: el Módulo 2 registra y reporta los hechos, el Módulo 3 saca las consecuencias.
+Este caso de uso cierra la familia de reportes hacia el Módulo 3, junto a `Reportar información de la reserva`: aquel le cuenta qué se apartó, este le cuenta que se deshizo, y ninguno de los dos sanciona. `Recibir reporte de no asistencia` completa el cuadro por el otro lado, porque ahí el mensaje viaja al revés: la ausencia nos la reporta el Módulo 3. El reparto es el mismo de siempre: el Módulo 2 registra y reporta los hechos, el Módulo 3 saca las consecuencias.
 
-Hay dos orígenes de cancelación y el reporte tiene que distinguirlos, porque tienen consecuencias opuestas:
+Hay tres orígenes de cancelación y el reporte tiene que distinguirlos, porque no significan lo mismo para la persona:
 
 | Origen | Quién la provoca | Qué debe entender el Módulo 3 |
 |---|---|---|
 | Cancelación del titular | El Estudiante o Monitor que reservó | Cumplió: liberó a tiempo. Según [gestionunimag.md](../gestionunimag.md), esto alimenta positivamente su "score" de confianza. |
 | Cancelación por prioridad académica | El sistema, al entrar una actividad docente | La persona no tuvo ninguna culpa; no puede penalizársele por esto. |
+| Cancelación por recurso no disponible | El sistema, cuando el recurso pasa a `EN_MANTENIMIENTO` | Tampoco es culpa de la persona; no puede penalizársele por esto. |
 
 `Notificar estado de recursos al finalizar reserva` (UC5), con el que antes había que deslindarse, se eliminó del diagrama. Todas las cancelaciones, sin excepción, se reportan desde aquí.
 
@@ -31,7 +32,7 @@ Hay dos orígenes de cancelación y el reporte tiene que distinguirlos, porque t
 
 - `Cancelar reserva` — es lo que dispara este reporte, tanto la cancelación del titular como la automática por prioridad; ver [spec-modulo2-uc4-cancelar-reserva.md](./spec-modulo2-uc4-cancelar-reserva.md)
 - `Recibir reporte de no asistencia` — el cierre contrario: la reserva no se canceló, simplemente nadie llegó; ver [spec-modulo2-uc9-recibir-reporte-no-asistencia.md](./spec-modulo2-uc9-recibir-reporte-no-asistencia.md)
-- `Actualizar estado de los recursos` — libera la franja al cancelar y avisa al Módulo 1; es el camino paralelo hacia el otro módulo; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
+- `Actualizar estado de los recursos` — libera la franja o el periodo al cancelar, en el calendario del Módulo 2; ver [spec-modulo2-uc7-actualizar-estado-recursos.md](./spec-modulo2-uc7-actualizar-estado-recursos.md)
 - `Consultar sanciones` — el camino de vuelta: lo que aquí se reporta es parte de lo que el Módulo 3 devuelve después como cumplimiento o sanción; ver [spec-modulo2-uc6-consultar-sanciones.md](./spec-modulo2-uc6-consultar-sanciones.md)
 
 ## User Scenarios & Testing *(mandatory)*
@@ -104,7 +105,7 @@ Como sistema, quiero reportarle al Módulo 3 cada cancelación de reserva indica
 ### Key Entities
 
 - **ReporteDeCancelación**: constancia de que una reserva se deshizo y aviso correspondiente al Módulo 3. Atributos: reserva de origen, persona, recurso, franja, origen de la cancelación, motivo, antelación, fecha y hora de ejecución, resultado del envío.
-- **Reserva**: el apartado que se cancela; aporta su estado final (`CANCELADA` o `CANCELADA_POR_PRIORIDAD_ACADEMICA`) y el motivo.
+- **Reserva**: el apartado que se cancela; aporta su estado final (`CANCELADA`, `CANCELADA_POR_PRIORIDAD_ACADEMICA` o `CANCELADA_POR_RECURSO_NO_DISPONIBLE`) y el motivo.
 - **Recurso**: el espacio o activo cuya franja vuelve a quedar libre.
 - **Usuario**: el titular de la reserva cancelada, a quien el Módulo 3 le anota el hecho.
 
