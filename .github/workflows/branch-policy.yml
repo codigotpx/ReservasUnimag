@@ -1,0 +1,40 @@
+name: Politica de ramas
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  validar:
+    name: validar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validar origen y destino del PR
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+        run: |
+          echo "PR: $HEAD -> $BASE"
+
+          if [ "$BASE" = "main" ]; then
+            case "$HEAD" in
+              release/*|hotfix/*)
+                echo "OK: $HEAD puede entrar a main." ;;
+              *)
+                echo "::error::A main solo entran ramas release/* o hotfix/*."
+                echo "::error::La rama '$HEAD' debe ir a develop. Cambia la rama base del PR."
+                exit 1 ;;
+            esac
+          fi
+
+          if [ "$BASE" = "develop" ]; then
+            case "$HEAD" in
+              feature/*|fix/*|release/*|hotfix/*|docs/*|chore/*)
+                echo "OK: $HEAD puede entrar a develop." ;;
+              *)
+                echo "::error::Nombre de rama invalido: '$HEAD'."
+                echo "::error::Usa feature/, fix/, docs/, chore/, release/ o hotfix/."
+                exit 1 ;;
+            esac
+          fi

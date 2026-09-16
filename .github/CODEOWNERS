@@ -1,0 +1,8 @@
+# Cualquier PR necesita la aprobacion de al menos uno del equipo.
+# GitHub asigna revisor automaticamente y no permite que el autor
+# se apruebe a si mismo.
+*   @codigotpx @Juancarias17 @Camilo-9 @Mitchz01
+
+# Cuando cada quien tenga su modulo, se puede afinar por carpeta. Ejemplo:
+# src/main/java/edu/unimagdalena/reservasunimag/reservas/   @Juancarias17
+# src/main/java/edu/unimagdalena/reservasunimag/activos/    @Camilo-9
