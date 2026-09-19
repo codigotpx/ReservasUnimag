@@ -20,6 +20,7 @@ estudiantil.
 | [docs/unimag.png](docs/unimag.png) | Diagrama de casos de uso. |
 | [docs/specs/](docs/specs/) | Especificaciones detalladas, una por caso de uso. |
 | [docs/specs/spec-template.md](docs/specs/spec-template.md) | Plantilla base de las especificaciones. |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Cómo trabajamos: GitFlow, ramas, Pull Requests y revisión. |
 
 ### Casos de uso
 
@@ -49,15 +50,15 @@ estudiantil.
 
 ## Stack
 
-- Java 17
+- Java 21
 - Spring Boot 4.1.1 (Web MVC, Data JPA, RestClient, Web Services)
 - PostgreSQL
 - Testcontainers para las pruebas de integración
-- Maven (con wrapper incluido)
+- Gradle con Groovy DSL (con wrapper incluido)
 
 ## Requisitos
 
-- JDK 17 o superior
+- JDK 21
 - Docker en ejecución (lo usan Testcontainers y el arranque de desarrollo)
 
 ## Cómo ejecutarlo
@@ -66,22 +67,22 @@ Levantar la aplicación en desarrollo, con la base de datos PostgreSQL en un con
 gestionado automáticamente por Testcontainers:
 
 ```bash
-./mvnw spring-boot:test-run
+./gradlew bootTestRun
 ```
 
 Ejecutar las pruebas:
 
 ```bash
-./mvnw test
+./gradlew test
 ```
 
 Compilar el empaquetado:
 
 ```bash
-./mvnw clean package
+./gradlew clean build
 ```
 
-En Windows, usar `mvnw.cmd` en lugar de `./mvnw`.
+En Windows, usar `gradlew.bat` en lugar de `./gradlew`.
 
 ## Estructura del repositorio
 
@@ -94,5 +95,5 @@ src/
   main/java/edu/unimagdalena/reservasunimag/
   main/resources/
   test/java/edu/unimagdalena/reservasunimag/
-pom.xml
+build.gradle
 ```
