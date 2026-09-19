@@ -71,8 +71,8 @@ Como sistema, quiero recibir del Módulo 3 el aviso de que una persona no se pre
 
 ### Edge Cases
 
-- **Llega justo en el minuto 10**: el criterio del borde debe ser explícito y siempre el mismo, para que ambos módulos cuenten igual a partir de qué instante cabe reportar; una persona que se presenta exactamente al cumplirse el plazo no puede quedar reportada unas veces sí y otras no.
-- **Llega después de que se reportó la ausencia**: si aparece cuando el reporte ya entró, la ausencia no se deshace sola; el recurso ya volvió a estar disponible para otros y puede que alguien más lo haya tomado.
+- **Llega justo en el minuto 10**: el criterio del borde debe ser explícito y siempre el mismo: la persona tiene exactamente 9 minutos y 59 segundos para llegar, si llega después de ese tiempo así sea por un segundo se reportará como no asistencia.
+- **Llega después de que se reportó la ausencia**: si aparece cuando el reporte ya entró, la ausencia no se deshace; el recurso ya volvió a estar disponible para otros y puede que alguien más lo haya tomado.
 - **Reporte equivocado**: detrás del aviso del Módulo 3 hay una comprobación humana, así que cabe el error. El Módulo 3 debe poder anular un reporte que envió, y el Módulo 2 debe deshacer la constancia; anularlo no devuelve automáticamente el recurso a su titular si otra persona ya lo tomó.
 - **Reporte que llega tarde**: si el aviso entra cuando la franja ya terminó, la constancia se registra igual para el historial, pero no hay nada que liberar: el recurso ya se había desocupado solo al acabar su franja.
 - **El Módulo 3 no responde**: el reporte entra desde el Módulo 3, así que de nuestro lado no hay nada que reintentar. Mientras esté caído no llegan ausencias y los recursos siguen apartados hasta que termine su franja; cuando se restablezca, los reportes atrasados se registran igual (FR-008).
@@ -111,6 +111,6 @@ Como sistema, quiero recibir del Módulo 3 el aviso de que una persona no se pre
 
 - **SC-001**: El 100 % de las ausencias que reporta el Módulo 3 quedan registradas y con el recurso liberado dentro de los 5 minutos siguientes a la llegada del reporte. El tiempo se mide desde el reporte, no desde el inicio de la franja, porque el Módulo 2 no puede responder por lo que tarde el otro módulo en avisar.
 - **SC-002**: Cero ausencias reportadas dos veces sobre la misma reserva.
-- **SC-003**: Cero ausencias atribuidas a personas cuya reserva fue cancelada por prioridad académica o por mantenimiento del recurso.
+- **SC-003**: Cero ausencias atribuidas a personas cuya reserva fue cancelada por ella misma, por prioridad académica o por mantenimiento del recurso.
 - **SC-004**: Reducción del 40 % en las franjas apartadas y no usadas durante el primer semestre de operación.
 - **SC-005**: El 100 % de los reportes atrasados que el Módulo 3 envíe al restablecerse tras una caída quedan registrados, aunque ya no haya recurso que liberar.
