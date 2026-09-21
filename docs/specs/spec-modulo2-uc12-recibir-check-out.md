@@ -103,7 +103,7 @@ Como sistema, quiero recibir del Módulo 3 el check-out de cada espacio después
 - **Check-out el mismo día de la entrega**: si alguien recoge un activo y lo devuelve sin haberlo llegado a usar, el check-out se procesa igual y no cuenta como retraso; el préstamo se cierra ahí y el cupo se libera.
 - **Espacios físicos (salones, auditorios, salas de estudio)**: su check-out no libera nada, porque no hay nada que devolver. Su liberación ocurre sola al cumplirse la hora de fin de la franja, a través de `Actualizar estado de los recursos`, llegue o no la revisión. Tampoco les aplica el umbral de pérdida de 7 días.
 - **Check-out de un espacio antes de que termine su franja**: la revisión es posterior al uso. Si llega antes de la hora de fin, el sistema DEBE rechazarlo, porque el espacio todavía está en uso.
-- **Espacio que requiere mantenimiento con reservas ya confirmadas**: el dictamen queda registrado, pero qué pasa con las reservas siguientes sobre ese espacio: ver spec-modulo2-cancelar-por-mantenimiento.md
+- **Espacio que requiere mantenimiento con reservas ya confirmadas**: el dictamen queda registrado, pero qué pasa con las reservas siguientes sobre ese espacio: ver [spec-modulo2-cancelar-por-mantenimiento.md](spec-modulo2-13-cancelar-por-mantenimiento.md)
 
 ## Requirements *(mandatory)*
 
