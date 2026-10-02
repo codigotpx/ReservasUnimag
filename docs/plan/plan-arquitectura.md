@@ -42,6 +42,17 @@ El profesor trabaja con arquitectura hexagonal, y además encaja con cómo está
 - **Las caídas de otros módulos (P-10, P-14) se resuelven en el adaptador**, con timeouts, reintentos y respuestas por defecto, sin tocar el caso de uso.
 - **Las reglas de negocio cambian mientras se cierran los pendientes**, y al vivir en Java puro se prueban en milisegundos, sin levantar Spring ni la base de datos.
 
+### Convención de nombres
+
+El código va **en inglés**: clases, atributos, métodos, puertos, paquetes, tablas, columnas, rutas HTTP y campos JSON. La documentación —esta y la de cada caso de uso— se queda en español, y los specs también.
+
+Lo que **no** se traduce son los valores que los specs ya fijaron, porque son el vocabulario con el que el equipo y el profesor discuten el módulo: los estados (`DISPONIBLE`, `EN_USO`, `EN_MANTENIMIENTO`, `RESERVADO`, `BLOQUEO_ACADEMICO`), los estados de la reserva (`CONFIRMADA`, `CANCELADA_POR_PRIORIDAD_ACADEMICA`, …), el origen (`ESTUDIANTIL`, `ACADEMICO`), la categoría (`ESPACIO`, `ACTIVO`), los roles y los códigos del diccionario de errores (`RES-001` a `RES-004`, `CAN-001`, `CAN-002`). Traducirlos obligaría a mantener una tabla de equivalencias entre el código y los specs, y a que nadie supiera cuál de los dos manda.
+
+Dos consecuencias prácticas:
+
+- Una enumeración con nombre en inglés y valores en español es lo normal aquí: `ReservationStatus.CONFIRMADA`, `ResourceCategory.ESPACIO`. Es deliberado.
+- La tabla de usuarios se llama **`app_user`** y no `user`, porque `user` es palabra reservada en PostgreSQL y obligaría a escribirla entre comillas en cada consulta.
+
 ### Capas y regla de dependencia
 
 ```text
@@ -68,27 +79,27 @@ Decisiones que se derivan de la regla:
 
 - **El dominio es puro.** Las entidades de `domain.model` no llevan `@Entity`. Las entidades JPA viven en `infrastructure.adapter.out.persistence`, y un mapper traduce entre las dos.
 - **Los casos de uso no llevan `@Service`.** Se registran como beans en `infrastructure.config`, y las transacciones (`@Transactional`) se abren en esa misma capa, envolviendo el caso de uso.
-- **La hora se inyecta con un puerto `Reloj`.** Casi todas las reglas dependen de "ahora" (10 minutos de no-show, vencimiento a las 22:00, antelación de cancelación), y las pruebas necesitan controlarlo.
-- **Los `<<include>>` del diagrama son llamadas entre casos de uso.** Por ejemplo, `ReservarRecursosUseCase` usa `ConsultarDisponibilidad`, `ConsultarSanciones`, `ActualizarEstadoRecursos` y `ReportarInformacionReserva` a través de sus puertos de entrada.
-- **El diccionario de errores es parte del dominio** (`CodigoDenegacion`). El adaptador web lo traduce a respuestas `ProblemDetail` (RFC 9457).
+- **La hora se inyecta con un puerto `Clock`.** Casi todas las reglas dependen de "ahora" (10 minutos de no-show, vencimiento a las 22:00, antelación de cancelación), y las pruebas necesitan controlarlo.
+- **Los `<<include>>` del diagrama son llamadas entre casos de uso.** Por ejemplo, `ReserveResourcesUseCase` usa `CheckAvailability`, `CheckSanctions`, `UpdateResourceStatus` y `ReportReservation` a través de sus puertos de entrada.
+- **El diccionario de errores es parte del dominio** (`DenialCode`). El adaptador web lo traduce a respuestas `ProblemDetail` (RFC 9457).
 
 ### Casos de uso y dónde viven
 
 | UC | Caso de uso | Puerto de entrada | Lo dispara |
 |---|---|---|---|
-| UC1 | Consultar recursos | `ConsultarRecursosPort` | Frontend |
-| UC2 | Reservar recursos | `ReservarRecursosPort` | Frontend, UC3 |
-| UC3 | Importar horarios semestrales | `ImportarHorariosPort` | Frontend (Dirección) |
-| UC4 | Cancelar reserva | `CancelarReservaPort` | Frontend, UC3 |
-| UC6 | Consultar sanciones | `ConsultarSancionesPort` | UC1, UC2 |
-| UC7 | Actualizar estado de los recursos | `ActualizarEstadoRecursosPort` | UC2, UC4, UC9, UC12 |
-| UC8 | Consultar disponibilidad de los recursos | `ConsultarDisponibilidadPort` | UC1, UC2 |
-| UC9 | Recibir reporte de no asistencia | `RecibirNoAsistenciaPort` | Módulo 3 |
-| UC10 | Reportar información de la reserva | `ReportarInformacionReservaPort` | UC2 |
-| UC11 | Reportar cancelación de reserva | `ReportarCancelacionPort` | UC4 |
-| UC12 | Recibir check-out | `RecibirCheckOutPort` | Módulo 3 |
-| — | Registrarse | `RegistrarUsuarioPort` | Frontend |
-| — | Iniciar sesión | `IniciarSesionPort` | Frontend |
+| UC1 | Consultar recursos | `SearchResourcesPort` | Frontend |
+| UC2 | Reservar recursos | `ReserveResourcesPort` | Frontend, UC3 |
+| UC3 | Importar horarios semestrales | `ImportSchedulePort` | Frontend (Dirección) |
+| UC4 | Cancelar reserva | `CancelReservationPort` | Frontend, UC3 |
+| UC6 | Consultar sanciones | `CheckSanctionsPort` | UC1, UC2 |
+| UC7 | Actualizar estado de los recursos | `UpdateResourceStatusPort` | UC2, UC4, UC9, UC12 |
+| UC8 | Consultar disponibilidad de los recursos | `CheckAvailabilityPort` | UC1, UC2 |
+| UC9 | Recibir reporte de no asistencia | `ReceiveNoShowPort` | Módulo 3 |
+| UC10 | Reportar información de la reserva | `ReportReservationPort` | UC2 |
+| UC11 | Reportar cancelación de reserva | `ReportCancellationPort` | UC4 |
+| UC12 | Recibir check-out | `ReceiveCheckOutPort` | Módulo 3 |
+| — | Registrarse | `RegisterUserPort` | Frontend |
+| — | Iniciar sesión | `SignInPort` | Frontend |
 
 Registrarse e iniciar sesión no están en el diagrama de casos de uso. Aparecen porque el equipo decidió tener login propio con autorregistro, y necesitan su propio spec (ver [Pendientes](#pendientes-que-afectan-la-arquitectura)).
 
@@ -96,15 +107,15 @@ Registrarse e iniciar sesión no están en el diagrama de casos de uso. Aparecen
 
 | Dirección | Con quién | Cómo | Puerto |
 |---|---|---|---|
-| Salida | Módulo 1: catálogo y estado operativo | REST síncrono con RestClient, con timeout; la política ante caídas depende de P-14 | `InventarioPort` |
-| Salida | Módulo 3: sanciones vigentes | REST síncrono con timeout; la política ante caídas depende de P-10 | `CumplimientoPort` |
-| Salida | Módulo 3: ficha de reserva (UC10) y cancelación (UC11) | **Kafka**: el evento se guarda en la *outbox*, en la misma transacción que la reserva, y un publicador lo lleva al topic | `NotificadorModulo3Port` |
-| Entrada | Módulo 3: no asistencia (UC9) y check-out (UC12) | **Kafka**: un consumidor por topic, con *inbox* para no procesar dos veces el mismo evento | `RecibirNoAsistenciaPort`, `RecibirCheckOutPort` |
+| Salida | Módulo 1: catálogo y estado operativo | REST síncrono con RestClient, con timeout; la política ante caídas depende de P-14 | `InventoryPort` |
+| Salida | Módulo 3: sanciones vigentes | REST síncrono con timeout; la política ante caídas depende de P-10 | `CompliancePort` |
+| Salida | Módulo 3: ficha de reserva (UC10) y cancelación (UC11) | **Kafka**: el evento se guarda en la *outbox*, en la misma transacción que la reserva, y un publicador lo lleva al topic | `Module3NotifierPort` |
+| Entrada | Módulo 3: no asistencia (UC9) y check-out (UC12) | **Kafka**: un consumidor por topic, con *inbox* para no procesar dos veces el mismo evento | `ReceiveNoShowPort`, `ReceiveCheckOutPort` |
 | Entrada | Frontend | Endpoints REST bajo `/api/**`, autenticados con JWT | Los demás puertos de entrada |
 
 La ficha y la cancelación son asíncronas por dos razones: no se pueden perder si el Módulo 3 está caído justo cuando alguien reserva o cancela, y reservar no debe quedarse esperando a otro módulo para responderle al estudiante. Eso es lo que resuelve Kafka.
 
-La *outbox* se queda delante del broker. Escribir en PostgreSQL y publicar en Kafka no se pueden hacer en una sola transacción, así que el evento se inserta en `mensaje_saliente` junto con la reserva y un publicador lo envía después del *commit*. Sin esa tabla, una caída entre el *commit* y el `send` perdería el evento, y un `send` antes de un *rollback* anunciaría una reserva que no existe. Además, las entidades `FichaDeReserva` y `ReporteDeCancelación` de UC10 y UC11 ya piden guardar el resultado del envío.
+La *outbox* se queda delante del broker. Escribir en PostgreSQL y publicar en Kafka no se pueden hacer en una sola transacción, así que el evento se inserta en `outbox_message` junto con la reserva y un publicador lo envía después del *commit*. Sin esa tabla, una caída entre el *commit* y el `send` perdería el evento, y un `send` antes de un *rollback* anunciaría una reserva que no existe. Además, las entidades `ReservationRecord` y `CancellationReport` de UC10 y UC11 ya piden guardar el resultado del envío.
 
 ### Mensajería con Kafka
 
@@ -112,58 +123,58 @@ Cuatro topics: dos que publicamos y dos que consumimos. Lo único que sigue sien
 
 | Topic | Evento | Caso de uso | Nosotros |
 |---|---|---|---|
-| `modulo2.reserva.ficha.v1` | `FichaDeReservaCreada` | UC10 | publicamos |
-| `modulo2.reserva.cancelacion.v1` | `ReservaCancelada` | UC11 | publicamos |
-| `modulo3.reserva.no-asistencia.v1` | `NoAsistenciaReportada` | UC9 | consumimos |
-| `modulo3.reserva.check-out.v1` | `CheckOutRegistrado` | UC12 | consumimos |
+| `module2.reservation.record.v1` | `ReservationRecordCreated` | UC10 | publicamos |
+| `module2.reservation.cancellation.v1` | `ReservationCancelled` | UC11 | publicamos |
+| `module3.reservation.no-show.v1` | `NoShowReported` | UC9 | consumimos |
+| `module3.reservation.check-out.v1` | `CheckOutRegistered` | UC12 | consumimos |
 
-Convención para los cuatro: el prefijo es el módulo dueño del evento, el sufijo `v1` es la versión del contrato, la clave de partición es el `reserva_id` y el valor es JSON con el envoltorio `eventoId`, `tipo`, `version`, `ocurridoEn` y `datos`. Los nombres y los campos definitivos se cierran con el Módulo 3 (ver [Pendientes](#pendientes-que-afectan-la-arquitectura)); mientras tanto, esta es la convención con la que trabajamos.
+Convención para los cuatro: el prefijo es el módulo dueño del evento, el sufijo `v1` es la versión del contrato, la clave de partición es el `reservation_id` y el valor es JSON con el envoltorio `eventId`, `type`, `version`, `occurredAt` y `data`. Los nombres y los campos definitivos se cierran con el Módulo 3 (ver [Pendientes](#pendientes-que-afectan-la-arquitectura)); mientras tanto, esta es la convención con la que trabajamos.
 
 #### Lo que publicamos (UC10 y UC11)
 
-- **La clave `reserva_id` da el orden que nos importa**: todos los eventos de una reserva caen en la misma partición, así que la cancelación nunca le llega al Módulo 3 antes que su ficha.
+- **La clave `reservation_id` da el orden que nos importa**: todos los eventos de una reserva caen en la misma partición, así que la cancelación nunca le llega al Módulo 3 antes que su ficha.
 - **Nada de Avro ni *Schema Registry*.** Son cuatro eventos entre dos equipos: el JSON y un documento de contrato compartido bastan, y evitan sumar otra pieza de infraestructura al proyecto.
 - **Un cambio incompatible crea `...v2`** y los dos topics conviven mientras el otro módulo migra; añadir un campo opcional no cambia el nombre.
-- **La entrega es *at-least-once*, y el `eventoId` permite descartar el repetido.** Si el publicador cae después del `send` y antes de marcar `ENVIADO`, el evento se republica. Por eso cada evento lleva el `eventoId`, que es el mismo `mensaje_saliente.id`: identifica el hecho, no el intento de envío.
+- **La entrega es *at-least-once*, y el `eventId` permite descartar el repetido.** Si el publicador cae después del `send` y antes de marcar `SENT`, el evento se republica. Por eso cada evento lleva el `eventId`, que es el mismo `outbox_message.id`: identifica el hecho, no el intento de envío.
 - **Productor**: `acks=all` y `enable.idempotence=true`, para que un reintento del cliente no duplique ni reordene dentro de una partición.
-- **El publicador** toma los `mensaje_saliente` en `PENDIENTE` cuyo `proximo_intento` ya pasó, ordenados por `creado_en`, publica y marca `ENVIADO`. Corre con `@Scheduled` y los lee con `SELECT ... FOR UPDATE SKIP LOCKED`, para que dos instancias del backend no publiquen el mismo evento.
-- **Reintentos con espera creciente.** Si el `send` falla, sube `intentos`, se guarda `ultimo_error` y el registro sigue `PENDIENTE` con un `proximo_intento` más lejano (5 s, 30 s, 2 min, 10 min…). Al agotar `max-intentos` queda `FALLIDO` para revisión manual. No hace falta un *dead letter topic* del lado del productor: el evento nunca se pierde, sigue en la tabla.
+- **El publicador** toma los `outbox_message` en `PENDING` cuyo `next_attempt_at` ya pasó, ordenados por `created_at`, publica y marca `SENT`. Corre con `@Scheduled` y los lee con `SELECT ... FOR UPDATE SKIP LOCKED`, para que dos instancias del backend no publiquen el mismo evento.
+- **Reintentos con espera creciente.** Si el `send` falla, sube `intentos`, se guarda `last_error` y el registro sigue `PENDING` con un `next_attempt_at` más lejano (5 s, 30 s, 2 min, 10 min…). Al agotar `max-attempts` queda `FAILED` para revisión manual. No hace falta un *dead letter topic* del lado del productor: el evento nunca se pierde, sigue en la tabla.
 - **Si Kafka está caído, el usuario no se entera.** Reservar y cancelar se confirman igual y los eventos salen cuando el broker vuelve. Es la diferencia con las llamadas síncronas al Módulo 1 y al Módulo 3, cuya política ante caídas todavía depende de P-10 y P-14.
-- **Kafka no se filtra al dominio.** `NotificadorModulo3Port` sigue recibiendo objetos de `domain.model`; el `KafkaTemplate`, los nombres de los topics y la serialización viven en `infrastructure.adapter.out.mensajeria`, y ArchUnit lo verifica igual que con JPA y HTTP.
+- **Kafka no se filtra al dominio.** `Module3NotifierPort` sigue recibiendo objetos de `domain.model`; el `KafkaTemplate`, los nombres de los topics y la serialización viven en `infrastructure.adapter.out.mensajeria`, y ArchUnit lo verifica igual que con JPA y HTTP.
 
 #### Lo que consumimos (UC9 y UC12)
 
-- **Un `@KafkaListener` por topic**, en el grupo `modulo2-reservas`, que traduce el evento a la petición del puerto de entrada y llama a `RecibirNoAsistenciaPort` o `RecibirCheckOutPort`. El consumidor es un adaptador de entrada más, al mismo nivel que un controlador REST.
-- ***Inbox* para la idempotencia.** Kafka entrega *at-least-once*, así que el mismo evento puede llegar dos veces. El `eventoId` se inserta en `mensaje_entrante` dentro de la misma transacción que ejecuta el caso de uso: si ya estaba, el evento se descarta sin volver a aplicarlo. Es lo que evita cerrar dos veces un check-out o contar dos ausencias por una reentrega.
+- **Un `@KafkaListener` por topic**, en el grupo `module2-reservations`, que traduce el evento a la petición del puerto de entrada y llama a `ReceiveNoShowPort` o `ReceiveCheckOutPort`. El consumidor es un adaptador de entrada más, al mismo nivel que un controlador REST.
+- ***Inbox* para la idempotencia.** Kafka entrega *at-least-once*, así que el mismo evento puede llegar dos veces. El `eventId` se inserta en `inbox_message` dentro de la misma transacción que ejecuta el caso de uso: si ya estaba, el evento se descarta sin volver a aplicarlo. Es lo que evita cerrar dos veces un check-out o contar dos ausencias por una reentrega.
 - **El *offset* se confirma después del *commit*** (`AckMode.MANUAL`). Confirmarlo antes perdería el evento si la transacción falla; hacerlo después solo puede repetirlo, y de eso ya se encarga la *inbox*.
 - **Errores recuperables**: el broker no responde, la base está caída, el Módulo 1 no contesta cuando UC12 le actualiza el estado. El `DefaultErrorHandler` reintenta con espera creciente sin mover el *offset*; el consumidor se queda parado en ese evento, que es lo correcto, porque saltárselo rompería el orden de la reserva.
-- **Errores no recuperables**: el JSON no se puede deserializar, falta un campo obligatorio, el `reserva_id` no existe o la reserva está en un estado que no admite el reporte. Estos no mejoran con reintentos, así que el evento va al *dead letter topic* `modulo2.dlt.<topic-de-origen>` con la causa en las cabeceras, se registra y el consumidor sigue. Del lado que publicamos no hace falta DLT porque el evento se queda en `mensaje_saliente`; aquí sí, porque es la única copia que tenemos del evento que llegó.
+- **Errores no recuperables**: el JSON no se puede deserializar, falta un campo obligatorio, el `reservation_id` no existe o la reserva está en un estado que no admite el reporte. Estos no mejoran con reintentos, así que el evento va al *dead letter topic* `module2.dlt.<topic-de-origen>` con la causa en las cabeceras, se registra y el consumidor sigue. Del lado que publicamos no hace falta DLT porque el evento se queda en `outbox_message`; aquí sí, porque es la única copia que tenemos del evento que llegó.
 - **Concurrencia igual al número de particiones del topic**, para no perder el orden por reserva dentro de una partición.
-- **No exponemos endpoints de integración.** UC9 y UC12 entran solo por Kafka, así que `/api/integracion/modulo3/**` y su API key ya no existen: quien autentica es el broker (SASL más TLS), con las credenciales en variables de entorno, no en `application.properties`.
+- **No exponemos endpoints de integración.** UC9 y UC12 entran solo por Kafka, así que `/api/integration/module3/**` y su API key ya no existen: quien autentica es el broker (SASL más TLS), con las credenciales en variables de entorno, no en `application.properties`.
 
 #### Local y pruebas
 
-En desarrollo el broker se levanta con Docker Compose, junto con PostgreSQL. Las pruebas del publicador y de los consumidores usan Testcontainers (`KafkaContainer`), y las de los consumidores comprueban además los tres caminos: evento nuevo, evento repetido que la *inbox* descarta y evento inválido que acaba en el DLT. Los casos de uso se siguen probando con un `NotificadorModulo3Port` falso, sin broker.
+En desarrollo el broker se levanta con Docker Compose, junto con PostgreSQL. Las pruebas del publicador y de los consumidores usan Testcontainers (`KafkaContainer`), y las de los consumidores comprueban además los tres caminos: evento nuevo, evento repetido que la *inbox* descarta y evento inválido que acaba en el DLT. Los casos de uso se siguen probando con un `Module3NotifierPort` falso, sin broker.
 
 ```properties
 spring.kafka.bootstrap-servers=localhost:9092
 spring.kafka.producer.acks=all
 spring.kafka.producer.properties.enable.idempotence=true
-spring.kafka.consumer.group-id=modulo2-reservas
+spring.kafka.consumer.group-id=module2-reservations
 spring.kafka.consumer.auto-offset-reset=earliest
 spring.kafka.consumer.enable-auto-commit=false
 spring.kafka.listener.ack-mode=manual
 
 # publicamos
-reservas.kafka.topic.ficha=modulo2.reserva.ficha.v1
-reservas.kafka.topic.cancelacion=modulo2.reserva.cancelacion.v1
+reservations.kafka.topic.record=module2.reservation.record.v1
+reservations.kafka.topic.cancellation=module2.reservation.cancellation.v1
 # consumimos
-reservas.kafka.topic.no-asistencia=modulo3.reserva.no-asistencia.v1
-reservas.kafka.topic.check-out=modulo3.reserva.check-out.v1
+reservations.kafka.topic.no-show=module3.reservation.no-show.v1
+reservations.kafka.topic.check-out=module3.reservation.check-out.v1
 
-reservas.outbox.intervalo=5s
-reservas.outbox.lote=50
-reservas.outbox.max-intentos=10
+reservations.outbox.interval=5s
+reservations.outbox.batch=50
+reservations.outbox.max-attempts=10
 ```
 
 ### Seguridad
@@ -199,23 +210,23 @@ src/main/java/edu/unimagdalena/reservasunimag/
 │
 ├── domain/                              sin Spring, JPA ni HTTP
 │   ├── model/
-│   │   ├── reserva/                     Reserva, EstadoReserva, OrigenReserva,
-│   │   │                                FranjaHoraria, PeriodoDePrestamo, Prestamo
-│   │   ├── bloqueo/                     DatosAcademicos, TipoBloqueo, HorarioSemestral
-│   │   ├── cumplimiento/                Ausencia, CheckOut, Dictamen, Sancion,
-│   │   │                                ReporteDeCumplimiento
-│   │   ├── recurso/                     RecursoRef, CategoriaRecurso (ESPACIO/ACTIVO),
-│   │   │                                EstadoOperativo, EstadoVisible
-│   │   ├── usuario/                     Usuario, Rol
-│   │   └── error/                       CodigoDenegacion, ReservaDenegadaException
+│   │   ├── reserva/                     Reservation, ReservationStatus, ReservationOrigin,
+│   │   │                                TimeSlot, LoanPeriod, Loan
+│   │   ├── bloqueo/                     AcademicData, BlockType, SemesterSchedule
+│   │   ├── cumplimiento/                Absence, CheckOut, Verdict, Sanction,
+│   │   │                                ComplianceReport
+│   │   ├── recurso/                     ResourceRef, ResourceCategory (ESPACIO/ACTIVO),
+│   │   │                                OperationalStatus, DisplayedStatus
+│   │   ├── usuario/                     User, Role
+│   │   └── error/                       DenialCode, ReservationDeniedException
 │   ├── port/
-│   │   ├── in/                          ReservarRecursosPort, CancelarReservaPort, ...
-│   │   └── out/                         ReservaRepositoryPort, HorarioRepositoryPort,
-│   │                                    UsuarioRepositoryPort, InventarioPort,
-│   │                                    CumplimientoPort, NotificadorModulo3Port,
-│   │                                    CifradorContrasenaPort, Reloj
-│   └── usecase/                         ReservarRecursosUseCase, CancelarReservaUseCase,
-│                                        ImportarHorariosUseCase, ...
+│   │   ├── in/                          ReserveResourcesPort, CancelReservationPort, ...
+│   │   └── out/                         ReservationRepositoryPort, ScheduleRepositoryPort,
+│   │                                    UserRepositoryPort, InventoryPort,
+│   │                                    CompliancePort, Module3NotifierPort,
+│   │                                    PasswordHasherPort, Clock
+│   └── usecase/                         ReserveResourcesUseCase, CancelReservationUseCase,
+│                                        ImportScheduleUseCase, ...
 │
 └── infrastructure/
     ├── adapter/
@@ -234,24 +245,24 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │       │   ├── repository/          interfaces Spring Data
     │       │   ├── mapper/              dominio ↔ JPA
     │       │   └── *Adapter.java        implementan los *RepositoryPort
-    │       ├── modulo1/                 cliente RestClient → InventarioPort
-    │       ├── modulo3/                 cliente RestClient → CumplimientoPort
+    │       ├── modulo1/                 cliente RestClient → InventoryPort
+    │       ├── modulo3/                 cliente RestClient → CompliancePort
     │       ├── mensajeria/              outbox: el adaptador que guarda el evento
-    │       │                            (→ NotificadorModulo3Port) y el publicador
+    │       │                            (→ Module3NotifierPort) y el publicador
     │       │                            @Scheduled que lo lleva al topic
-    │       └── security/                BCrypt → CifradorContrasenaPort, emisión de JWT
+    │       └── security/                BCrypt → PasswordHasherPort, emisión de JWT
     └── config/                          beans de casos de uso, transacciones, seguridad,
-                                         propiedades (cupo, ventana, plazos), Reloj
+                                         propiedades (cupo, ventana, plazos), Clock
 
 src/main/resources/
 ├── application.properties
-└── db/migration/                        V1__esquema_inicial.sql, V2__..., ...
+└── db/migration/                        V1__initial_schema.sql, V2__..., ...
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/model/                        pruebas unitarias de las reglas
 ├── domain/usecase/                      casos de uso con puertos falsos
 ├── infrastructure/adapter/              @WebMvcTest, Testcontainers y WireMock
-└── ArquitecturaTest.java                ArchUnit: domain no depende de infrastructure
+└── ArchitectureTest.java                ArchUnit: domain no depende de infrastructure
 ```
 
 ### Frontend
@@ -263,7 +274,7 @@ frontend/
     ├── app/                             rutas (App Router)
     │   ├── (auth)/login/, registro/
     │   ├── (estudiante)/recursos/       UC1, UC8 y reservar (UC2)
-    │   ├── (estudiante)/mis-reservas/   ver y cancelar (UC4)
+    │   ├── (estudiante)/my-reservations/   ver y cancelar (UC4)
     │   └── (direccion)/horarios/        importar horarios (UC3)
     ├── components/                      componentes visuales reutilizables
     ├── features/                        lógica por funcionalidad: recursos, reservas,
@@ -291,7 +302,7 @@ Según el reparto de estados que aclaró el profesor ([spec-modulo2.md](../specs
 
 | Guardamos (el Módulo 2 es dueño) | No guardamos (solo referenciamos o consultamos) |
 |---|---|
-| Usuarios y credenciales (login propio) | **Recurso** y su estado operativo (`DISPONIBLE`, `EN_USO`, `EN_MANTENIMIENTO`): son del Módulo 1. Guardamos solo `recurso_id` y la categoría. |
+| Usuarios y credenciales (login propio) | **Recurso** y su estado operativo (`DISPONIBLE`, `EN_USO`, `EN_MANTENIMIENTO`): son del Módulo 1. Guardamos solo `resource_id` y la categoría. |
 | Reservas y bloqueos académicos (`RESERVADO`, `BLOQUEO_ACADEMICO` y los estados de la reserva) | **Sanciones**: son del Módulo 3. Se consultan en cada reserva y no se copian. |
 | Préstamos, ausencias, check-out, denegaciones | |
 | Cargas de horario semestral | |
@@ -302,143 +313,143 @@ Según el reparto de estados que aclaró el profesor ([spec-modulo2.md](../specs
 El diagrama entidad–relación completo de estas tablas está en [modelo-datos-der.md](./modelo-datos-der.md).
 
 ```text
-usuario 1───* reserva *───(recurso_id: Módulo 1)
+usuario 1───* reserva *───(resource_id: Módulo 1)
                  │
                  ├── 0..1 prestamo           (si el recurso es un activo)
-                 ├── 0..1 bloqueo_academico  (si el origen es ACADEMICO) *───1 horario_semestral
+                 ├── 0..1 academic_block  (si el origen es ACADEMICO) *───1 semester_schedule
                  ├── 0..1 ausencia
                  └── 0..1 check_out
 usuario 1───* denegacion
-mensaje_saliente  (outbox: ficha y cancelación → Kafka → Módulo 3)
-mensaje_entrante  (inbox: eventos del Módulo 3 ya procesados)
+outbox_message  (outbox: ficha y cancelación → Kafka → Módulo 3)
+inbox_message  (inbox: eventos del Módulo 3 ya procesados)
 ```
 
-**`usuario`**
+**`app_user`**
 | Columna | Tipo | Nota |
 |---|---|---|
 | id | uuid PK | |
-| codigo | varchar, único | código estudiantil o institucional |
-| nombre | varchar | |
-| correo | varchar, único | dominio institucional |
-| contrasena_hash | varchar | BCrypt |
-| rol | varchar | `ESTUDIANTE`, `MONITOR`, `DIRECCION_PROGRAMA` |
-| activo | boolean | |
-| creado_en | timestamptz | |
+| code | varchar, único | código estudiantil o institucional |
+| name | varchar | |
+| email | varchar, único | dominio institucional |
+| password_hash | varchar | BCrypt |
+| role | varchar | `ESTUDIANTE`, `MONITOR`, `DIRECCION_PROGRAMA` |
+| active | boolean | |
+| created_at | timestamptz | |
 
-**`reserva`**: una sola tabla para espacios y activos, estudiantiles y académicas.
+**`reservation`**: una sola tabla para espacios y activos, estudiantiles y académicas.
 | Columna | Tipo | Nota |
 |---|---|---|
 | id | uuid PK | |
-| usuario_id | uuid FK, nulo | nulo solo si el origen es `ACADEMICO` |
-| recurso_id | varchar | identificador del Módulo 1 |
-| categoria_recurso | varchar | `ESPACIO`, `ACTIVO` |
-| origen | varchar | `ESTUDIANTIL`, `ACADEMICO` |
-| estado | varchar | `CONFIRMADA`, `CANCELADA`, `CANCELADA_POR_PRIORIDAD_ACADEMICA`, `CANCELADA_POR_RECURSO_NO_DISPONIBLE`, `FINALIZADA` |
-| inicio | timestamptz | inicio de la franja, o entrega del préstamo |
-| fin | timestamptz | fin de la franja, o vencimiento del préstamo |
-| ocupacion | tstzrange, generada | `tstzrange(inicio, fin, '[)')` |
-| motivo_cancelacion | varchar, nulo | |
-| cancelada_en | timestamptz, nulo | |
-| creada_en | timestamptz | |
+| user_id | uuid FK, nulo | nulo solo si el origen es `ACADEMICO` |
+| resource_id | varchar | identificador del Módulo 1 |
+| resource_category | varchar | `ESPACIO`, `ACTIVO` |
+| origin | varchar | `ESTUDIANTIL`, `ACADEMICO` |
+| status | varchar | `CONFIRMADA`, `CANCELADA`, `CANCELADA_POR_PRIORIDAD_ACADEMICA`, `CANCELADA_POR_RECURSO_NO_DISPONIBLE`, `FINALIZADA` |
+| starts_at | timestamptz | inicio de la franja, o entrega del préstamo |
+| ends_at | timestamptz | fin de la franja, o vencimiento del préstamo |
+| occupancy | tstzrange, generada | `tstzrange(starts_at, ends_at, '[)')` |
+| cancellation_reason | varchar, nulo | |
+| cancelled_at | timestamptz, nulo | |
+| created_at | timestamptz | |
 | version | bigint | bloqueo optimista |
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
-ALTER TABLE reserva ADD CONSTRAINT reserva_sin_cruces
-  EXCLUDE USING gist (recurso_id WITH =, ocupacion WITH &&)
-  WHERE (estado = 'CONFIRMADA');
+ALTER TABLE reservation ADD CONSTRAINT reservation_no_overlap
+  EXCLUDE USING gist (resource_id WITH =, occupancy WITH &&)
+  WHERE (status = 'CONFIRMADA');
 
-ALTER TABLE reserva ADD CONSTRAINT reserva_titular_segun_origen
-  CHECK ((origen = 'ACADEMICO') = (usuario_id IS NULL));
+ALTER TABLE reservation ADD CONSTRAINT reservation_holder_by_origin
+  CHECK ((origin = 'ACADEMICO') = (user_id IS NULL));
 ```
 
 El bloqueo académico es una reserva con `origen = 'ACADEMICO'`, porque cada clase importada pasa por `Reservar recursos` (P-06). Así una sola restricción protege contra los cruces entre clases, reservas estudiantiles y préstamos. Cuando UC3 desplaza una reserva estudiantil, la cancela y crea el bloqueo en la misma transacción, y la restricción nunca ve los dos confirmados a la vez.
 
-**`prestamo`**: el detalle de una reserva de activo.
+**`loan`**: el detalle de una reserva de activo.
 | Columna | Tipo | Nota |
 |---|---|---|
-| reserva_id | uuid PK, FK | |
-| plazo_dias_habiles | int | según el tipo del activo (Módulo 1) |
-| entregado_en | timestamptz, nulo | cuándo se recogió |
-| renovado | boolean | una sola renovación (UC2 FR-016) |
-| devuelto_en | timestamptz, nulo | llega por check-out (UC12) |
+| reservation_id | uuid PK, FK | |
+| term_business_days | int | según el tipo del activo (Módulo 1) |
+| picked_up_at | timestamptz, nulo | cuándo se recogió |
+| renewed | boolean | una sola renovación (UC2 FR-016) |
+| returned_at | timestamptz, nulo | llega por check-out (UC12) |
 
-Al renovar se actualiza `reserva.fin` al nuevo vencimiento, y la restricción de exclusión rechaza la renovación si invade la reserva de otra persona.
+Al renovar se actualiza `reservation.ends_at` al nuevo vencimiento, y la restricción de exclusión rechaza la renovación si invade la reserva de otra persona.
 
-**`bloqueo_academico`**
+**`academic_block`**
 | Columna | Tipo | Nota |
 |---|---|---|
-| reserva_id | uuid PK, FK | |
-| horario_semestral_id | uuid FK, nulo | nulo si es una necesidad extraordinaria |
-| tipo | varchar | `REGULAR`, `EXTRAORDINARIO` |
-| asignatura | varchar | |
-| programa | varchar | |
-| docente | varchar | |
+| reservation_id | uuid PK, FK | |
+| semester_schedule_id | uuid FK, nulo | nulo si es una necesidad extraordinaria |
+| type | varchar | `REGULAR`, `EXTRAORDINARIO` |
+| course | varchar | |
+| program | varchar | |
+| instructor | varchar | |
 
-**`horario_semestral`**
-| Columna | Tipo | Nota |
-|---|---|---|
-| id | uuid PK | |
-| periodo_academico | varchar | p. ej. `2026-2` |
-| cargado_por | uuid FK → usuario | Dirección de Programa |
-| cargado_en | timestamptz | |
-| resultado | jsonb | resumen de la carga: creados, choques, rechazos |
-
-**`ausencia`** (UC9)
+**`semester_schedule`**
 | Columna | Tipo | Nota |
 |---|---|---|
 | id | uuid PK | |
-| reserva_id | uuid FK, único | |
-| reportada_en | timestamptz | cuándo llegó el aviso del Módulo 3 |
-| anulada | boolean | anulación de un reporte enviado por error |
+| academic_term | varchar | p. ej. `2026-2` |
+| uploaded_by | uuid FK → usuario | Dirección de Programa |
+| uploaded_at | timestamptz | |
+| result | jsonb | resumen de la carga: creados, choques, rechazos |
+
+**`absence`** (UC9)
+| Columna | Tipo | Nota |
+|---|---|---|
+| id | uuid PK | |
+| reservation_id | uuid FK, único | |
+| reported_at | timestamptz | cuándo llegó el aviso del Módulo 3 |
+| voided | boolean | anulación de un reporte enviado por error |
 
 **`check_out`** (UC12)
 | Columna | Tipo | Nota |
 |---|---|---|
 | id | uuid PK | |
-| reserva_id | uuid FK, único | |
-| ocurrido_en | timestamptz | devolución o revisión real |
-| dictamen | varchar, nulo | solo espacios: `SIN_NOVEDAD`, `REQUIERE_MANTENIMIENTO` |
-| recibido_en | timestamptz | |
+| reservation_id | uuid FK, único | |
+| occurred_at | timestamptz | devolución o revisión real |
+| verdict | varchar, nulo | solo espacios: `NO_ISSUES`, `NEEDS_MAINTENANCE` |
+| received_at | timestamptz | |
 
-**`denegacion`** (UC2)
+**`denial`** (UC2)
 | Columna | Tipo | Nota |
 |---|---|---|
 | id | uuid PK | |
-| usuario_id | uuid FK | |
-| recurso_id | varchar | |
-| codigo | varchar | del diccionario de errores |
-| ocurrida_en | timestamptz | |
+| user_id | uuid FK | |
+| resource_id | varchar | |
+| code | varchar | del diccionario de errores |
+| occurred_at | timestamptz | |
 
-**`mensaje_saliente`** (*outbox* de UC10 y UC11, hacia Kafka)
+**`outbox_message`** (*outbox* de UC10 y UC11, hacia Kafka)
 | Columna | Tipo | Nota |
 |---|---|---|
-| id | uuid PK | también es el `eventoId` del evento publicado |
-| tipo | varchar | `FICHA_RESERVA`, `CANCELACION`; determina el topic |
-| reserva_id | uuid FK | además es la clave de partición en Kafka |
+| id | uuid PK | también es el `eventId` del evento publicado |
+| type | varchar | `RESERVATION_RECORD`, `CANCELLATION`; determina el topic |
+| reservation_id | uuid FK | además es la clave de partición en Kafka |
 | payload | jsonb | el evento serializado |
-| estado | varchar | `PENDIENTE`, `ENVIADO`, `FALLIDO` |
-| intentos | int | |
-| proximo_intento | timestamptz | espera creciente tras un fallo |
-| ultimo_error | varchar, nulo | para diagnosticar los `FALLIDO` |
-| creado_en, enviado_en | timestamptz | |
+| status | varchar | `PENDING`, `SENT`, `FAILED` |
+| attempts | int | |
+| next_attempt_at | timestamptz | espera creciente tras un fallo |
+| last_error | varchar, nulo | para diagnosticar los `FAILED` |
+| created_at, sent_at | timestamptz | |
 
 ```sql
-CREATE INDEX mensaje_saliente_pendientes
-  ON mensaje_saliente (proximo_intento, creado_en)
-  WHERE (estado = 'PENDIENTE');
+CREATE INDEX outbox_message_pending
+  ON outbox_message (next_attempt_at, created_at)
+  WHERE (status = 'PENDING');
 ```
 
-**`mensaje_entrante`** (*inbox* de UC9 y UC12, desde Kafka)
+**`inbox_message`** (*inbox* de UC9 y UC12, desde Kafka)
 | Columna | Tipo | Nota |
 |---|---|---|
-| evento_id | uuid PK | el `eventoId` que envía el Módulo 3; la PK es la que descarta el repetido |
+| event_id | uuid PK | el `eventId` que envía el Módulo 3; la PK es la que descarta el repetido |
 | topic | varchar | de qué topic llegó |
-| tipo | varchar | `NO_ASISTENCIA`, `CHECK_OUT` |
-| reserva_id | uuid FK, nulo | nulo si el evento se rechazó porque la reserva no existe |
+| type | varchar | `NO_SHOW`, `CHECK_OUT` |
+| reservation_id | uuid FK, nulo | nulo si el evento se rechazó porque la reserva no existe |
 | payload | jsonb | el evento tal como llegó, para poder reprocesar o auditar |
-| procesado_en | timestamptz | |
+| processed_at | timestamptz | |
 
 La inserción va en la misma transacción que el caso de uso. Si choca con la clave primaria, el evento ya se aplicó y el consumidor solo confirma el *offset*.
 
@@ -449,13 +460,13 @@ Los parámetros del negocio (cupo de 3, ventana de 06:00 a 22:00, 10 minutos de 
 | Pendiente | Qué afecta |
 |---|---|
 | P-10, P-14 | Política de los adaptadores del Módulo 3 y del Módulo 1 cuando no responden: bloquear o permitir, y qué mostrar |
-| P-16, P-20 | Contrato del `InventarioPort` con el Módulo 1 |
+| P-16, P-20 | Contrato del `InventoryPort` con el Módulo 1 |
 | P-17 | Timeouts de los clientes y metas de rendimiento |
 | Kafka | Contrato de los cuatro topics con el Módulo 3: nombres y campos de cada evento. Lo de este documento es nuestra convención de partida |
 | Kafka | Particiones y réplicas por topic: de ahí sale la concurrencia de los consumidores |
 | P-08 | Qué pasa con un préstamo que nunca se devuelve: hoy la ocupación dura hasta el check-out |
 | UC9 | En qué estado queda una reserva con ausencia. La lista de estados de UC2 no tiene uno propio: NEEDS CLARIFICATION |
-| UC7 | Tabla de historial de cambios de estado (`CambioDeEstado`): se diseña cuando se responda P-20 |
+| UC7 | Tabla de historial de cambios de estado (`StatusChange`): se diseña cuando se responda P-20 |
 | UC9, UC12 | Qué hacemos con un evento que no encaja con el estado de la reserva, por ejemplo un check-out de una reserva ya finalizada: hoy va al DLT |
 | Registro | Spec de registro e inicio de sesión: dominio de correo permitido, datos obligatorios y cómo se asignan los roles `MONITOR` y `DIRECCION_PROGRAMA`, que no pueden salir del autorregistro |
 | Escala | Usuarios concurrentes y volumen de recursos esperados |
