@@ -154,6 +154,8 @@ src/test/java/edu/unimagdalena/reservasunimag/
     ├── out/persistence/ReservaConcurrenciaIT.java
     └── out/mensajeria/PublicadorOutboxIT.java
 
+src/test/resources/contratos/                       # + los JSON de la sección Contratos (T020)
+
 frontend/src/
 ├── app/(app)/recursos/page.tsx                     # (existe) + botón reservar sobre los seleccionables
 ├── app/(app)/mis-reservas/page.tsx                 # lista mínima: entrada a la renovación
@@ -240,31 +242,633 @@ Al renovar sale una ficha nueva hacia el Módulo 3 con el vencimiento actualizad
 
 **Reservas de origen académico.** `SolicitudDeReserva` lleva el `origen` desde ya, para que UC3 pueda reusar este caso de uso sin refactor. Con `origen = ACADEMICO` se saltan la sanción, el cupo y el tope de 2 horas, y no hay titular. (NEEDS CLARIFICATION: P-19 pregunta exactamente esto; lo de aquí es el supuesto de partida.)
 
-**Contrato HTTP.**
+## Contratos
+
+Aquí queda definido todo el JSON de UC2: los cuatro endpoints que consume el frontend, la ficha que le pedimos al Módulo 1, lo que cambia respecto a UC1 en la consulta de sanciones y el evento que sale hacia el Módulo 3. Los ejemplos son el contrato: las pruebas de T019, T020 y T038 se escriben contra ellos y los mismos JSON viven como *fixtures* en `src/test/resources/contratos/`.
+
+Se aplican sin repetirlas las **convenciones comunes** de [plan-uc1-consultar-recursos.md § Contratos](./plan-uc1-consultar-recursos.md#contratos): `camelCase`, enumeraciones en mayúsculas, **nunca `null`** (lo que no aplica se omite), `fecha` como `yyyy-MM-dd` y horas como `HH:mm` en `America/Bogota`, instantes ISO-8601 con `-05:00`, franjas `[inicio, fin)`, `recursoId` como cadena y errores RFC 9457 con `type` bajo `https://reservasunimag.unimagdalena.edu.co/errores/`.
+
+Tres reglas propias de este caso de uso:
+
+| Regla | Detalle |
+|---|---|
+| Horas de entrada, instantes de salida | La persona manda `fecha` + `HH:mm`, igual que en UC1. Las respuestas devuelven **instantes completos**, porque un préstamo cruza días y `"fin": "22:00"` no diría de qué día. |
+| Un código por respuesta | Una denegación lleva **un solo** `codigo`, el primero que falla en el orden de FR-002 (edge case **Múltiples causas de denegación simultáneas**). Nunca una lista. |
+| Forma mal puesta es `400` | Una franja mal formada o un cuerpo que no corresponde a la categoría del recurso es `400` **sin** `codigo`: no es una regla de negocio (FR-009). Los `RES-00X` van siempre en `409`. |
+
+---
+
+### 1. `POST /api/reservas`
+
+**Petición de un espacio** (FR-001): la persona elige la franja completa.
+
+```json
+{ "recursoId": "ESP-0107", "fecha": "2026-09-01", "inicio": "10:00", "fin": "12:00" }
+```
+
+**Petición de un activo** (FR-001): la persona elige **solo cuándo lo recoge**; el vencimiento lo calcula el sistema.
+
+```json
+{ "recursoId": "ACT-004512", "fecha": "2026-09-01", "recogida": "14:30" }
+```
+
+| Campo | Tipo | Forma | Validación |
+|---|---|---|---|
+| `recursoId` | cadena | las dos | obligatorio |
+| `fecha` | `yyyy-MM-dd` | las dos | obligatorio |
+| `inicio`, `fin` | `HH:mm` | espacio | obligatorios; dentro de 06:00–22:00, `fin > inicio`, máximo 2 horas (FR-009) |
+| `recogida` | `HH:mm` | activo | obligatorio; dentro de 06:00–22:00 |
+
+**Decisión: el cuerpo no lleva `categoria`.** La categoría la manda el Módulo 1 en la ficha (paso 0 de la tabla de decisiones), no el cliente, así que nadie puede forzar la forma equivocada. El backend compara: si llega `inicio`/`fin` para un activo, o `recogida` para un espacio, responde `400` con `codigo: "FORMA_NO_CORRESPONDE_A_CATEGORIA"`. El `origen` tampoco viaja en el cuerpo: `POST /api/reservas` siempre crea una reserva `ESTUDIANTIL` con el titular del JWT. Las reservas `ACADEMICO` entran por UC3 llamando al caso de uso, nunca por este endpoint; por eso `SolicitudDeReserva` tiene el campo y el `CrearReservaRequest` no.
+
+**`201 Created`** — espacio (escenario 1)
+
+```http
+HTTP/1.1 201 Created
+Location: /api/reservas/9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45
+```
+
+```json
+{
+  "id": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+  "recursoId": "ESP-0107",
+  "nombre": "Sala de Estudio 3",
+  "categoria": "ESPACIO",
+  "estado": "CONFIRMADA",
+  "origen": "ESTUDIANTIL",
+  "inicio": "2026-09-01T10:00:00-05:00",
+  "fin": "2026-09-01T12:00:00-05:00",
+  "creadaEn": "2026-08-30T09:14:22-05:00",
+  "cupo": { "usado": 2, "maximo": 3 }
+}
+```
+
+**`201 Created`** — activo (escenario 2: martes 2026-09-01 14:30, plazo 7 → jueves 2026-09-10 22:00)
+
+```json
+{
+  "id": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+  "recursoId": "ACT-004512",
+  "nombre": "Libro de Cálculo I",
+  "categoria": "ACTIVO",
+  "estado": "CONFIRMADA",
+  "origen": "ESTUDIANTIL",
+  "inicio": "2026-09-01T14:30:00-05:00",
+  "fin": "2026-09-10T22:00:00-05:00",
+  "prestamo": {
+    "recogida": "2026-09-01T14:30:00-05:00",
+    "vencimiento": "2026-09-10T22:00:00-05:00",
+    "plazoDiasHabiles": 7,
+    "renovado": false,
+    "renovable": true,
+    "entregado": false
+  },
+  "creadaEn": "2026-08-30T09:14:22-05:00",
+  "cupo": { "usado": 2, "maximo": 3 }
+}
+```
+
+| Campo | Tipo | Nota |
+|---|---|---|
+| `id` | uuid | Identificador de la reserva (escenario 1: "devuelve el identificador"). |
+| `nombre` | cadena | Del Módulo 1, de la ficha que ya se pidió; no lo guardamos (UC1 FR-006). |
+| `estado` | enumeración | `CONFIRMADA`, `CANCELADA`, `CANCELADA_POR_PRIORIDAD_ACADEMICA`, `CANCELADA_POR_RECURSO_NO_DISPONIBLE`, `FINALIZADA`. Al crear siempre es `CONFIRMADA`. |
+| `inicio`, `fin` | instantes | **La ocupación**, en las dos categorías: es la misma `[inicio, fin)` de la tabla `reserva` y lo que protege la restricción de exclusión. En un activo coincide con `recogida` y `vencimiento`. |
+| `prestamo` | objeto | Solo en activos. Repite la ocupación con nombres de negocio, que es lo que la persona entiende y lo que necesita la pantalla. |
+| `prestamo.renovable` | booleano | `false` si `renovado` ya es `true` o si `plazoDiasHabiles` es `0` (FR-017, `SIN_PRORROGA`). |
+| `prestamo.entregado` | booleano | `true` cuando el activo ya se recogió (`prestamo.entregado_en`). Al crear siempre `false`. |
+| `cupo` | objeto | Cómo quedó el cupo **después** de confirmar, para que la pantalla no tenga que volver a preguntar (FR-008). |
+
+El estado `RESERVADO` o `EN_USO` del recurso **no** aparece aquí: es la etiqueta que calcula UC1 al consultar, no un campo de la reserva. Lo que la confirmación deja escrito es la ocupación, y eso es todo lo que hoy significa el `<<include>>` a UC7 (FR-011).
+
+#### Errores de `POST /api/reservas`
+
+**`400`** — franja más larga que el tope (FR-009, edge case **Reserva más larga que el tope**)
+
+```json
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errores/franja-invalida",
+  "title": "Franja horaria inválida",
+  "status": 400,
+  "detail": "Una reserva de espacio puede durar como máximo 2 horas. Ajusta la franja.",
+  "instance": "/api/reservas",
+  "codigo": "DURACION_EXCEDIDA",
+  "topeMinutos": 120,
+  "duracionSolicitadaMinutos": 180
+}
+```
+
+El `codigo` de los `400` toma uno de `FRANJA_FUERA_DE_VENTANA`, `FRANJA_CRUZA_MEDIANOCHE`, `FRANJA_FIN_NO_POSTERIOR_A_INICIO` —los tres que ya define `FranjaHoraria` en el plan de UC1— más `DURACION_EXCEDIDA` y `FORMA_NO_CORRESPONDE_A_CATEGORIA`. Ninguno es un `RES-00X`, y esta respuesta sale **antes** de consultar sanción, cupo o disponibilidad: las pruebas de T013 lo verifican.
+
+**`404`** — el recurso no existe en el Módulo 1
+
+```json
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errores/recurso-no-encontrado",
+  "title": "Recurso no encontrado",
+  "status": 404,
+  "detail": "El recurso ACT-999999 no existe en el inventario.",
+  "instance": "/api/reservas",
+  "recursoId": "ACT-999999"
+}
+```
+
+**`409`** — las cuatro denegaciones del diccionario (FR-003). Todas comparten `type`, `title` y el campo `codigo`; cada código agrega lo que su mensaje necesita.
+
+`RES-001` — conflicto académico (escenario 3; cubre el cruce parcial de 09:30–10:30 contra una clase de 08:00–10:00)
+
+```json
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errores/reserva-denegada",
+  "title": "Reserva denegada",
+  "status": 409,
+  "detail": "El recurso está reservado para actividad docente en la franja solicitada.",
+  "instance": "/api/reservas",
+  "codigo": "RES-001",
+  "recursoId": "ESP-0412",
+  "ocupadoHasta": "2026-09-01T10:00:00-05:00"
+}
+```
+
+`RES-002` — cupo lleno (escenario 4: "3 de 3" y cuándo se libera la próxima)
+
+```json
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errores/reserva-denegada",
+  "title": "Reserva denegada",
+  "status": 409,
+  "detail": "Tienes 3 de 3 reservas vigentes. La próxima se libera el 2026-09-01 a las 12:00.",
+  "instance": "/api/reservas",
+  "codigo": "RES-002",
+  "vigentes": 3,
+  "maximo": 3,
+  "proximaLiberacion": "2026-09-01T12:00:00-05:00"
+}
+```
+
+Cuando la vigente más próxima es un **préstamo vencido y sin devolver**, no hay fecha que prometer: `proximaLiberacion` se omite y el `detail` dice `"Tienes 3 de 3 reservas vigentes. Una corresponde a un activo vencido: el cupo se libera cuando se registre su devolución."` (FR-008, FR-015).
+
+`RES-003` — sanción activa (escenario 5: informa la fecha de finalización)
+
+```json
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errores/reserva-denegada",
+  "title": "Reserva denegada",
+  "status": 409,
+  "detail": "Tienes una sanción vigente hasta el 2026-09-15 y no puedes reservar.",
+  "instance": "/api/reservas",
+  "codigo": "RES-003",
+  "sancionMotivo": "Dos ausencias no justificadas en el semestre",
+  "sancionHasta": "2026-09-15"
+}
+```
+
+`sancionMotivo` y `sancionHasta` se copian del reporte del Módulo 3 (UC6 FR-004). Si el reporte trae una sanción sin fecha de fin, `sancionHasta` se omite y el `detail` no la menciona.
+
+`RES-004` — el recurso acaba de ser tomado (edge case **Concurrencia sobre el mismo tiempo ocupado**)
+
+```json
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errores/reserva-denegada",
+  "title": "Reserva denegada",
+  "status": 409,
+  "detail": "El recurso acaba de ser tomado por otra solicitud. Vuelve a consultar la disponibilidad.",
+  "instance": "/api/reservas",
+  "codigo": "RES-004",
+  "recursoId": "ESP-0107"
+}
+```
+
+Nunca se dice **quién** lo tomó, ni en `detail` ni en ningún campo (UC8 FR-005). El mismo `RES-004` sale de los dos sitios: de la recomprobación de disponibilidad y de la violación de `reserva_sin_cruces` al insertar; el cliente no los distingue, y así debe ser.
+
+`RES-004` provisional por mantenimiento — el recurso está `EN_MANTENIMIENTO` y el diccionario no tiene código para eso:
+
+```json
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errores/reserva-denegada",
+  "title": "Reserva denegada",
+  "status": 409,
+  "detail": "El recurso está en mantenimiento y no se puede reservar.",
+  "instance": "/api/reservas",
+  "codigo": "RES-004",
+  "estadoDetectado": "EN_MANTENIMIENTO",
+  "recursoId": "ACT-000912"
+}
+```
+
+El campo `estadoDetectado` existe precisamente para que esta rama se pueda separar sin romper a nadie el día que el equipo acepte el `RES-005` que este plan propone: el frontend ya la distingue por ese campo y no por el texto.
+
+**`503`** — un módulo externo no respondió. Dos sabores, y los dos impiden la reserva:
+
+```json
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errores/inventario-no-disponible",
+  "title": "Inventario no disponible",
+  "status": 503,
+  "detail": "No se pudo consultar el recurso en este momento. Intenta de nuevo en unos minutos.",
+  "instance": "/api/reservas",
+  "modulo": "MODULO_1"
+}
+```
+
+```json
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errores/sanciones-no-comprobables",
+  "title": "No se pudo comprobar tu situación",
+  "status": 503,
+  "detail": "No se pudo comprobar si tienes sanciones vigentes, así que la reserva no se confirmó. Intenta de nuevo en unos minutos.",
+  "instance": "/api/reservas",
+  "modulo": "MODULO_3"
+}
+```
+
+Esta es **la diferencia con UC1**: allí la caída del Módulo 3 era un aviso y la consulta seguía; aquí bloquea, porque confirmar sería dar por buena una situación que no se comprobó (UC6 FR-006). Un tercer `503` con `codigo: "FICHA_INCOMPLETA"` cubre el activo cuyo `plazoPrestamoDiasHabiles` no viene en la ficha: no es culpa de la persona ni una regla de negocio, es el contrato del Módulo 1 incompleto (FR-012, P-16).
+
+Kafka caído **no** produce error: la reserva se confirma y la ficha espera en la *outbox* (UC10 FR-005).
+
+---
+
+### 2. `GET /api/prestamos/vencimiento-previsto`
+
+Lo que FR-001 exige informar **antes** de confirmar. No crea nada, no reserva nada y no consume cupo.
+
+```http
+GET /api/prestamos/vencimiento-previsto?recursoId=ACT-004512&fecha=2026-09-01&recogida=14:30
+```
+
+```json
+{
+  "recursoId": "ACT-004512",
+  "nombre": "Libro de Cálculo I",
+  "recogida": "2026-09-01T14:30:00-05:00",
+  "vencimiento": "2026-09-10T22:00:00-05:00",
+  "plazoDiasHabiles": 7,
+  "diasNoHabilesOmitidos": ["2026-09-05", "2026-09-06"],
+  "renovable": true
+}
+```
+
+`diasNoHabilesOmitidos` es lo que vuelve auditable el cálculo de FR-014: son los días que no consumieron plazo. Con `plazoDiasHabiles: 0` (uso en sitio, como el microscopio) el vencimiento es a las 22:00 del mismo día de la recogida y `renovable` es `false`.
+
+> El bosquejo anterior de este plan usaba `recogida=2026-09-01T14:30`. Se parte en `fecha` + `recogida` para que la entrada sea idéntica a la de `POST /api/reservas` y a la de UC1, y el frontend no tenga que armar dos formatos.
+
+Errores: `400` si la hora cae fuera de la ventana, `404` si el recurso no existe, `409` con `codigo: "NO_ES_ACTIVO"` si se pregunta por un espacio, y `503` si el Módulo 1 no responde.
+
+---
+
+### 3. `POST /api/prestamos/{reservaId}/renovacion`
+
+Sin cuerpo: el plazo no se negocia, se vuelve a aplicar el del tipo (FR-016). El titular sale del JWT.
+
+**`200 OK`**
+
+```json
+{
+  "reservaId": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+  "vencimientoAnterior": "2026-09-10T22:00:00-05:00",
+  "vencimientoNuevo": "2026-09-21T22:00:00-05:00",
+  "plazoDiasHabiles": 7,
+  "renovado": true,
+  "renovable": false,
+  "cupo": { "usado": 2, "maximo": 3 }
+}
+```
+
+`vencimientoNuevo` se cuenta **desde `vencimientoAnterior`**, no desde hoy (FR-016), y `cupo` viene igual que antes para dejar claro en la respuesta que la renovación no consumió cupo nuevo.
+
+**`409`** — los cinco rechazos de FR-017, con `motivo` en vez de `codigo`, porque el diccionario de errores no cubre la renovación:
+
+```json
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errores/renovacion-denegada",
+  "title": "Renovación denegada",
+  "status": 409,
+  "detail": "Este préstamo ya fue renovado una vez y no admite otra prórroga.",
+  "instance": "/api/prestamos/4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3/renovacion",
+  "motivo": "YA_RENOVADO"
+}
+```
+
+| `motivo` | `detail` |
+|---|---|
+| `YA_RENOVADO` | `Este préstamo ya fue renovado una vez y no admite otra prórroga.` |
+| `PRESTAMO_VENCIDO` | `El préstamo venció el 2026-09-10 a las 22:00. Devuelve el activo; la mora la calcula el Módulo 3.` (agrega `vencimiento`) |
+| `SANCION_ACTIVA` | `Tienes una sanción vigente hasta el 2026-09-15 y no puedes renovar.` (agrega `sancionHasta`) |
+| `INVADE_OTRA_RESERVA` | `Otra persona ya tiene este activo apartado en las fechas que ocuparía la renovación.` (sin decir quién, UC8 FR-005) |
+| `SIN_PRORROGA` | `Este activo es de uso en sitio y se devuelve el mismo día, así que no admite prórroga.` |
+
+Los otros errores: `403` con `type` `.../errores/no-autorizado-sobre-la-reserva` cuando quien pide no es el titular, `404` si la reserva no existe, `409` con `motivo: "NO_ES_PRESTAMO"` si el id corresponde a una reserva de espacio, y `503` si el Módulo 3 no responde —la renovación se bloquea igual que la reserva.
+
+---
+
+### 4. `GET /api/reservas/mias`
+
+La lista mínima que sirve de entrada a la renovación. `?vigentes=true` (por defecto) aplica la misma definición de vigente de FR-008; `?vigentes=false` trae también las cerradas.
+
+```json
+{
+  "reservas": [
+    {
+      "id": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+      "recursoId": "ACT-004512",
+      "nombre": "Libro de Cálculo I",
+      "categoria": "ACTIVO",
+      "estado": "CONFIRMADA",
+      "inicio": "2026-09-01T14:30:00-05:00",
+      "fin": "2026-09-10T22:00:00-05:00",
+      "prestamo": {
+        "recogida": "2026-09-01T14:30:00-05:00",
+        "vencimiento": "2026-09-10T22:00:00-05:00",
+        "plazoDiasHabiles": 7,
+        "renovado": false,
+        "renovable": true,
+        "entregado": true,
+        "vencido": false
+      }
+    },
+    {
+      "id": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+      "recursoId": "ESP-0107",
+      "nombre": "Sala de Estudio 3",
+      "categoria": "ESPACIO",
+      "estado": "CONFIRMADA",
+      "inicio": "2026-09-01T10:00:00-05:00",
+      "fin": "2026-09-01T12:00:00-05:00"
+    }
+  ],
+  "cupo": { "usado": 2, "maximo": 3 },
+  "catalogoNoDisponible": false
+}
+```
+
+Orden: por `inicio` ascendente, y ante empate por `id`, para que la lista sea estable entre recargas igual que la de UC1 (FR-014 de UC1).
+
+**Decisión: si el Módulo 1 no responde, esta lista sí se entrega.** El `nombre` del recurso no es nuestro —hay que pedirlo al Módulo 1 por cada `recursoId`, porque no guardamos el catálogo (UC1 FR-006)—, pero la reserva, su vencimiento y el cupo sí lo son. Cuando el inventario falla se responde `200` con `nombre` omitido en cada recurso y `catalogoNoDisponible: true`, y la pantalla muestra el `recursoId` con un aviso. Es distinto de UC1, donde sin catálogo no hay absolutamente nada que mostrar y por eso es `503` (UC1 FR-008): aquí negar la lista dejaría a la persona sin poder renovar un préstamo por una caída que no afecta a sus propios datos. Es una decisión de este plan; el spec no la trata.
+
+`prestamo.vencido` es `true` cuando `ahora > vencimiento` y no hay check-out: es el caso de FR-015 y lo que la pantalla necesita para explicar por qué ese cupo no se libera.
+
+---
+
+### 5. Módulo 1 — ficha de un recurso
+
+Tercera operación de `InventarioPort`, además de las dos que definió [UC1 § Contratos §2](./plan-uc1-consultar-recursos.md#2-módulo-1--inventarioport). Sigue siendo **nuestra propuesta** mientras P-16 esté abierto.
+
+```http
+GET /api/v1/recursos/ACT-004512 HTTP/1.1
+Authorization: Bearer <token>
+```
+
+```json
+{
+  "id": "ACT-004512",
+  "nombre": "Libro de Cálculo I",
+  "categoria": "ACTIVO",
+  "tipo": "LIBRO",
+  "estadoOperativo": "DISPONIBLE",
+  "ubicacion": "Biblioteca, estantería C-4",
+  "placa": "ACT-004512",
+  "estadoFisico": "BUENO",
+  "plazoPrestamoDiasHabiles": 7
+}
+```
+
+Es el mismo objeto que el Módulo 1 pone dentro de `contenido[]` en el catálogo de UC1, servido de a uno. No se inventa una forma nueva: así un solo DTO y un solo mapper sirven para las dos operaciones.
+
+**`plazoPrestamoDiasHabiles` es el campo que FR-012 necesita y que hoy no existe.** Los valores acordados con el Módulo 1 son Libro 7, Kit de dibujo 3, Videobeam 1 y Microscopio 0. El Módulo 2 **no** guarda esa tabla: si el campo no viene en un activo, el préstamo no se puede calcular y la respuesta es `503` con `codigo: "FICHA_INCOMPLETA"`, nunca un valor por defecto nuestro. Un `0` legítimo significa uso en sitio y es distinto de que el campo falte, así que el DTO lo modela como `Integer`, no como `int`.
+
+| Respuesta del Módulo 1 | Qué hace el adaptador | Qué ve la persona |
+|---|---|---|
+| `200` | Ficha normal. | Sigue el flujo. |
+| `404` | El recurso no existe. | `404` |
+| `5xx`, timeout, conexión rechazada | `ServicioExternoNoDisponibleException`. | `503` con `modulo: MODULO_1` |
+| `200` sin `plazoPrestamoDiasHabiles` en un activo | Se registra como contrato incompleto. | `503` con `codigo: FICHA_INCOMPLETA` |
+
+---
+
+### 6. Módulo 3 — sanciones al confirmar
+
+El contrato de la petición y la respuesta es exactamente el de [UC1 § Contratos §3](./plan-uc1-consultar-recursos.md#3-módulo-3--cumplimientoport): `GET /api/v1/cumplimiento/personas/{codigo}`, con el `codigo` tomado del claim del JWT (UC6 FR-007). Lo que cambia es **qué se hace con la respuesta**:
+
+| Situación | UC1 (consultar) | UC2 (confirmar) |
+|---|---|---|
+| Sanción vigente | `avisoSancion` y la lista se muestra | `409` con `RES-003`, motivo y `sancionHasta` |
+| Sin sanciones o `404` | Nada | Sigue al paso del cupo |
+| Módulo 3 no responde | `avisoSancion` con `NO_COMPROBADO`, respuesta `200` | **`503`**, la reserva no se confirma (UC6 FR-006, P-10) |
+
+Del reporte se toma la sanción de `fin` más lejano. El campo `alcance` se lee si viene, pero hoy **no se usa para filtrar**: cualquier sanción vigente bloquea cualquier reserva, de espacio o de activo (P-11 abierto). Cuando P-11 se cierre, el cambio es solo esa comparación.
+
+Cada consulta queda en el log con su duración y su resultado, y la denegación resultante en la tabla `denegacion` (FR-005): entre las dos cosas se cubre la auditoría de UC6 FR-009.
+
+---
+
+### 7. Evento hacia el Módulo 3 — `modulo2.reserva.ficha.v1`
+
+Lo que UC2 inserta en `mensaje_saliente.payload` y el publicador manda al topic, con la clave de partición `reserva_id` y el envoltorio del plan general. Es el `<<include>>` a UC10 (FR-018).
+
+**Reserva estudiantil**
+
+```json
+{
+  "eventoId": "c3a7f1d2-4e58-4b09-9a61-7d2e8f0b5c34",
+  "tipo": "FichaDeReservaCreada",
+  "version": 1,
+  "ocurridoEn": "2026-08-30T09:14:22-05:00",
+  "datos": {
+    "reservaId": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+    "origen": "ESTUDIANTIL",
+    "sancionable": true,
+    "recurso": {
+      "id": "ACT-004512",
+      "nombre": "Libro de Cálculo I",
+      "categoria": "ACTIVO",
+      "tipo": "LIBRO",
+      "ubicacion": "Biblioteca, estantería C-4"
+    },
+    "titular": {
+      "usuarioId": "5f1b9c2d-7a34-4e81-b0f6-3c8d1e9a4b72",
+      "codigo": "2019114045",
+      "nombre": "Camilo Cerpa",
+      "rol": "ESTUDIANTE"
+    },
+    "ocupacion": {
+      "inicio": "2026-09-01T14:30:00-05:00",
+      "fin": "2026-09-10T22:00:00-05:00"
+    },
+    "prestamo": {
+      "recogida": "2026-09-01T14:30:00-05:00",
+      "vencimiento": "2026-09-10T22:00:00-05:00",
+      "plazoDiasHabiles": 7,
+      "renovado": false
+    }
+  }
+}
+```
+
+**Bloqueo académico** (lo usará UC3; el campo ya existe para no refactorizar luego, UC10 FR-009)
+
+```json
+{
+  "eventoId": "8d41b6c0-2f93-4a7e-8c15-9b0e3d7f2a68",
+  "tipo": "FichaDeReservaCreada",
+  "version": 1,
+  "ocurridoEn": "2026-08-30T09:14:22-05:00",
+  "datos": {
+    "reservaId": "b7c2e418-3d65-4f09-a2b8-1e5c9d0a7f34",
+    "origen": "ACADEMICO",
+    "sancionable": false,
+    "recurso": {
+      "id": "ESP-0412",
+      "nombre": "Laboratorio de Redes",
+      "categoria": "ESPACIO",
+      "tipo": "LABORATORIO",
+      "ubicacion": "Bloque 7, piso 2"
+    },
+    "academico": {
+      "asignatura": "Redes de Computadores",
+      "programa": "Ingeniería de Sistemas",
+      "docente": "Nombre del docente"
+    },
+    "ocupacion": {
+      "inicio": "2026-09-01T08:00:00-05:00",
+      "fin": "2026-09-01T10:00:00-05:00"
+    }
+  }
+}
+```
+
+| Regla del evento | Detalle |
+|---|---|
+| `titular` y `academico` | Mutuamente excluyentes: uno u otro según `origen`, igual que el `CHECK` de la tabla `reserva`. |
+| `sancionable` | `false` en las académicas, que no tienen a quién sancionar (UC9 FR-006, UC11 SC-004). |
+| `prestamo` | Solo cuando la categoría es `ACTIVO`. |
+| `ocupacion` | Siempre, en las dos categorías: es el dato con el que el Módulo 3 sabe cuándo constatar una ausencia o cerrar un check-out. |
+| `eventoId` | Es el `mensaje_saliente.id`. Identifica el **hecho**, no el intento de envío, y es lo que permite al Módulo 3 descartar una reentrega (entrega *at-least-once*). |
+| Clave de partición | `reserva_id`, para que la ficha nunca llegue después de la cancelación de la misma reserva. |
+
+**Renovación: un tipo nuevo en el mismo topic.** Al renovar, UC10 FR-003 pide volver a informar el vencimiento. Sale otro evento al mismo topic, con `tipo: "FichaDeReservaActualizada"`, el mismo bloque `datos` y `prestamo.renovado: true`. Es un añadido compatible —el topic sigue siendo `v1` y el Módulo 3 puede ignorar el tipo que no conozca— pero **el nombre hay que confirmarlo con ellos**: el plan general solo había nombrado `FichaDeReservaCreada`. Es una decisión de este plan.
+
+El campo `payload` de `mensaje_saliente` guarda este JSON **tal cual**, completo y con el envoltorio, para que republicar sea volver a enviar el mismo texto sin recomponer nada.
+
+---
+
+### 8. Tipos del frontend
+
+Traducción literal de las secciones 1 a 4, en `frontend/src/features/reservas/tipos.ts`. Reusa `Categoria` y `ErrorApi` de `features/recursos/tipos.ts` (UC1).
+
+```ts
+import type { Categoria, ErrorApi } from "../recursos/tipos";
+
+export type EstadoReserva =
+  | "CONFIRMADA" | "CANCELADA" | "CANCELADA_POR_PRIORIDAD_ACADEMICA"
+  | "CANCELADA_POR_RECURSO_NO_DISPONIBLE" | "FINALIZADA";
+
+export type CodigoDenegacion = "RES-001" | "RES-002" | "RES-003" | "RES-004";
+
+export type MotivoRenovacion =
+  | "YA_RENOVADO" | "PRESTAMO_VENCIDO" | "SANCION_ACTIVA"
+  | "INVADE_OTRA_RESERVA" | "SIN_PRORROGA" | "NO_ES_PRESTAMO";
+
+export interface Cupo { usado: number; maximo: number }
+
+export interface Prestamo {
+  recogida: string;
+  vencimiento: string;
+  plazoDiasHabiles: number;
+  renovado: boolean;
+  renovable: boolean;
+  entregado: boolean;
+  vencido?: boolean;          // solo en GET /api/reservas/mias
+}
+
+/** Cuerpo de POST /api/reservas: una forma u otra, nunca las dos. */
+export type CrearReservaRequest =
+  | { recursoId: string; fecha: string; inicio: string; fin: string }
+  | { recursoId: string; fecha: string; recogida: string };
+
+export interface Reserva {
+  id: string;
+  recursoId: string;
+  nombre?: string;            // se omite si el Módulo 1 no respondió
+  categoria: Categoria;
+  estado: EstadoReserva;
+  origen?: "ESTUDIANTIL" | "ACADEMICO";
+  inicio: string;
+  fin: string;
+  prestamo?: Prestamo;        // solo activos
+  creadaEn?: string;
+  cupo?: Cupo;                // viene en la respuesta de creación
+}
+
+export interface VencimientoPrevisto {
+  recursoId: string;
+  nombre: string;
+  recogida: string;
+  vencimiento: string;
+  plazoDiasHabiles: number;
+  diasNoHabilesOmitidos: string[];
+  renovable: boolean;
+}
+
+export interface RenovacionResponse {
+  reservaId: string;
+  vencimientoAnterior: string;
+  vencimientoNuevo: string;
+  plazoDiasHabiles: number;
+  renovado: boolean;
+  renovable: boolean;
+  cupo: Cupo;
+}
+
+export interface MisReservasResponse {
+  reservas: Reserva[];
+  cupo: Cupo;
+  catalogoNoDisponible: boolean;
+}
+
+/** Extensiones que puede traer un ProblemDetail de este caso de uso. */
+export interface ErrorReserva extends ErrorApi {
+  codigo?: CodigoDenegacion | string;
+  motivo?: MotivoRenovacion;
+  estadoDetectado?: "EN_MANTENIMIENTO";
+  vigentes?: number;
+  maximo?: number;
+  proximaLiberacion?: string;
+  sancionMotivo?: string;
+  sancionHasta?: string;
+  ocupadoHasta?: string;
+  topeMinutos?: number;
+  duracionSolicitadaMinutos?: number;
+  recursoId?: string;
+  vencimiento?: string;
+}
+```
+
+`MensajeDenegacion.tsx` (T036) escribe un texto por `codigo` y usa estos campos —el "3 de 3" sale de `vigentes`/`maximo`, la fecha de la sanción de `sancionHasta`— en vez de mostrar el `detail` crudo. El `detail` del backend sigue siendo la red de seguridad para un código que la pantalla todavía no conozca.
+
+---
+
+### 9. Fixtures compartidos
+
+Se suman a los que creó el plan de UC1 en la misma carpeta:
 
 ```text
-POST /api/reservas
-  espacio: { recursoId, fecha, inicio, fin }
-  activo:  { recursoId, fecha, recogida }
-→ 201 { id, recursoId, categoria, inicio, fin, estado, vencimiento?, renovable? }
-→ 400 ProblemDetail  franja fuera de la ventana, que cruza la medianoche, inicio ≥ fin o más de 2 horas
-→ 401                sin sesión
-→ 404 ProblemDetail  el recurso no existe en el Módulo 1
-→ 409 ProblemDetail  { codigo: "RES-001".."RES-004", detalle, sancionHasta?, vigentes?, proximaLiberacion? }
-→ 503 ProblemDetail  el Módulo 1 o el Módulo 3 no respondieron
-
-GET  /api/prestamos/vencimiento-previsto?recursoId=...&recogida=2026-09-01T14:30
-→ 200 { vencimiento: "2026-09-10T22:00", plazoDiasHabiles: 7 }     # FR-001: informarlo antes de confirmar
-
-POST /api/prestamos/{reservaId}/renovacion
-→ 200 { reservaId, vencimientoAnterior, vencimientoNuevo }
-→ 403                no es el titular
-→ 409 ProblemDetail  { motivo: "YA_RENOVADO" | "PRESTAMO_VENCIDO" | "SANCION_ACTIVA" |
-                                "INVADE_OTRA_RESERVA" | "SIN_PRORROGA" }
-
-GET  /api/reservas/mias?vigentes=true
-→ 200 { reservas: [{ id, recursoId, nombre, categoria, inicio, fin, estado, renovable }], cupo: { usado, maximo } }
+src/test/resources/contratos/
+├── modulo1-ficha-activo.json            # con plazoPrestamoDiasHabiles
+├── modulo1-ficha-activo-sin-plazo.json  # el 503 FICHA_INCOMPLETA (P-16)
+├── modulo1-ficha-espacio.json
+├── api-reserva-espacio-201.json
+├── api-reserva-activo-201.json
+├── api-reserva-409-res-001.json         # y -002, -003, -004 y -004-mantenimiento
+├── api-reserva-400-duracion.json
+├── api-vencimiento-previsto.json
+├── api-renovacion-200.json
+├── api-renovacion-409.json
+├── api-mis-reservas.json
+├── evento-ficha-estudiantil.json        # lo que debe quedar en mensaje_saliente.payload
+└── evento-ficha-academica.json
 ```
+
+`PublicadorOutboxIT` (T019) compara contra `evento-ficha-*.json` el mensaje que llega al topic, así que el contrato del evento se verifica de punta a punta —de la transacción al broker— y no solo en el adaptador.
 
 ---
 
@@ -288,9 +892,9 @@ GET  /api/reservas/mias?vigentes=true
 - [ ] T005 Escribir `src/main/resources/db/migration/V3__denegacion_y_outbox.sql` con las tablas `denegacion` y `mensaje_saliente` y el índice parcial de pendientes del plan general; verificar que la restricción `reserva_sin_cruces` y el `CHECK` de titular según origen ya están en `V1`
 - [ ] T006 [P] Crear `infrastructure/config/KafkaConfig.java`: productor con `acks=all` y `enable.idempotence=true`, serialización JSON y los nombres de los topics desde las propiedades
 - [ ] T007 [P] Crear el puerto `CalendarioHabil` en `domain/port/out/` y su implementación en `infrastructure/config`, que excluye sábados, domingos y los festivos de las propiedades
-- [ ] T008 [P] Extender `FranjaHoraria` con el tope de duración de FR-009, que lanza `DuracionExcedidaException` con el tope aplicado, y mapear esa excepción a `400` en `ManejadorGlobalErrores`
-- [ ] T009 [P] Crear `CodigoDenegacion`, `ReservaDenegadaException` y `RenovacionDenegadaException` en `domain/model/error/`, y traducirlas a `409` con `ProblemDetail` en `ManejadorGlobalErrores`, incluyendo el campo `codigo` (SC-003)
-- [ ] T010 Extender `InventarioPort` y sus adaptadores (real, falso) con `ficha(recursoId)`, que devuelve `FichaRecurso` con la categoría y el **plazo máximo de préstamo** de los activos (FR-012, P-16)
+- [ ] T008 [P] Extender `FranjaHoraria` con el tope de duración de FR-009, que lanza `DuracionExcedidaException` con el tope aplicado, y mapear esa excepción a `400` con `codigo: DURACION_EXCEDIDA`, `topeMinutos` y `duracionSolicitadaMinutos` ([Contratos §1](#1-post-apireservas))
+- [ ] T009 [P] Crear `CodigoDenegacion`, `ReservaDenegadaException` y `RenovacionDenegadaException` en `domain/model/error/`, y traducirlas a `409` con `ProblemDetail` en `ManejadorGlobalErrores` con las extensiones que fija [Contratos §1](#1-post-apireservas) y [§3](#3-post-apiprestamosreservaidrenovacion): `codigo` o `motivo` y los campos de cada mensaje (SC-003)
+- [ ] T010 Extender `InventarioPort` y sus adaptadores (real, falso) con `ficha(recursoId)` según [Contratos §5](#5-módulo-1--ficha-de-un-recurso): devuelve `FichaRecurso` con la categoría y el **plazo máximo de préstamo** de los activos como `Integer` —`0` es uso en sitio y ausente es ficha incompleta— y traduce la falta del campo a `503` con `codigo: FICHA_INCOMPLETA` (FR-012, P-16)
 - [ ] T011 Completar `ConsultarDisponibilidadUseCase` con la consulta de **un solo recurso** y el "hasta cuándo está comprometido" de UC8 FR-012, que el plan de UC1 dejó pendiente
 - [ ] T012 [P] Crear `Reserva`, `EstadoReserva`, `OrigenReserva`, `Prestamo` y `PeriodoDePrestamo` en `domain/model/reserva/`, con las transiciones de estado y sin nada de Spring ni JPA
 
@@ -312,8 +916,8 @@ GET  /api/reservas/mias?vigentes=true
 - [ ] T016 [P] [US1] Pruebas en `ReservarRecursosUseCaseTest.java` para el cupo: 3 vigentes → `RES-002` con "3 de 3" y la próxima liberación, un préstamo vencido y sin devolver que **sigue** ocupando cupo (FR-008), y una `CANCELADA` o `FINALIZADA` que lo libera
 - [ ] T017 [P] [US1] Prueba de integración `ReservaPersistenceAdapterIT.java` con Testcontainers: la restricción de exclusión rechaza la ocupación solapada, el `INSERT` de la reserva y del evento en `mensaje_saliente` ocurren en la misma transacción, un *rollback* no deja ni reserva ni evento, y la denegación sí queda registrada
 - [ ] T018 [P] [US1] Prueba `ReservaConcurrenciaIT.java`: N hilos piden a la vez el mismo recurso con tiempos que se cruzan y exactamente uno queda `CONFIRMADA`, el resto recibe `RES-004` (SC-004); y dos peticiones del mismo usuario con cupo 3 no se cuelan las dos
-- [ ] T019 [P] [US1] Prueba `PublicadorOutboxIT.java` con Testcontainers de Kafka: publica el pendiente y lo marca `ENVIADO`, reintenta con espera creciente y sube `intentos`, queda `FALLIDO` al agotar `max-intentos`, y dos instancias no publican el mismo evento (`SKIP LOCKED`)
-- [ ] T020 [P] [US1] Prueba `ReservaControllerTest.java` con `@WebMvcTest`: `201` con el cuerpo de la reserva, `400` por franja de más de 2 horas, `401` sin sesión, `404` si el recurso no existe, `409` con el campo `codigo` en cada una de las cuatro denegaciones y `503` con el Módulo 3 caído
+- [ ] T019 [P] [US1] Prueba `PublicadorOutboxIT.java` con Testcontainers de Kafka: el mensaje que llega al topic coincide con los *fixtures* `evento-ficha-*.json` de [Contratos §7](#7-evento-hacia-el-módulo-3--modulo2reservafichav1) —envoltorio, clave de partición `reserva_id` y las dos formas, estudiantil y académica—, publica el pendiente y lo marca `ENVIADO`, reintenta con espera creciente y sube `intentos`, queda `FALLIDO` al agotar `max-intentos`, y dos instancias no publican el mismo evento (`SKIP LOCKED`)
+- [ ] T020 [P] [US1] Guardar los JSON de [Contratos §1 a §7](#contratos) como *fixtures* en `src/test/resources/contratos/` y escribir con ellos `ReservaControllerTest.java` con `@WebMvcTest`: `201` con `Location` y el cuerpo de las dos formas (espacio y activo), `400` por franja de más de 2 horas y por cuerpo que no corresponde a la categoría, `401` sin sesión, `404` si el recurso no existe, `409` con el `codigo` y las extensiones de cada una de las cuatro denegaciones —incluida la de mantenimiento con `estadoDetectado`—, los dos `503` (`MODULO_1` y `MODULO_3`), y que ninguna respuesta nombre al titular de otra reserva (UC8 FR-005)
 
 ### Implementation for User Story 1
 
@@ -327,12 +931,12 @@ GET  /api/reservas/mias?vigentes=true
 - [ ] T028 [US1] Implementar el registro de denegaciones en el caso de uso y en `DenegacionPersistenceAdapter`, con su propia transacción (FR-005)
 - [ ] T029 [P] [US1] Implementar `ReservaPersistenceAdapter` con la transacción de confirmación: bloqueo de la fila del titular, conteo del cupo, recomprobación de la ocupación (incluidos los préstamos abiertos sin devolver) e inserción de `reserva`, `prestamo` y el evento; traducir la violación de `reserva_sin_cruces` a `RecursoTomado`
 - [ ] T030 [P] [US1] Crear las entidades y repositorios JPA que faltan (`PrestamoJpa`, `DenegacionJpa`, `MensajeSalienteJpa`) y sus mappers dominio ↔ JPA
-- [ ] T031 [P] [US1] Implementar `OutboxNotificadorAdapter`, que serializa `EventoFichaDeReserva` con el envoltorio `eventoId`, `tipo`, `version`, `ocurridoEn` y `datos`, y lo inserta en `mensaje_saliente`
+- [ ] T031 [P] [US1] Implementar `OutboxNotificadorAdapter`, que serializa `EventoFichaDeReserva` según [Contratos §7](#7-evento-hacia-el-módulo-3--modulo2reservafichav1) —envoltorio completo, `titular` o `academico` según el origen, `prestamo` solo en activos— y lo inserta en `mensaje_saliente` con ese mismo JSON como `payload`
 - [ ] T032 [P] [US1] Implementar `PublicadorOutbox` con `@Scheduled`: lee los `PENDIENTE` con `FOR UPDATE SKIP LOCKED`, publica con la clave `reserva_id`, marca `ENVIADO`, y en el fallo sube `intentos` con espera creciente hasta `FALLIDO`
 - [ ] T033 [US1] Registrar los beans y las transacciones de UC2 en `CasosDeUsoConfig` (depende de T024 a T032)
-- [ ] T034 [US1] Implementar `ReservaController` (`POST /api/reservas`) con `CrearReservaRequest` validado según la categoría del recurso y `ReservaResponse`, documentado con OpenAPI
-- [ ] T035 [P] [US1] Frontend: `frontend/src/features/reservas/tipos.ts` y `api.ts` con la llamada de creación y el mapeo de los `ProblemDetail` con `codigo`
-- [ ] T036 [US1] Frontend: `ConfirmarReserva.tsx` (franja para espacios con el tope de 2 horas, hora de recogida y vencimiento previsto para activos) y `MensajeDenegacion.tsx` con un texto por código, incluida la fecha de fin de la sanción y el "3 de 3" del cupo
+- [ ] T034 [US1] Implementar `ReservaController` (`POST /api/reservas`) exactamente como lo fija [Contratos §1](#1-post-apireservas): `CrearReservaRequest` validado contra la categoría que devuelve la ficha, `ReservaResponse` que omite lo que no aplica, `Location` en el `201`, y la documentación OpenAPI con los mismos ejemplos de la sección
+- [ ] T035 [P] [US1] Frontend: copiar los tipos de [Contratos §8](#8-tipos-del-frontend) a `frontend/src/features/reservas/tipos.ts` y escribir en `api.ts` la llamada de creación y el mapeo del `ProblemDetail` a `ErrorReserva`
+- [ ] T036 [US1] Frontend: `ConfirmarReserva.tsx` (franja para espacios con el tope de 2 horas, hora de recogida y vencimiento previsto para activos tomado de [Contratos §2](#2-get-apiprestamosvencimiento-previsto)) y `MensajeDenegacion.tsx` con un texto por código armado desde los campos del error —`vigentes`/`maximo` para el "3 de 3", `sancionHasta` para la sanción, `estadoDetectado` para el mantenimiento— y el `detail` como respaldo
 - [ ] T037 [US1] Frontend: enganchar el botón de reservar en `app/(app)/recursos/page.tsx`, habilitado solo para los recursos seleccionables que ya marca UC1, y refrescar la lista tras confirmar
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
@@ -345,8 +949,8 @@ GET  /api/reservas/mias?vigentes=true
 
 - [ ] T038 [P] Pruebas en `RenovarPrestamoUseCaseTest.java`: renovación válida que suma el plazo desde el vencimiento vigente y no desde hoy, la pedida el mismo día del vencimiento antes de las 22:00 que se acepta y un minuto después que no (edge case **Renovación pedida el mismo día del vencimiento**), y los cinco rechazos de FR-017
 - [ ] T039 [P] Prueba de integración de la renovación: el `UPDATE` de `reserva.fin` que invade la reserva de otra persona lo rechaza la restricción de exclusión, y la renovación **no** consume cupo nuevo (FR-016)
-- [ ] T040 Definir `RenovarPrestamoPort` e implementar `RenovarPrestamoUseCase`: verifica titularidad, aplica los cinco rechazos, mueve `reserva.fin`, marca `prestamo.renovado` y publica la ficha con el vencimiento nuevo (UC10 FR-003) (depende de T024, T029)
-- [ ] T041 Implementar `PrestamoController`: `POST /api/prestamos/{reservaId}/renovacion` y `GET /api/prestamos/vencimiento-previsto`, y `GET /api/reservas/mias` en `ReservaController` con el cupo usado
+- [ ] T040 Definir `RenovarPrestamoPort` e implementar `RenovarPrestamoUseCase`: verifica titularidad, aplica los cinco rechazos con el `motivo` de [Contratos §3](#3-post-apiprestamosreservaidrenovacion), mueve `reserva.fin`, marca `prestamo.renovado` y publica la ficha con el vencimiento nuevo como `FichaDeReservaActualizada` (UC10 FR-003) (depende de T024, T029)
+- [ ] T041 Implementar `PrestamoController` (`POST /api/prestamos/{reservaId}/renovacion` y `GET /api/prestamos/vencimiento-previsto`) y `GET /api/reservas/mias` en `ReservaController`, según [Contratos §2, §3 y §4](#2-get-apiprestamosvencimiento-previsto), incluido el `catalogoNoDisponible` cuando el Módulo 1 no responda
 - [ ] T042 Frontend: `ListaMisReservas.tsx` y `RenovarPrestamo.tsx` en una pantalla mínima `app/(app)/mis-reservas/page.tsx`, que muestra el vencimiento, si queda renovación y el motivo cuando se deniega
 
 **Checkpoint**: El spec de UC2 queda cubierto de punta a punta
@@ -361,7 +965,7 @@ GET  /api/reservas/mias?vigentes=true
 - [ ] T044 [P] Registrar en logs cada confirmación, cada denegación y cada consulta de sanciones con su duración y su resultado, sin datos personales más allá del identificador del usuario (FR-005, FR-007, UC6 FR-009)
 - [ ] T045 [P] Medir la confirmación bajo concurrencia contra un Módulo 1 y un Módulo 3 simulados con su latencia prometida, y comprobar que no aparecen ocupaciones solapadas (SC-004)
 - [ ] T046 [P] Actualizar el README con `docker-compose up` para PostgreSQL y Kafka, y con cómo ver la *outbox* cuando el broker está caído
-- [ ] T047 Llevar a `pendientes-clarificacion.md` los NEEDS CLARIFICATION que este plan deja abiertos y revisarlos con el equipo
+- [ ] T047 Enviar al Módulo 1 la ficha de [Contratos §5](#5-módulo-1--ficha-de-un-recurso) (P-16, con el plazo de préstamo) y al Módulo 3 el evento de [§7](#7-evento-hacia-el-módulo-3--modulo2reservafichav1) con el tipo `FichaDeReservaActualizada` para confirmarlo, y llevar a `pendientes-clarificacion.md` los NEEDS CLARIFICATION que este plan deja abiertos
 
 ---
 
@@ -408,6 +1012,8 @@ GET  /api/reservas/mias?vigentes=true
 - Verify tests pass
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
+- La sección **Contratos** es la única fuente del JSON de UC2: si algo cambia ahí, cambia en los *fixtures*, en el OpenAPI y en los tipos del frontend, no al revés. Las convenciones comunes no se repiten: viven en el plan de UC1.
+- **Decisiones de los contratos que el spec no fija**: el cuerpo de `POST /api/reservas` no lleva `categoria` ni `origen` (los pone el Módulo 1 y el JWT); `GET /api/reservas/mias` responde `200` con `catalogoNoDisponible: true` si el Módulo 1 no contesta, en vez de `503`, porque la reserva y el cupo son datos nuestros; la renovación publica `FichaDeReservaActualizada` en el mismo topic; y `estadoDetectado: "EN_MANTENIMIENTO"` acompaña al `RES-004` provisional para poder migrarlo a `RES-005` sin romper al frontend.
 - **NEEDS CLARIFICATION abiertos en este plan**:
   - **P-10**: si el Módulo 3 no responde, aquí se bloquea la reserva con `503`, que es la opción conservadora del spec
   - **P-11**: el alcance de la sanción; hoy cualquier sanción vigente bloquea cualquier reserva
@@ -417,3 +1023,4 @@ GET  /api/reservas/mias?vigentes=true
   - **P-08**: un préstamo vencido y no devuelto sigue ocupando el activo sin fecha de fin; falta cuándo se da por perdido
   - **Código para `EN_MANTENIMIENTO`**: el diccionario de errores no tiene uno; se responde `RES-004` con un mensaje propio y se propone un `RES-005`
   - **Calendario de festivos**: FR-014 cuenta días hábiles y nadie nos da el calendario de la universidad; por ahora es una lista en `application.properties`
+  - **`FichaDeReservaActualizada`**: el nombre del evento de la renovación es propuesta de este plan; el plan general solo había nombrado `FichaDeReservaCreada` y hay que confirmarlo con el Módulo 3
