@@ -7,7 +7,7 @@
 
 ## Contexto
 
-Es la pregunta corta: *¿este recurso concreto está libre en esta franja concreta, sí o no?* Para responder junta dos fuentes: el estado operativo del recurso, que le pregunta en el momento al Módulo 1, y la ocupación de la franja —reservas, préstamos y bloqueos académicos—, que está en la base del propio Módulo 2. No usa ninguna foto guardada de antes.
+Es la pregunta corta: *¿este recurso concreto está libre en esta franja concreta, sí o no?* Para responder junta dos fuentes: el estado operativo del recurso, que le pregunta en el momento al Módulo 1, y la ocupación de la franja —reservas, préstamos y bloqueos académicos—, que está en la base del propio Módulo 2.
 
 No es lo mismo que `Consultar recursos`. Aquel muestra una lista al estudiante para que mire qué hay; este responde por un solo recurso y una sola franja, y es la comprobación que se hace justo antes de confirmar una reserva. Esa diferencia importa: entre que el estudiante ve la lista y decide apartar algo, otra persona puede haberse adelantado. Por eso la lista sirve para orientarse y esta comprobación sirve para decidir.
 
@@ -26,7 +26,7 @@ No es lo mismo que `Consultar recursos`. Aquel muestra una lista al estudiante p
 
 **Qué cuenta como "no disponible"**
 
-Un recurso no está disponible en una franja si en esa franja está `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO`. Basta con que se crucen un minuto para que cuente como ocupado. `EN_MANTENIMIENTO` sale del Módulo 1; `RESERVADO`, `BLOQUEO_ACADEMICO` y la ocupación por un préstamo abierto salen de la base del Módulo 2 (ver el reparto de estados en [spec-modulo2.md](./spec-modulo2.md)).
+Un recurso no está disponible en una franja si en esa franja está `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO`. `EN_MANTENIMIENTO` sale del Módulo 1; `RESERVADO`, `BLOQUEO_ACADEMICO` y la ocupación por un préstamo abierto salen de la base del Módulo 2 (ver el reparto de estados en [spec-modulo2.md](./spec-modulo2.md)).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -76,7 +76,7 @@ Como sistema, quiero poder preguntar en cualquier momento si un recurso está li
 - **El inventario no responde**: si el Módulo 1 no está disponible, la consulta NO debe responder "disponible" por defecto; debe avisar que no se pudo comprobar, para que nadie confirme una reserva a ciegas.
 - **Recurso que no existe**: se responde que no se encontró, no que está ocupado.
 - **La respuesta envejece enseguida**: la disponibilidad vale para el instante en que se preguntó; por eso `Reservar recursos` vuelve a preguntar antes de confirmar en vez de reutilizar la respuesta anterior.
-- **Horario operativo y franjas que cruzan la medianoche**: No se permite reservar ni consultar disponibilidad dentro del horario nocturno de 22:00 (10:00 p. m.) a 06:00 (06:00 a. m.) del día siguiente (zona horaria `America/Bogota`, UTC-5). Toda franja válida debe iniciar y concluir dentro del rango operativo diurno (06:00 a 22:00) del mismo día; cualquier consulta sobre una franja fuera de este horario o que cruce la medianoche se reporta como no disponible / inválida.
+- **Horario operativo y franjas que cruzan la medianoche**: No se permite reservar ni consultar disponibilidad dentro del horario nocturno de 22:00 (10:00 p. m.) a 06:00 (06:00 a. m.) del día siguiente (zona horaria `America/Bogota`, UTC-5). Toda franja válida debe iniciar y concluir dentro del rango operativo (06:00 a 22:00) del mismo día; cualquier consulta sobre una franja fuera de este horario o que cruce la medianoche se reporta como no disponible.
 
 ## Requirements *(mandatory)*
 

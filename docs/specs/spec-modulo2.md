@@ -48,6 +48,14 @@ Lo que el Módulo 3 constata en el sitio sigue la misma regla: los daños de un 
 | Reportar cancelación de reserva `<<include>>` | P2 | [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md) |
 | Recibir check-out | P3 | [spec-modulo2-uc12-recibir-check-out.md](./spec-modulo2-uc12-recibir-check-out.md) |
 
+### Especificaciones que no son casos de uso
+
+Reglas de negocio que no tienen óvalo propio en el diagrama y se resuelven con casos de uso que ya existen.
+
+| Regla | Prioridad | Archivo de especificación |
+|---|---|---|
+| Cancelar reservas por mantenimiento de un espacio (sale de `Recibir check-out`) | P3 | [spec-modulo2-cancelar-por-mantenimiento.md](spec-modulo2-13-cancelar-por-mantenimiento.md) |
+
 ## Orden de entrega sugerido
 
 1. **P1 (MVP)**: Consultar recursos + Reservar recursos, con Consultar disponibilidad de los recursos, Actualizar estado de los recursos y Consultar sanciones — consultar y apartar, el núcleo demostrable. Estos tres últimos no se ven por fuera, pero sin ellos el sistema muestra información falsa o deniega sin poder explicar por qué.
@@ -70,5 +78,5 @@ Lo que el Módulo 3 constata en el sitio sigue la misma regla: los daños de un 
 - El Monitor ya no tiene ninguna capacidad propia dentro del módulo: heredaba de Estudiante y lo que lo distinguía era consultar reportes, que ahora ejecuta el sistema. [NEEDS CLARIFICATION]
 - Política de sanción retroactiva: ¿se cancelan las reservas ya confirmadas de un estudiante sancionado, o solo se le impide crear nuevas? [NEEDS CLARIFICATION]
 - Umbral de no-show: definido en 10 minutos desde el inicio de la franja (ver `Reservar recursos`, FR-010). Queda abierto su encadenamiento con las sanciones. [NEEDS CLARIFICATION: cuántas ausencias acumuladas originan sanción y cuánto dura]
-- Parámetros ya definidos: **límite máximo de préstamos simultáneos, 3 reservas vigentes por persona** (`Reservar recursos`, FR-008) y **antelación mínima de cancelación, 10 minutos** (`Cancelar reserva`, FR-007). La **duración máxima de la reserva de un espacio** quedó en **2 horas continuas** (`Reservar recursos`, FR-009), y el **plazo de préstamo de un activo** depende de su tipo y viene como atributo del Módulo 1, en días hábiles (`Reservar recursos`, FR-012). Un préstamo se puede **renovar una sola vez** antes de vencer, sumando otra vez el plazo desde el vencimiento vigente y sin ocupar cupo nuevo (`Reservar recursos`, FR-016 y FR-017).
+- Parámetros ya definidos: **límite máximo de préstamos simultáneos, 3 reservas vigentes por persona** (`Reservar recursos`, FR-008) y **antelación mínima de cancelación, 10 minutos** (`Cancelar reserva`, FR-007). La **duración máxima de la reserva de un espacio** quedó en **2 horas continuas** (`Reservar recursos`, FR-009), y el **plazo de préstamo de un activo** depende de su tipo y viene como atributo del Módulo 1, en días hábiles (`Reservar recursos`, FR-012).
 - **Horario de reservas y cambio de día**: Se definió que la ventana de operación es de 06:00 a 22:00 del mismo día (hora Colombia, `America/Bogota`). No se permiten reservas nocturnas (de 10:00 p. m. a 06:00 a. m. del día siguiente) ni franjas que crucen la medianoche.
