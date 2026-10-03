@@ -144,16 +144,16 @@ src/main/resources/db/migration/
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/usecase/importschedule/
-│   ├── ExpansorDeSesionesTest.java
-│   ├── ClasificadorDeFilasTest.java
-│   ├── ValidarHorarioUseCaseTest.java
-│   ├── AplicarHorarioUseCaseTest.java
-│   └── ReconciliadorDeHorarioTest.java
-├── domain/usecase/cancelreservation/CancelarReservaUseCaseTest.java
+│   ├── SessionExpanderTest.java
+│   ├── RowClassifierTest.java
+│   ├── ValidateScheduleUseCaseTest.java
+│   ├── ApplyScheduleUseCaseTest.java
+│   └── ScheduleReconcilerTest.java
+├── domain/usecase/cancelreservation/CancelReservationUseCaseTest.java
 └── infrastructure/adapter/
-    ├── in/web/schedule/HorarioControllerTest.java
-    ├── out/archivo/LectorCsvDeHorariosTest.java
-    ├── out/persistence/CargaHorarioPersistenceAdapterIT.java
+    ├── in/web/schedule/ScheduleControllerTest.java
+    ├── out/archivo/CsvScheduleReaderTest.java
+    ├── out/persistence/ScheduleUploadPersistenceAdapterIT.java
     └── out/persistence/AcademicPriorityIT.java
 
 src/test/resources/contratos/                       # + los JSON y el CSV de la sección Contratos
@@ -182,8 +182,8 @@ frontend/src/
 
 | Paso | Endpoint | Qué hace | Qué cambia |
 |---|---|---|---|
-| 1 | `POST /api/schedules/validaciones` | Lee el archivo, expande, clasifica cada fila y calcula qué reservas se cancelarían | Guarda la carga como `VALIDATED` y sus filas; **ninguna reserva se toca** |
-| 2 | `POST /api/schedules/{uploadId}/confirmacion` | Vuelve a comprobar y aplica todo en una transacción | Crea los bloqueos y cancela las reservas desplazadas |
+| 1 | `POST /api/schedules/validations` | Lee el archivo, expande, clasifica cada fila y calcula qué reservas se cancelarían | Guarda la carga como `VALIDATED` y sus filas; **ninguna reserva se toca** |
+| 2 | `POST /api/schedules/{uploadId}/confirmation` | Vuelve a comprobar y aplica todo en una transacción | Crea los bloqueos y cancela las reservas desplazadas |
 
 La carga validada se guarda —no se le pide al navegador que reenvíe el archivo— por dos razones: el reporte que la persona aprobó es exactamente lo que se aplica, y queda la constancia de FR-009 aunque nunca se confirme. Caduca a los `reservations.upload.vigencia` (30 minutos por defecto): pasado ese plazo queda `EXPIRED` y hay que volver a validar, porque el impacto que se mostró ya no es de fiar.
 
@@ -232,7 +232,7 @@ Una carga grande hace esto en **una sola transacción**, que es lo que FR-008 ex
 
 **Una sola llamada al Módulo 1 por carga.** El catálogo no se pide fila por fila: se juntan todos los `resource_id` distintos del archivo y se usa la operación por lote de [UC1 § Contratos §2.2](./plan-uc1-consultar-recursos.md#2-módulo-1--inventoryport), que hasta ahora no tenía consumidor real. De ahí salen a la vez los `REJECTED_RESOURCE` (los que vuelven en `notFound`) y los `RESOURCE_UNDER_MAINTENANCE`. Si el Módulo 1 no responde, la validación falla completa con `503`: no se puede bloquear un salón sin saber si existe.
 
-**La necesidad extraordinaria es la misma maquinaria con una sola fila.** `RegisterExtraordinaryNeedUseCase` no repite nada: arma una `ClassSession` suelta con `BlockType.EXTRAORDINARIO` y `semester_schedule_id` nulo, la pasa por el mismo clasificador y, si desplaza reservas, por la misma confirmación. La diferencia está en la respuesta: al ser una sola franja, el impacto se muestra en la misma petición y se aplica con `confirmar: true` en lugar de guardar una carga (ver [Contratos §3](#3-post-apischedulesextraordinarias)).
+**La necesidad extraordinaria es la misma maquinaria con una sola fila.** `RegisterExtraordinaryNeedUseCase` no repite nada: arma una `ClassSession` suelta con `BlockType.EXTRAORDINARIO` y `semester_schedule_id` nulo, la pasa por el mismo clasificador y, si desplaza reservas, por la misma confirmación. La diferencia está en la respuesta: al ser una sola franja, el impacto se muestra en la misma petición y se aplica con `confirm: true` en lugar de guardar una carga (ver [Contratos §3](#3-post-apischedulesextraordinary-needs)).
 
 ## Contratos
 
@@ -243,13 +243,13 @@ Se aplican sin repetirlas las **convenciones comunes** de [plan-uc1-consultar-re
 | Regla | Detalle |
 |---|---|
 | Solo Dirección de Programa | Los cuatro endpoints exigen el rol `DIRECCION_PROGRAMA`. Un `ESTUDIANTE` o `MONITOR` con sesión válida recibe `403`, no `401`. |
-| Validar nunca cambia nada | `POST /api/schedules/validaciones` es seguro de repetir: guarda la carga y su reporte, pero no crea bloqueos ni cancela reservas. Lo único que cambia es `semester_schedule` y sus filas. |
+| Validar nunca cambia nada | `POST /api/schedules/validations` es seguro de repetir: guarda la carga y su reporte, pero no crea bloqueos ni cancela reservas. Lo único que cambia es `semester_schedule` y sus filas. |
 | El reporte habla de filas, no de sesiones | Los dictámenes y los errores se reportan **por fila del archivo**, que es lo que la persona puede corregir. Las sesiones expandidas se cuentan, pero no se listan una por una: un semestre son miles. |
 | `row` es el número real del archivo | Empieza en 2, porque la 1 es la cabecera. Así el mensaje de error se puede buscar directamente en el CSV. |
 
 ---
 
-### 1. `POST /api/schedules/validaciones`
+### 1. `POST /api/schedules/validations`
 
 Paso 1 de la carga. `multipart/form-data`, porque va un archivo:
 
@@ -465,7 +465,7 @@ El `estado: "REJECTED"` queda guardado: la constancia de FR-009 vale también pa
 
 ---
 
-### 2. `POST /api/schedules/{uploadId}/confirmacion`
+### 2. `POST /api/schedules/{uploadId}/confirmation`
 
 Paso 2. Sin cuerpo: lo que se aplica es exactamente la carga que se validó y que la persona acaba de revisar.
 
@@ -519,7 +519,7 @@ Paso 2. Sin cuerpo: lo que se aplica es exactamente la carga que se validó y qu
 
 ---
 
-### 3. `POST /api/schedules/extraordinarias`
+### 3. `POST /api/schedules/extraordinary-needs`
 
 La necesidad extraordinaria: una sola franja, sin archivo. Como es una, el impacto se devuelve en la misma petición y se aplica con `confirm`.
 
@@ -560,7 +560,7 @@ Con `confirmar: false` (el valor por defecto) **no cambia nada** y responde `200
 }
 ```
 
-Con `confirmar: true` se aplica y responde `201` (escenario 3):
+Con `confirm: true` se aplica y responde `201` (escenario 3):
 
 ```http
 HTTP/1.1 201 Created
@@ -626,7 +626,7 @@ El histórico, que es la cara consultable de la constancia de FR-009.
 }
 ```
 
-`GET /api/schedules/{uploadId}` devuelve ese mismo objeto más el `filas[]` de la validación, con la misma forma de [§1](#1-post-apischedulesvalidaciones), para poder volver a mirar un reporte sin repetir la carga.
+`GET /api/schedules/{uploadId}` devuelve ese mismo objeto más el `rows[]` de la validación, con la misma forma de [§1](#1-post-apischedulesvalidations), para poder volver a mirar un reporte sin repetir la carga.
 
 ---
 
@@ -656,7 +656,7 @@ El `academicTerm` y las fechas del periodo **no** van en el archivo: viajan en l
 
 Una fila con `day_of_week: SABADO` es válida —hay clases los sábados—, pero sus sesiones se omiten si el sábado está en la lista de días no hábiles. Una columna extra en el CSV se ignora; una obligatoria que falte es `INVALID_HEADER` y la carga no empieza.
 
-**Decisión: CSV y no Excel.** Un `.xlsx` obligaría a sumar Apache POI y a tratar con celdas con formato de hora, que es donde aparecen los errores difíciles de explicar. Excel exporta a CSV en dos clics, y el reporte de [§1](#1-post-apischedulesvalidaciones) señala la fila y la columna exactas. (NEEDS CLARIFICATION: si la Dirección de Programa solo puede entregar `.xlsx`, cambia `CsvScheduleReader` y nada más; el puerto `ScheduleReader` existe para eso.)
+**Decisión: CSV y no Excel.** Un `.xlsx` obligaría a sumar Apache POI y a tratar con celdas con formato de hora, que es donde aparecen los errores difíciles de explicar. Excel exporta a CSV en dos clics, y el reporte de [§1](#1-post-apischedulesvalidations) señala la fila y la columna exactas. (NEEDS CLARIFICATION: si la Dirección de Programa solo puede entregar `.xlsx`, cambia `CsvScheduleReader` y nada más; el puerto `ScheduleReader` existe para eso.)
 
 ---
 
@@ -882,21 +882,21 @@ Se suman a los de UC1 y UC2 en la misma carpeta:
 
 ```text
 src/test/resources/contratos/
-├── horario-valido.csv                      # 3 clases limpias
-├── horario-con-errores.csv                 # una fila por cada dictamen bloqueante
-├── horario-vacio.csv                       # solo la cabecera
-├── horario-cabecera-invalida.csv           # sin la columna resource_id
-├── api-horario-validacion-aplicable.json   # el 200 con DISPLACES_RESERVATIONS
-├── api-horario-validacion-rechazada.json   # el 200 con aplicable: false
-├── api-horario-confirmacion.json
-├── api-horario-409-impacto-cambio.json
-├── api-extraordinaria-previa.json          # confirmar: false
-├── api-extraordinaria-201.json
-├── modulo1-estado-operativo-lote.json      # con notFound y un EN_MANTENIMIENTO
-└── evento-reserva-cancelada.json           # lo que debe quedar en outbox_message.payload
+├── schedule-valid.csv                      # 3 clases limpias
+├── schedule-with-errors.csv                 # una fila por cada dictamen bloqueante
+├── schedule-empty.csv                       # solo la cabecera
+├── schedule-invalid-header.csv           # sin la columna resource_id
+├── api-schedule-validation-applicable.json   # el 200 con DISPLACES_RESERVATIONS
+├── api-schedule-validation-rejected.json   # el 200 con aplicable: false
+├── api-schedule-confirmation.json
+├── api-schedule-409-impact-changed.json
+├── api-extraordinary-need-preview.json          # confirmar: false
+├── api-extraordinary-need-201.json
+├── module1-operational-status-batch.json      # con notFound y un EN_MANTENIMIENTO
+└── event-reservation-cancelled.json           # lo que debe quedar en outbox_message.payload
 ```
 
-Los CSV son también la entrada de `LectorCsvDeHorariosTest` (T021), así que el formato de [§5](#5-formato-del-archivo-csv) se verifica contra los mismos archivos que usan las pruebas del controlador.
+Los CSV son también la entrada de `CsvScheduleReaderTest` (T021), así que el formato de [§5](#5-formato-del-archivo-csv) se verifica contra los mismos archivos que usan las pruebas del controlador.
 
 ---
 
@@ -924,7 +924,7 @@ Los CSV son también la entrada de `LectorCsvDeHorariosTest` (T021), así que el
 - [ ] T009 [P] Definir los puertos de entrada `ValidateSchedulePort`, `ApplySchedulePort`, `RegisterExtraordinaryNeedPort` y `CancelReservationPort` en `domain/port/in/`
 - [ ] T010 Implementar `CancelReservationUseCase` con **solo la rama académica**: cancela sin penalizar, deja la auditoría con autor, motivo y marca de tiempo, y encola el evento de cancelación (UC4 FR-002, FR-004 a FR-006, FR-009). La rama del titular, con `CAN-001` y `CAN-002`, queda para el plan de UC4
 - [ ] T011 [P] Implementar `ReservationCancelledEvent` y extender `OutboxNotifierAdapter` para encolarlo en el topic de cancelación según [Contratos §7](#7-evento-de-cancelación--module2reservationcancellationv1), con `attributableToPerson` en `false` (UC11 FR-002, FR-003, FR-006)
-- [ ] T012 [P] Mapear `InvalidFileException` y `UploadNotApplicableException` a `400` y `409` en `GlobalErrorHandler`, con los `code` de [Contratos §1 y §2](#1-post-apischedulesvalidaciones)
+- [ ] T012 [P] Mapear `InvalidFileException` y `UploadNotApplicableException` a `400` y `409` en `GlobalErrorHandler`, con los `code` de [Contratos §1 y §2](#1-post-apischedulesvalidations)
 - [ ] T013 [P] Exigir el rol `DIRECCION_PROGRAMA` en `/api/schedules/**` en `SecurityConfig`, y comprobar que un `ESTUDIANTE` autenticado recibe `403` y no `401`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
@@ -935,19 +935,19 @@ Los CSV son también la entrada de `LectorCsvDeHorariosTest` (T021), así que el
 
 **Goal**: La Dirección de Programa carga el archivo del semestre, ve un reporte fila por fila y, cuando hay reservas que se desplazarían, las aprueba antes de que se cancelen. Al confirmar, cada clase queda en `BLOQUEO_ACADEMICO` y ningún estudiante puede reservar esos recursos en esas franjas.
 
-**Independent Test**: Con el perfil local, cargar `horario-valido.csv` y comprobar en la consulta de UC1 que las franjas de clase aparecen como `BLOQUEO_ACADEMICO` y no son seleccionables; cargar `horario-con-errores.csv` y comprobar que no se creó ni un bloqueo y que el reporte señala las cinco filas; volver a cargar el mismo archivo válido y comprobar que no se duplicó nada. No necesita que exista UC4 ni que Kafka esté levantado: los eventos quedan en la *outbox*.
+**Independent Test**: Con el perfil local, cargar `schedule-valid.csv` y comprobar en la consulta de UC1 que las franjas de clase aparecen como `BLOQUEO_ACADEMICO` y no son seleccionables; cargar `schedule-with-errors.csv` y comprobar que no se creó ni un bloqueo y que el reporte señala las cinco filas; volver a cargar el mismo archivo válido y comprobar que no se duplicó nada. No necesita que exista UC4 ni que Kafka esté levantado: los eventos quedan en la *outbox*.
 
 ### Tests for User Story 1
 
-- [ ] T014 [P] [US1] Pruebas en `ExpansorDeSesionesTest.java`: una clase de lunes en un periodo de 16 semanas da 16 sesiones; un festivo configurado en lunes la deja en 15 y lo informa; `SABADO` genera sesiones si el sábado es hábil; un periodo que no contiene ningún día de esa clase da 0 sesiones y la fila lo dice
-- [ ] T015 [P] [US1] Pruebas en `ClasificadorDeFilasTest.java`: un dictamen por cada fila de la tabla, el cruce parcial de 09:00–11:00 contra una clase de 08:00–10:00 como `ACADEMIC_CLASH`, el activo apartado sin recoger como `DISPLACES_RESERVATIONS` y el ya entregado como `ASSET_ALREADY_PICKED_UP` (FR-010), y que una fila con dos problemas reporta el bloqueante
-- [ ] T016 [P] [US1] Pruebas en `ValidarHorarioUseCaseTest.java`: el archivo limpio deja la carga `VALIDATED` y `aplicable: true` sin crear bloqueos ni cancelar reservas; una sola fila bloqueante deja `aplicable: false` y **cero** bloqueos (escenario 2); el reporte lista **todas** las filas con problema y no se para en la primera; el archivo vacío responde `EMPTY_FILE`; y el Módulo 1 caído da `503`
-- [ ] T017 [P] [US1] Pruebas en `ReconciliadorDeHorarioTest.java`: recargar el mismo archivo deja todas las filas en `UNCHANGED` y cero bloqueos nuevos (FR-007, SC-003); una clase nueva se crea; una clase que desapareció del archivo entra como `blocksToWithdraw` y exige confirmación; y una clase retirada y vuelta a cargar funciona, porque la `session_key` cancelada quedó en `NULL`
-- [ ] T018 [P] [US1] Pruebas en `AplicarHorarioUseCaseTest.java`: la confirmación crea los bloqueos y cancela las reservas desplazadas; una carga `aplicable: false` responde `UPLOAD_NOT_APPLICABLE`; una vencida, `UPLOAD_EXPIRED`; confirmar dos veces no aplica dos veces y responde `UPLOAD_ALREADY_APPLIED`; y un impacto que creció entre validar y confirmar responde `IMPACT_CHANGED` sin cancelar nada
-- [ ] T019 [P] [US1] Prueba `AcademicPriorityIT.java` con Testcontainers: la cancelación de la reserva estudiantil y la creación del bloqueo ocurren en la misma transacción y la restricción de exclusión nunca ve las dos `CONFIRMADA` (escenario 3); un fallo a mitad de la carga no deja ni un bloqueo ni una reserva cancelada (FR-008); y por cada cancelación queda un `outbox_message` que coincide con `evento-reserva-cancelada.json`
-- [ ] T020 [P] [US1] Prueba `CargaHorarioPersistenceAdapterIT.java`: el índice único de `session_key` rechaza el duplicado, cancelar un bloqueo pone la clave en `NULL`, y la escritura por lotes de miles de sesiones termina dentro del presupuesto de SC-001
-- [ ] T021 [P] [US1] Pruebas `LectorCsvDeHorariosTest.java` con los CSV de [Contratos §9](#9-fixtures-compartidos): archivo válido, campo con comas entre comillas, cabecera sin una columna obligatoria, hora mal escrita, `DOMINGO` rechazado, columna extra ignorada y archivo con solo la cabecera
-- [ ] T022 [P] [US1] Prueba `HorarioControllerTest.java` con `@WebMvcTest` y `MockMultipartFile`, comparando contra los *fixtures* `api-horario-*.json`: el `200` aplicable y el `200` rechazado, los tres `400`, `401` sin sesión, `403` con rol `ESTUDIANTE`, `413` con un archivo grande, los cuatro `409` de la confirmación y el `503` del Módulo 1
+- [ ] T014 [P] [US1] Pruebas en `SessionExpanderTest.java`: una clase de lunes en un periodo de 16 semanas da 16 sesiones; un festivo configurado en lunes la deja en 15 y lo informa; `SABADO` genera sesiones si el sábado es hábil; un periodo que no contiene ningún día de esa clase da 0 sesiones y la fila lo dice
+- [ ] T015 [P] [US1] Pruebas en `RowClassifierTest.java`: un dictamen por cada fila de la tabla, el cruce parcial de 09:00–11:00 contra una clase de 08:00–10:00 como `ACADEMIC_CLASH`, el activo apartado sin recoger como `DISPLACES_RESERVATIONS` y el ya entregado como `ASSET_ALREADY_PICKED_UP` (FR-010), y que una fila con dos problemas reporta el bloqueante
+- [ ] T016 [P] [US1] Pruebas en `ValidateScheduleUseCaseTest.java`: el archivo limpio deja la carga `VALIDATED` y `aplicable: true` sin crear bloqueos ni cancelar reservas; una sola fila bloqueante deja `aplicable: false` y **cero** bloqueos (escenario 2); el reporte lista **todas** las filas con problema y no se para en la primera; el archivo vacío responde `EMPTY_FILE`; y el Módulo 1 caído da `503`
+- [ ] T017 [P] [US1] Pruebas en `ScheduleReconcilerTest.java`: recargar el mismo archivo deja todas las filas en `UNCHANGED` y cero bloqueos nuevos (FR-007, SC-003); una clase nueva se crea; una clase que desapareció del archivo entra como `blocksToWithdraw` y exige confirmación; y una clase retirada y vuelta a cargar funciona, porque la `session_key` cancelada quedó en `NULL`
+- [ ] T018 [P] [US1] Pruebas en `ApplyScheduleUseCaseTest.java`: la confirmación crea los bloqueos y cancela las reservas desplazadas; una carga `aplicable: false` responde `UPLOAD_NOT_APPLICABLE`; una vencida, `UPLOAD_EXPIRED`; confirmar dos veces no aplica dos veces y responde `UPLOAD_ALREADY_APPLIED`; y un impacto que creció entre validar y confirmar responde `IMPACT_CHANGED` sin cancelar nada
+- [ ] T019 [P] [US1] Prueba `AcademicPriorityIT.java` con Testcontainers: la cancelación de la reserva estudiantil y la creación del bloqueo ocurren en la misma transacción y la restricción de exclusión nunca ve las dos `CONFIRMADA` (escenario 3); un fallo a mitad de la carga no deja ni un bloqueo ni una reserva cancelada (FR-008); y por cada cancelación queda un `outbox_message` que coincide con `event-reservation-cancelled.json`
+- [ ] T020 [P] [US1] Prueba `ScheduleUploadPersistenceAdapterIT.java`: el índice único de `session_key` rechaza el duplicado, cancelar un bloqueo pone la clave en `NULL`, y la escritura por lotes de miles de sesiones termina dentro del presupuesto de SC-001
+- [ ] T021 [P] [US1] Pruebas `CsvScheduleReaderTest.java` con los CSV de [Contratos §9](#9-fixtures-compartidos): archivo válido, campo con comas entre comillas, cabecera sin una columna obligatoria, hora mal escrita, `DOMINGO` rechazado, columna extra ignorada y archivo con solo la cabecera
+- [ ] T022 [P] [US1] Prueba `ScheduleControllerTest.java` con `@WebMvcTest` y `MockMultipartFile`, comparando contra los *fixtures* `api-schedule-*.json`: el `200` aplicable y el `200` rechazado, los tres `400`, `401` sin sesión, `403` con rol `ESTUDIANTE`, `413` con un archivo grande, los cuatro `409` de la confirmación y el `503` del Módulo 1
 
 ### Implementation for User Story 1
 
@@ -959,7 +959,7 @@ Los CSV son también la entrada de `LectorCsvDeHorariosTest` (T021), así que el
 - [ ] T028 [US1] Implementar `ApplyScheduleUseCase`: comprueba estado y vigencia, recomprueba el impacto, cancela las desplazadas por `CancelReservationPort` y crea cada sesión por `ReserveResourcesPort` con `origen = ACADEMICO`, todo en una transacción y por lotes (depende de T010, T027)
 - [ ] T029 [P] [US1] Implementar `ScheduleUploadPersistenceAdapter` y `AcademicBlockPersistenceAdapter`, con la consulta de cruces por lote, la búsqueda por `session_key` y la escritura por lotes
 - [ ] T030 [US1] Registrar los beans y las transacciones de UC3 en `UseCasesConfig`, con la validación en `readOnly` y la aplicación en una sola transacción de escritura (depende de T027 a T029)
-- [ ] T031 [US1] Implementar `ScheduleController` con `POST /api/schedules/validaciones`, `POST /api/schedules/{uploadId}/confirmacion`, `GET /api/schedules` y `GET /api/schedules/{uploadId}`, exactamente como los fija [Contratos §1, §2 y §4](#1-post-apischedulesvalidaciones), documentado con OpenAPI
+- [ ] T031 [US1] Implementar `ScheduleController` con `POST /api/schedules/validations`, `POST /api/schedules/{uploadId}/confirmation`, `GET /api/schedules` y `GET /api/schedules/{uploadId}`, exactamente como los fija [Contratos §1, §2 y §4](#1-post-apischedulesvalidations), documentado con OpenAPI
 - [ ] T032 [P] [US1] Frontend: copiar los tipos de [Contratos §8](#8-tipos-del-frontend) a `frontend/src/features/schedules/types.ts` y escribir `api.ts` con la subida `multipart` y el mapeo a `ErrorHorario`
 - [ ] T033 [US1] Frontend: `FileUpload.tsx` (archivo, periodo académico y fechas), `ImportReportView.tsx` (tabla por fila, agrupada por dictamen y con los bloqueantes primero) y `ConfirmImpact.tsx`, que solo aparece si `requiresConfirmation` y lista todas las `affectedReservations` juntas
 - [ ] T034 [US1] Frontend: `app/(direccion)/schedules/page.tsx`, que encadena validar → revisar → confirmar, y muestra el resultado, el archivo vacío, la carga expirada y el `IMPACT_CHANGED` que obliga a revalidar
@@ -972,9 +972,9 @@ Los CSV son también la entrada de `LectorCsvDeHorariosTest` (T021), así que el
 
 **Purpose**: La otra mitad del spec. Reusa todo lo de la Phase 3 con una sola fila, así que se entrega después sin romper nada.
 
-- [ ] T035 [P] Pruebas en `RegistrarNecesidadExtraordinariaUseCaseTest.java`: con `confirmar: false` no cambia nada y devuelve el impacto; con `confirmar: true` cancela la reserva estudiantil y crea el bloqueo `EXTRAORDINARIO` (escenario 3); una franja con otra clase responde `ACADEMIC_CLASH` sin cancelar el bloqueo que ya estaba (escenario 4, FR-006); un activo ya entregado responde `ASSET_ALREADY_PICKED_UP` (FR-010); y una franja de 3 horas se acepta, porque el tope de 2 horas no aplica a lo académico
+- [ ] T035 [P] Pruebas en `RegisterExtraordinaryNeedUseCaseTest.java`: con `confirmar: false` no cambia nada y devuelve el impacto; con `confirm: true` cancela la reserva estudiantil y crea el bloqueo `EXTRAORDINARIO` (escenario 3); una franja con otra clase responde `ACADEMIC_CLASH` sin cancelar el bloqueo que ya estaba (escenario 4, FR-006); un activo ya entregado responde `ASSET_ALREADY_PICKED_UP` (FR-010); y una franja de 3 horas se acepta, porque el tope de 2 horas no aplica a lo académico
 - [ ] T036 Implementar `RegisterExtraordinaryNeedUseCase` reusando `RowClassifier` y `CancelReservationUseCase`, con `BlockType.EXTRAORDINARIO` y `semester_schedule_id` nulo (depende de T025, T010)
-- [ ] T037 Implementar `POST /api/schedules/extraordinarias` en `ScheduleController` según [Contratos §3](#3-post-apischedulesextraordinarias), con el `Location` apuntando a `/api/reservations/{id}`
+- [ ] T037 Implementar `POST /api/schedules/extraordinary-needs` en `ScheduleController` según [Contratos §3](#3-post-apischedulesextraordinary-needs), con el `Location` apuntando a `/api/reservations/{id}`
 - [ ] T038 Frontend: `ExtraordinaryNeedForm.tsx` y `app/(direccion)/horarios/extraordinary/page.tsx`, con la previsualización del impacto antes de confirmar
 
 **Checkpoint**: El spec de UC3 queda cubierto de punta a punta

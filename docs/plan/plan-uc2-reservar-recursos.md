@@ -114,7 +114,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     ├── adapter/
     │   ├── in/web/
     │   │   ├── reservation/
-    │   │   │   ├── ReservationController.java          # POST /api/reservations, GET /api/reservations/mias
+    │   │   │   ├── ReservationController.java          # POST /api/reservations, GET /api/reservations/mine
     │   │   │   ├── LoanController.java         # POST .../renovacion, GET vencimiento previsto
     │   │   │   ├── CreateReservationRequest.java
     │   │   │   ├── ReservationResponse.java
@@ -143,16 +143,16 @@ src/main/resources/
     └── V3__denial_and_outbox.sql                 # tablas denegacion y outbox_message
 
 src/test/java/edu/unimagdalena/reservasunimag/
-├── domain/model/reservation/FranjaHorariaTest.java     # (existe) + tope de 2 horas
+├── domain/model/reservation/TimeSlotTest.java     # (existe) + tope de 2 horas
 ├── domain/usecase/reserveresources/
-│   ├── ReservarRecursosUseCaseTest.java
-│   └── CalculadoraVencimientoTest.java
-├── domain/usecase/renewloan/RenovarPrestamoUseCaseTest.java
+│   ├── ReserveResourcesUseCaseTest.java
+│   └── DueDateCalculatorTest.java
+├── domain/usecase/renewloan/RenewLoanUseCaseTest.java
 └── infrastructure/adapter/
-    ├── in/web/reservation/ReservaControllerTest.java
-    ├── out/persistence/ReservaPersistenceAdapterIT.java
+    ├── in/web/reservation/ReservationControllerTest.java
+    ├── out/persistence/ReservationPersistenceAdapterIT.java
     ├── out/persistence/ReservationConcurrencyIT.java
-    └── out/mensajeria/PublicadorOutboxIT.java
+    └── out/mensajeria/OutboxPublisherIT.java
 
 src/test/resources/contratos/                       # + los JSON de la sección Contratos (T020)
 
@@ -561,7 +561,7 @@ Los otros errores: `403` con `type` `.../errors/not-reservation-holder` cuando q
 
 ---
 
-### 4. `GET /api/reservations/mias`
+### 4. `GET /api/reservations/mine`
 
 La lista mínima que sirve de entrada a la renovación. `?vigentes=true` (por defecto) aplica la misma definición de vigente de FR-008; `?vigentes=false` trae también las cerradas.
 
@@ -647,7 +647,7 @@ Es el mismo objeto que el Módulo 1 pone dentro de `contenido[]` en el catálogo
 
 ### 6. Módulo 3 — sanciones al confirmar
 
-El contrato de la petición y la respuesta es exactamente el de [UC1 § Contratos §3](./plan-uc1-consultar-recursos.md#3-módulo-3--complianceport): `GET /api/v1/compliance/people/{codigo}`, con el `code` tomado del claim del JWT (UC6 FR-007). Lo que cambia es **qué se hace con la respuesta**:
+El contrato de la petición y la respuesta es exactamente el de [UC1 § Contratos §3](./plan-uc1-consultar-recursos.md#3-módulo-3--complianceport): `GET /api/v1/compliance/people/{code}`, con el `code` tomado del claim del JWT (UC6 FR-007). Lo que cambia es **qué se hace con la respuesta**:
 
 | Situación | UC1 (consultar) | UC2 (confirmar) |
 |---|---|---|
@@ -777,7 +777,7 @@ export interface Loan {
   renewed: boolean;
   renewable: boolean;
   pickedUp: boolean;
-  overdue?: boolean;          // solo en GET /api/reservations/mias
+  overdue?: boolean;          // solo en GET /api/reservations/mine
 }
 
 /** Cuerpo de POST /api/reservations: una forma u otra, nunca las dos. */
@@ -853,22 +853,22 @@ Se suman a los que creó el plan de UC1 en la misma carpeta:
 
 ```text
 src/test/resources/contratos/
-├── modulo1-ficha-activo.json            # con loanTermBusinessDays
-├── modulo1-ficha-activo-sin-plazo.json  # el 503 INCOMPLETE_RESOURCE_DETAILS (P-16)
-├── modulo1-ficha-espacio.json
-├── api-reserva-espacio-201.json
-├── api-reserva-activo-201.json
-├── api-reserva-409-res-001.json         # y -002, -003, -004 y -004-mantenimiento
-├── api-reserva-400-duracion.json
-├── api-vencimiento-previsto.json
-├── api-renovacion-200.json
-├── api-renovacion-409.json
-├── api-mis-reservas.json
-├── evento-ficha-estudiantil.json        # lo que debe quedar en outbox_message.payload
-└── evento-ficha-academica.json
+├── module1-asset-details.json            # con loanTermBusinessDays
+├── module1-asset-details-no-term.json  # el 503 INCOMPLETE_RESOURCE_DETAILS (P-16)
+├── module1-space-details.json
+├── api-reservation-space-201.json
+├── api-reservation-asset-201.json
+├── api-reservation-409-res-001.json         # y -002, -003, -004 y -004-mantenimiento
+├── api-reservation-400-duration.json
+├── api-expected-due-date.json
+├── api-renewal-200.json
+├── api-renewal-409.json
+├── api-my-reservations.json
+├── event-reservation-record-created-student.json        # lo que debe quedar en outbox_message.payload
+└── event-reservation-record-created-academic.json
 ```
 
-`PublicadorOutboxIT` (T019) compara contra `evento-ficha-*.json` el mensaje que llega al topic, así que el contrato del evento se verifica de punta a punta —de la transacción al broker— y no solo en el adaptador.
+`OutboxPublisherIT` (T019) compara contra `evento-ficha-*.json` el mensaje que llega al topic, así que el contrato del evento se verifica de punta a punta —de la transacción al broker— y no solo en el adaptador.
 
 ---
 
@@ -910,14 +910,14 @@ src/test/resources/contratos/
 
 ### Tests for User Story 1
 
-- [ ] T013 [P] [US1] Pruebas en `FranjaHorariaTest.java` para el tope de FR-009: 09:00–12:00 rechazada, 09:00–11:00 aceptada, y que el rechazo ocurre sin consultar sanción, cupo ni disponibilidad (edge case **Reserva más larga que el tope**)
-- [ ] T014 [P] [US1] Pruebas en `CalculadoraVencimientoTest.java`: martes 2026-09-01 14:30 con plazo 7 → jueves 2026-09-10 22:00 (escenario 2), viernes con plazo 3 → miércoles siguiente (FR-014), plazo 0 → 22:00 del mismo día, y un festivo configurado que no consume plazo
-- [ ] T015 [P] [US1] Pruebas en `ReservarRecursosUseCaseTest.java` con puertos falsos: los escenarios 1 a 5 del spec, el cruce parcial de 09:30–10:30 contra una clase de 08:00–10:00 → `RES-001`, el activo apartado para recogerlo el jueves que bloquea todo el periodo, el orden de validación con las tres causas a la vez → un solo código (edge case **Múltiples causas de denegación simultáneas**), el `503` cuando el Módulo 3 no responde (P-10) y el `503` cuando el Módulo 1 no responde
-- [ ] T016 [P] [US1] Pruebas en `ReservarRecursosUseCaseTest.java` para el cupo: 3 vigentes → `RES-002` con "3 de 3" y la próxima liberación, un préstamo vencido y sin devolver que **sigue** ocupando cupo (FR-008), y una `CANCELADA` o `FINALIZADA` que lo libera
-- [ ] T017 [P] [US1] Prueba de integración `ReservaPersistenceAdapterIT.java` con Testcontainers: la restricción de exclusión rechaza la ocupación solapada, el `INSERT` de la reserva y del evento en `outbox_message` ocurren en la misma transacción, un *rollback* no deja ni reserva ni evento, y la denegación sí queda registrada
+- [ ] T013 [P] [US1] Pruebas en `TimeSlotTest.java` para el tope de FR-009: 09:00–12:00 rechazada, 09:00–11:00 aceptada, y que el rechazo ocurre sin consultar sanción, cupo ni disponibilidad (edge case **Reserva más larga que el tope**)
+- [ ] T014 [P] [US1] Pruebas en `DueDateCalculatorTest.java`: martes 2026-09-01 14:30 con plazo 7 → jueves 2026-09-10 22:00 (escenario 2), viernes con plazo 3 → miércoles siguiente (FR-014), plazo 0 → 22:00 del mismo día, y un festivo configurado que no consume plazo
+- [ ] T015 [P] [US1] Pruebas en `ReserveResourcesUseCaseTest.java` con puertos falsos: los escenarios 1 a 5 del spec, el cruce parcial de 09:30–10:30 contra una clase de 08:00–10:00 → `RES-001`, el activo apartado para recogerlo el jueves que bloquea todo el periodo, el orden de validación con las tres causas a la vez → un solo código (edge case **Múltiples causas de denegación simultáneas**), el `503` cuando el Módulo 3 no responde (P-10) y el `503` cuando el Módulo 1 no responde
+- [ ] T016 [P] [US1] Pruebas en `ReserveResourcesUseCaseTest.java` para el cupo: 3 vigentes → `RES-002` con "3 de 3" y la próxima liberación, un préstamo vencido y sin devolver que **sigue** ocupando cupo (FR-008), y una `CANCELADA` o `FINALIZADA` que lo libera
+- [ ] T017 [P] [US1] Prueba de integración `ReservationPersistenceAdapterIT.java` con Testcontainers: la restricción de exclusión rechaza la ocupación solapada, el `INSERT` de la reserva y del evento en `outbox_message` ocurren en la misma transacción, un *rollback* no deja ni reserva ni evento, y la denegación sí queda registrada
 - [ ] T018 [P] [US1] Prueba `ReservationConcurrencyIT.java`: N hilos piden a la vez el mismo recurso con tiempos que se cruzan y exactamente uno queda `CONFIRMADA`, el resto recibe `RES-004` (SC-004); y dos peticiones del mismo usuario con cupo 3 no se cuelan las dos
-- [ ] T019 [P] [US1] Prueba `PublicadorOutboxIT.java` con Testcontainers de Kafka: el mensaje que llega al topic coincide con los *fixtures* `evento-ficha-*.json` de [Contratos §7](#7-evento-hacia-el-módulo-3--module2reservationrecordv1) —envoltorio, clave de partición `reservation_id` y las dos formas, estudiantil y académica—, publica el pendiente y lo marca `SENT`, reintenta con espera creciente y sube `intentos`, queda `FAILED` al agotar `max-attempts`, y dos instancias no publican el mismo evento (`SKIP LOCKED`)
-- [ ] T020 [P] [US1] Guardar los JSON de [Contratos §1 a §7](#contratos) como *fixtures* en `src/test/resources/contratos/` y escribir con ellos `ReservaControllerTest.java` con `@WebMvcTest`: `201` con `Location` y el cuerpo de las dos formas (espacio y activo), `400` por franja de más de 2 horas y por cuerpo que no corresponde a la categoría, `401` sin sesión, `404` si el recurso no existe, `409` con el `code` y las extensiones de cada una de las cuatro denegaciones —incluida la de mantenimiento con `detectedStatus`—, los dos `503` (`MODULO_1` y `MODULO_3`), y que ninguna respuesta nombre al titular de otra reserva (UC8 FR-005)
+- [ ] T019 [P] [US1] Prueba `OutboxPublisherIT.java` con Testcontainers de Kafka: el mensaje que llega al topic coincide con los *fixtures* `evento-ficha-*.json` de [Contratos §7](#7-evento-hacia-el-módulo-3--module2reservationrecordv1) —envoltorio, clave de partición `reservation_id` y las dos formas, estudiantil y académica—, publica el pendiente y lo marca `SENT`, reintenta con espera creciente y sube `intentos`, queda `FAILED` al agotar `max-attempts`, y dos instancias no publican el mismo evento (`SKIP LOCKED`)
+- [ ] T020 [P] [US1] Guardar los JSON de [Contratos §1 a §7](#contratos) como *fixtures* en `src/test/resources/contratos/` y escribir con ellos `ReservationControllerTest.java` con `@WebMvcTest`: `201` con `Location` y el cuerpo de las dos formas (espacio y activo), `400` por franja de más de 2 horas y por cuerpo que no corresponde a la categoría, `401` sin sesión, `404` si el recurso no existe, `409` con el `code` y las extensiones de cada una de las cuatro denegaciones —incluida la de mantenimiento con `detectedStatus`—, los dos `503` (`MODULO_1` y `MODULO_3`), y que ninguna respuesta nombre al titular de otra reserva (UC8 FR-005)
 
 ### Implementation for User Story 1
 
@@ -947,10 +947,10 @@ src/test/resources/contratos/
 
 **Purpose**: Completar el resto de la funcionalidad del spec. No es una historia de usuario aparte —el spec tiene una sola— pero se entrega y se prueba de forma independiente, y puede quedar después de la demo del MVP sin romper nada de la Phase 3.
 
-- [ ] T038 [P] Pruebas en `RenovarPrestamoUseCaseTest.java`: renovación válida que suma el plazo desde el vencimiento vigente y no desde hoy, la pedida el mismo día del vencimiento antes de las 22:00 que se acepta y un minuto después que no (edge case **Renovación pedida el mismo día del vencimiento**), y los cinco rechazos de FR-017
+- [ ] T038 [P] Pruebas en `RenewLoanUseCaseTest.java`: renovación válida que suma el plazo desde el vencimiento vigente y no desde hoy, la pedida el mismo día del vencimiento antes de las 22:00 que se acepta y un minuto después que no (edge case **Renovación pedida el mismo día del vencimiento**), y los cinco rechazos de FR-017
 - [ ] T039 [P] Prueba de integración de la renovación: el `UPDATE` de `reservation.ends_at` que invade la reserva de otra persona lo rechaza la restricción de exclusión, y la renovación **no** consume cupo nuevo (FR-016)
 - [ ] T040 Definir `RenewLoanPort` e implementar `RenewLoanUseCase`: verifica titularidad, aplica los cinco rechazos con el `reason` de [Contratos §3](#3-post-apiloansreservationidrenovacion), mueve `reservation.ends_at`, marca `loan.renewed` y publica la ficha con el vencimiento nuevo como `ReservationRecordUpdated` (UC10 FR-003) (depende de T024, T029)
-- [ ] T041 Implementar `LoanController` (`POST /api/loans/{reservationId}/renovacion` y `GET /api/loans/expected-due-date`) y `GET /api/reservations/mias` en `ReservationController`, según [Contratos §2, §3 y §4](#2-get-apiloansexpected-due-date), incluido el `catalogUnavailable` cuando el Módulo 1 no responda
+- [ ] T041 Implementar `LoanController` (`POST /api/loans/{reservationId}/renovacion` y `GET /api/loans/expected-due-date`) y `GET /api/reservations/mine` en `ReservationController`, según [Contratos §2, §3 y §4](#2-get-apiloansexpected-due-date), incluido el `catalogUnavailable` cuando el Módulo 1 no responda
 - [ ] T042 Frontend: `MyReservationsList.tsx` y `RenewLoan.tsx` en una pantalla mínima `app/(app)/my-reservations/page.tsx`, que muestra el vencimiento, si queda renovación y el motivo cuando se deniega
 
 **Checkpoint**: El spec de UC2 queda cubierto de punta a punta
@@ -1013,7 +1013,7 @@ src/test/resources/contratos/
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - La sección **Contratos** es la única fuente del JSON de UC2: si algo cambia ahí, cambia en los *fixtures*, en el OpenAPI y en los tipos del frontend, no al revés. Las convenciones comunes no se repiten: viven en el plan de UC1.
-- **Decisiones de los contratos que el spec no fija**: el cuerpo de `POST /api/reservations` no lleva `category` ni `origin` (los pone el Módulo 1 y el JWT); `GET /api/reservations/mias` responde `200` con `catalogUnavailable: true` si el Módulo 1 no contesta, en vez de `503`, porque la reserva y el cupo son datos nuestros; la renovación publica `ReservationRecordUpdated` en el mismo topic; y `detectedStatus: "EN_MANTENIMIENTO"` acompaña al `RES-004` provisional para poder migrarlo a `RES-005` sin romper al frontend.
+- **Decisiones de los contratos que el spec no fija**: el cuerpo de `POST /api/reservations` no lleva `category` ni `origin` (los pone el Módulo 1 y el JWT); `GET /api/reservations/mine` responde `200` con `catalogUnavailable: true` si el Módulo 1 no contesta, en vez de `503`, porque la reserva y el cupo son datos nuestros; la renovación publica `ReservationRecordUpdated` en el mismo topic; y `detectedStatus: "EN_MANTENIMIENTO"` acompaña al `RES-004` provisional para poder migrarlo a `RES-005` sin romper al frontend.
 - **NEEDS CLARIFICATION abiertos en este plan**:
   - **P-10**: si el Módulo 3 no responde, aquí se bloquea la reserva con `503`, que es la opción conservadora del spec
   - **P-11**: el alcance de la sanción; hoy cualquier sanción vigente bloquea cualquier reserva

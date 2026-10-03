@@ -143,16 +143,16 @@ src/main/resources/
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── ArchitectureTest.java
-├── domain/model/reservation/FranjaHorariaTest.java
-├── domain/model/resource/EstadoVisibleTest.java
-├── domain/usecase/searchresources/ConsultarRecursosUseCaseTest.java
-├── domain/usecase/searchresources/BuscadorSiguienteFranjaTest.java
-├── domain/usecase/checkavailability/ConsultarDisponibilidadUseCaseTest.java
+├── domain/model/reservation/TimeSlotTest.java
+├── domain/model/resource/DisplayedStatusTest.java
+├── domain/usecase/searchresources/SearchResourcesUseCaseTest.java
+├── domain/usecase/searchresources/NextFreeSlotFinderTest.java
+├── domain/usecase/checkavailability/CheckAvailabilityUseCaseTest.java
 └── infrastructure/adapter/
-    ├── in/web/resource/RecursoControllerTest.java
-    ├── out/persistence/OcupacionPersistenceAdapterIT.java
-    ├── out/module1/InventarioRestAdapterTest.java
-    └── out/module3/CumplimientoRestAdapterTest.java
+    ├── in/web/resource/ResourceControllerTest.java
+    ├── out/persistence/OccupancyPersistenceAdapterIT.java
+    ├── out/module1/InventoryRestAdapterTest.java
+    └── out/module3/ComplianceRestAdapterTest.java
 
 src/test/resources/contratos/                       # los JSON de la sección Contratos (T022)
 
@@ -568,7 +568,7 @@ UC1 **no llama a esta operación**: el catálogo ya trae `operationalStatus` de 
 
 ### 3. Módulo 3 — `CompliancePort`
 
-#### 3.1 Reporte de cumplimiento — `GET /api/v1/compliance/people/{codigo}`
+#### 3.1 Reporte de cumplimiento — `GET /api/v1/compliance/people/{code}`
 
 Se pide por el **código institucional** de una sola persona, nunca por lotes y nunca por correo (UC6 FR-007). El `code` sale del claim del JWT, no de un parámetro que mande el frontend.
 
@@ -738,14 +738,14 @@ Los JSON de esta sección se guardan una sola vez y los usan las pruebas y el pe
 
 ```text
 src/test/resources/contratos/
-├── modulo1-catalogo-pagina1.json        # y -pagina2, -pagina3 (UC8 FR-011)
-├── modulo1-catalogo-vacio.json
-├── modulo1-estado-operativo.json
-├── modulo3-reporte-sancionado.json
-├── modulo3-reporte-al-dia.json
-├── api-recursos-respuesta.json          # el 200 normal, forma esperada en T023
-├── api-recursos-sin-seleccionables.json # escenario 7
-└── api-recursos-error-503.json
+├── module1-catalog-page1.json        # y -pagina2, -pagina3 (UC8 FR-011)
+├── module1-catalog-empty.json
+├── module1-operational-status.json
+├── module3-report-sanctioned.json
+├── module3-report-clear.json
+├── api-resources-response.json          # el 200 normal, forma esperada en T023
+├── api-resources-none-selectable.json # escenario 7
+└── api-resources-503.json
 ```
 
 Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos mismos archivos, para que lo que se ve en la demo sea lo mismo que afirman las pruebas.
@@ -793,14 +793,14 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] Pruebas unitarias en `FranjaHorariaTest.java`: ventana de 06:00 a 22:00, medianoche, inicio ≥ fin, cruce de un minuto y cruce parcial (edge case **Solapamiento parcial**)
-- [ ] T017 [P] [US1] Pruebas unitarias en `EstadoVisibleTest.java`: la tabla de prioridad completa, incluidos los empates entre `EN_MANTENIMIENTO` y un bloqueo, y entre un bloqueo y una reserva
-- [ ] T018 [P] [US1] Pruebas en `ConsultarDisponibilidadUseCaseTest.java` con puertos falsos: los escenarios 1 a 6 del spec, el préstamo vencido y no devuelto, y el Módulo 1 caído (UC8 FR-007)
-- [ ] T019 [P] [US1] Pruebas en `ConsultarRecursosUseCaseTest.java`: orden por nombre e identificador (FR-014), 47 recursos en páginas de 20, 20 y 7 sin repetir (escenario 8), 20 o menos en una sola página (FR-009), filtro de aforo mínimo, aviso de sanción para Estudiante y no para Dirección (FR-016), y el Módulo 3 caído sin tumbar la consulta
-- [ ] T020 [P] [US1] Pruebas en `BuscadorSiguienteFranjaTest.java`: ningún laboratorio seleccionable con una franja libre más tarde (escenario 7), y sin franja libre hasta las 22:00
-- [ ] T021 [P] [US1] Prueba de integración `OcupacionPersistenceAdapterIT.java` con Testcontainers: la consulta de ocupaciones con rangos, las reservas canceladas que no ocupan, el préstamo vencido sin devolver que sí ocupa, y los bloqueos académicos
-- [ ] T022 [P] [US1] Guardar los JSON de [Contratos §2 y §3](#2-módulo-1--inventoryport) como *fixtures* en `src/test/resources/contratos/` y escribir con ellos `InventarioRestAdapterTest.java` y `CumplimientoRestAdapterTest.java` con WireMock: respuesta normal, catálogo en varias páginas que se recorren todas (UC8 FR-011), tope de `max-pages` que marca `catalogTruncated`, `operationalStatus` desconocido, timeout y 5xx convertidos en `ExternalServiceUnavailableException`, y persona sin historial —`200` vacío y `404`— leída como "sin sanciones" (UC6 FR-008)
-- [ ] T023 [P] [US1] Prueba `RecursoControllerTest.java` con `@WebMvcTest`, comparando contra los *fixtures* `api-recursos-*.json`: parámetros válidos, `minCapacity` con `categoria=ACTIVO` y `pagina=0` como 400 de parámetros, 400 por franja inválida con su `code`, 401 sin sesión, 503 con el Módulo 1 caído, las dos formas de `sanctionNotice`, y que ningún campo opcional viaje como `null` ni se filtre el titular de una reserva (UC8 FR-005)
+- [ ] T016 [P] [US1] Pruebas unitarias en `TimeSlotTest.java`: ventana de 06:00 a 22:00, medianoche, inicio ≥ fin, cruce de un minuto y cruce parcial (edge case **Solapamiento parcial**)
+- [ ] T017 [P] [US1] Pruebas unitarias en `DisplayedStatusTest.java`: la tabla de prioridad completa, incluidos los empates entre `EN_MANTENIMIENTO` y un bloqueo, y entre un bloqueo y una reserva
+- [ ] T018 [P] [US1] Pruebas en `CheckAvailabilityUseCaseTest.java` con puertos falsos: los escenarios 1 a 6 del spec, el préstamo vencido y no devuelto, y el Módulo 1 caído (UC8 FR-007)
+- [ ] T019 [P] [US1] Pruebas en `SearchResourcesUseCaseTest.java`: orden por nombre e identificador (FR-014), 47 recursos en páginas de 20, 20 y 7 sin repetir (escenario 8), 20 o menos en una sola página (FR-009), filtro de aforo mínimo, aviso de sanción para Estudiante y no para Dirección (FR-016), y el Módulo 3 caído sin tumbar la consulta
+- [ ] T020 [P] [US1] Pruebas en `NextFreeSlotFinderTest.java`: ningún laboratorio seleccionable con una franja libre más tarde (escenario 7), y sin franja libre hasta las 22:00
+- [ ] T021 [P] [US1] Prueba de integración `OccupancyPersistenceAdapterIT.java` con Testcontainers: la consulta de ocupaciones con rangos, las reservas canceladas que no ocupan, el préstamo vencido sin devolver que sí ocupa, y los bloqueos académicos
+- [ ] T022 [P] [US1] Guardar los JSON de [Contratos §2 y §3](#2-módulo-1--inventoryport) como *fixtures* en `src/test/resources/contratos/` y escribir con ellos `InventoryRestAdapterTest.java` y `ComplianceRestAdapterTest.java` con WireMock: respuesta normal, catálogo en varias páginas que se recorren todas (UC8 FR-011), tope de `max-pages` que marca `catalogTruncated`, `operationalStatus` desconocido, timeout y 5xx convertidos en `ExternalServiceUnavailableException`, y persona sin historial —`200` vacío y `404`— leída como "sin sanciones" (UC6 FR-008)
+- [ ] T023 [P] [US1] Prueba `ResourceControllerTest.java` con `@WebMvcTest`, comparando contra los *fixtures* `api-recursos-*.json`: parámetros válidos, `minCapacity` con `categoria=ACTIVO` y `pagina=0` como 400 de parámetros, 400 por franja inválida con su `code`, 401 sin sesión, 503 con el Módulo 1 caído, las dos formas de `sanctionNotice`, y que ningún campo opcional viaje como `null` ni se filtre el titular de una reserva (UC8 FR-005)
 
 ### Implementation for User Story 1
 
