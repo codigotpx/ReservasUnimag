@@ -1011,7 +1011,7 @@ Los CSV son también la entrada de `CsvScheduleReaderTest` (T021), así que el f
 - **UC4 `Cancelar reserva`**: este plan implementa **solo** la rama de prioridad académica (UC4 FR-002, FR-004 a FR-006, FR-009). Su plan añadirá la cancelación del titular con `CAN-001` y `CAN-002`, la antelación de 10 minutos, la prohibición de cancelar un activo ya entregado (UC4 FR-008) y la cancelación por recurso no disponible (UC4 FR-010).
 - **UC11 `Reportar cancelación de reserva`**: este plan monta el evento y lo encola. Su plan añadirá `antelacionMinutos` para la cancelación del titular (UC11 FR-004) y el historial de envíos (UC11 FR-010).
 - **UC7 `Actualizar estado de los recursos`**: entra por UC2 y sigue con el alcance vigente —dejar escrita la ocupación— mientras P-20 esté abierto.
-- **UC10 `Reportar información de la reserva`**: la ficha de cada bloqueo sale por la *outbox* de UC2, marcada con `origen: ACADEMICO` y `sancionable: false`, que es la forma ya definida en [UC2 § Contratos §7](./plan-uc2-reservar-recursos.md#7-evento-hacia-el-módulo-3--module2reservationrecordv1).
+- **UC10 `Reportar información de la reserva`**: la ficha de cada bloqueo sale por la *outbox* de UC2, marcada con `origen: ACADEMICO` y `sancionable: false`, que es la forma ya definida en [UC2 § Contratos §7](./plan-uc2-reservar-recursos.md#6-evento-hacia-el-módulo-3--module2reservationrecordv1).
 - **UC9 `Recibir reporte de no asistencia`**: no se toca aquí, pero este plan crea la situación que P-19 señala —nada impide hoy que el Módulo 3 reporte una ausencia sobre una clase—. El rechazo le toca a UC9.
 
 ### Within User Story 1

@@ -44,7 +44,6 @@ erDiagram
         uuid        reservation_id          PK  "tambien FK"
         int         term_business_days          "segun el tipo del activo (Modulo 1)"
         timestamptz picked_up_at                "nulo: cuando se recogio"
-        boolean     renewed                     "una sola renovacion (UC2 FR-016)"
         timestamptz returned_at                 "nulo: llega por check-out (UC12)"
     }
 

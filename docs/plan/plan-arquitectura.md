@@ -65,7 +65,7 @@ Dos consecuencias prácticas:
 
 | Capa | Contiene | Puede importar |
 |---|---|---|
-| `domain.model` | Entidades, objetos de valor y reglas: franja de máximo 2 horas, ventana de 06:00 a 22:00, vencimiento a las 22:00 del día hábil, renovación única, cupo de 3, transiciones de estado de la reserva | Solo Java estándar |
+| `domain.model` | Entidades, objetos de valor y reglas: franja de máximo 2 horas, ventana de 06:00 a 22:00, vencimiento a las 22:00 del día hábil, cupo de 3, transiciones de estado de la reserva | Solo Java estándar |
 | `domain.port.in` | Una interfaz por caso de uso: lo que la aplicación ofrece | `domain.model` |
 | `domain.port.out` | Lo que la aplicación necesita del exterior: repositorios, Módulo 1, Módulo 3, reloj | `domain.model` |
 | `domain.usecase` | La implementación de cada caso de uso, que orquesta el modelo usando los puertos de salida | `domain.*` |
@@ -372,10 +372,7 @@ El bloqueo académico es una reserva con `origen = 'ACADEMICO'`, porque cada cla
 | reservation_id | uuid PK, FK | |
 | term_business_days | int | según el tipo del activo (Módulo 1) |
 | picked_up_at | timestamptz, nulo | cuándo se recogió |
-| renewed | boolean | una sola renovación (UC2 FR-016) |
 | returned_at | timestamptz, nulo | llega por check-out (UC12) |
-
-Al renovar se actualiza `reservation.ends_at` al nuevo vencimiento, y la restricción de exclusión rechaza la renovación si invade la reserva de otra persona.
 
 **`academic_block`**
 | Columna | Tipo | Nota |

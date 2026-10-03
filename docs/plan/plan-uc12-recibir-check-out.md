@@ -236,7 +236,7 @@ Por el topic de acuse que creó UC9, `module2.reservation.no-show-ack.v1`, no: *
 }
 ```
 
-`dueAt` va en el acuse **a propósito**, aunque el Módulo 3 ya lo recibió en la ficha de UC10: es la fecha contra la que va a medir la mora, y devolverla con la devolución le deja los dos datos juntos sin tener que cruzarlos. Si el préstamo se renovó, es el vencimiento vigente.
+`dueAt` va en el acuse **a propósito**, aunque el Módulo 3 ya lo recibió en la ficha de UC10: es la fecha contra la que va a medir la mora, y devolverla con la devolución le deja los dos datos juntos sin tener que cruzarlos.
 
 **Aceptado, espacio**:
 
@@ -314,7 +314,6 @@ FR-009 y SC-005. Rol `DIRECCION_PROGRAMA`.
       "pickup": "2026-09-01T14:30:00-05:00",
       "dueAt": "2026-09-10T22:00:00-05:00",
       "overdueDays": 3,
-      "renewed": false,
       "lossThresholdAt": "2026-09-17T22:00:00-05:00"
     }
   ],
@@ -378,7 +377,7 @@ ALTER TABLE check_out ADD CONSTRAINT check_out_verdict_by_kind
 CREATE INDEX check_out_received ON check_out (received_at);
 ```
 
-El `CHECK` es lo que hace imposible guardar un dictamen en un activo (FR-011) y un espacio sin dictamen (FR-012), en vez de confiarlo a la validación. `due_at_snapshot` guarda contra qué fecha se cerró: si más adelante alguien cambia el vencimiento, la auditoría conserva la que valía.
+El `CHECK` es lo que hace imposible guardar un dictamen en un activo (FR-011) y un espacio sin dictamen (FR-012), en vez de confiarlo a la validación. `due_at_snapshot` guarda contra qué fecha se cerró, para que la auditoría conserve la que valía en ese momento.
 
 **No hay ninguna columna de daños**, y el `CHECK` del dictamen limita los valores a los dos de FR-012. Es la forma de que FR-011 no dependa de que nadie añada un campo por descuido.
 
@@ -489,7 +488,7 @@ src/test/resources/contratos/
 - **UC2 `Reservar recursos`**: aporta el préstamo, su vencimiento y el cupo. UC12 es lo que cierra el ciclo que UC2 abre: sin él, UC2 FR-015 deja los activos ocupados para siempre.
 - **UC9 `Recibir reporte de no asistencia`**: montó el consumidor de Kafka, `InboxGuard` y el patrón de acuse, y UC12 los reusa tal cual. Además una reserva con ausencia **no** admite revisión de espacio (FR-014), y eso se comprueba con `reservation_closure`.
 - **UC11 `Reportar cancelación de reserva`**: una reserva cancelada no admite check-out, ni de activo ni de espacio (FR-008, FR-014).
-- **UC10 `Reportar información de la reserva`**: informa el vencimiento contra el que el Módulo 3 mide la mora. Si su FR-003 no se implementa, un préstamo renovado se mide contra la fecha vieja y el acuse de UC12 sería el único sitio donde llega la correcta.
+- **UC10 `Reportar información de la reserva`**: informa el vencimiento contra el que el Módulo 3 mide la mora, y el acuse de UC12 lo devuelve con la devolución para que tenga los dos datos juntos.
 - **UC4 `Cancelar reserva`**: su FR-008 se niega a cancelar un activo ya entregado y manda a la persona a devolverlo, es decir aquí.
 - **UC1 `Consultar recursos`**: es donde se ve el efecto. No hay que tocarlo, salvo que la baja lógica de un recurso perdido (T025) tiene que dejar de ofrecerlo.
 - **UC7 `Actualizar estado de los recursos`**: el `<<include>>` de FR-004 se cumple liberando el periodo. UC12 **no** fija el estado físico: eso es del Módulo 1.

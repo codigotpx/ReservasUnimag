@@ -108,7 +108,6 @@ Dónde se escribe: en `UpdateResourceStatusUseCase`, que ya existe desde UC2 y q
 | Quién invoca | Motivo | Estado nuevo |
 |---|---|---|
 | UC2, al confirmar | `RESERVATION_CONFIRMED` | `RESERVADO` |
-| UC2, al renovar | `LOAN_RENEWED` | `EN_USO` (el periodo cambia de fin) |
 | UC3, al crear un bloqueo | `ACADEMIC_BLOCK_CREATED` | `BLOQUEO_ACADEMICO` |
 | UC4, al cancelar | `RESERVATION_CANCELLED` | `DISPONIBLE` |
 | UC9, al registrar una ausencia | `NO_SHOW_REGISTERED` | `DISPONIBLE` |
@@ -250,7 +249,7 @@ src/test/resources/contratos/
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 - [ ] T002 Escribir `V9__status_change.sql` con la tabla de [Contratos §1](#1-la-tabla-status_change) y sus dos índices
-- [ ] T003 [P] Crear `StatusChange` y `StatusChangeReason` —con los siete motivos de la tabla de decisiones— en `domain/model/resource/`
+- [ ] T003 [P] Crear `StatusChange` y `StatusChangeReason` —con los seis motivos de la tabla de decisiones— en `domain/model/resource/`
 - [ ] T004 [P] Definir `StatusChangeRepositoryPort` e `InventoryStatusNotifierPort` en `domain/port/out/`, y completar `UpdateResourceStatusPort` con el motivo y la ocupación
 - [ ] T005 [P] Crear la entidad JPA, el repositorio y `StatusChangePersistenceAdapter`, con la consulta paginada por recurso
 - [ ] T006 [P] Crear `InventoryStatusNoOpAdapter`, que registra en el log el aviso que no se envía y deja `notified_status` en `NOT_SENT`
@@ -267,7 +266,7 @@ src/test/resources/contratos/
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Pruebas en `UpdateResourceStatusUseCaseTest.java`: los siete motivos producen su registro con la franja y los dos estados correctos; el registro se escribe en la transacción de quien invoca; y un `previous_status_module2` que nunca es `EN_MANTENIMIENTO` ni `EN_USO` por el Módulo 1 (la decisión de diseño)
+- [ ] T007 [P] [US1] Pruebas en `UpdateResourceStatusUseCaseTest.java`: los seis motivos producen su registro con la franja y los dos estados correctos; el registro se escribe en la transacción de quien invoca; y un `previous_status_module2` que nunca es `EN_MANTENIMIENTO` ni `EN_USO` por el Módulo 1 (la decisión de diseño)
 - [ ] T008 [P] [US1] Prueba `StatusChangeIT.java`: cada uno de los cinco casos de uso que invocan UC7 deja **exactamente un** registro por ocupación afectada —y una carga de UC3 con 50 bloqueos deja 50—; un *rollback* de la operación no deja ninguno (FR-009)
 - [ ] T009 [P] [US1] Prueba `ResourceStatusCoherenceIT.java` para FR-006 y SC-003: con N hilos reservando, cancelando y cargando horarios sobre el mismo recurso, **nunca** quedan dos ocupaciones confirmadas solapadas, y la etiqueta que calcula UC1 es siempre una sola para cada instante
 - [ ] T010 [P] [US1] Prueba de FR-010: una franja que termina deja el recurso disponible en la consulta siguiente **sin que ninguna tarea haya corrido**, y si hay otra reserva encima, esa manda; y de FR-011: un préstamo entregado y vencido sigue ocupando y **no** se libera por el paso del tiempo
@@ -278,7 +277,7 @@ src/test/resources/contratos/
 ### Implementation for User Story 1
 
 - [ ] T014 [US1] Completar `UpdateResourceStatusUseCase`: recibe el motivo y la ocupación, calcula el estado anterior con los datos del Módulo 2, escribe el registro y llama a `InventoryStatusNotifierPort` (depende de T003 a T006)
-- [ ] T015 [US1] Pasar el motivo desde los cinco invocadores: `ReserveResourcesUseCase`, `RenewLoanUseCase`, `ApplyScheduleUseCase`, `CancelReservationUseCase`, `ReceiveNoShowUseCase`, `ReceiveCheckOutUseCase` y `DeclareLoanLostUseCase` (depende de T014)
+- [ ] T015 [US1] Pasar el motivo desde los cinco invocadores: `ReserveResourcesUseCase`, `ApplyScheduleUseCase`, `CancelReservationUseCase`, `ReceiveNoShowUseCase`, `ReceiveCheckOutUseCase` y `DeclareLoanLostUseCase` (depende de T014)
 - [ ] T016 [US1] Implementar `StatusChangeController` según [Contratos §2](#2-get-apiresourcesresourceidstatus-changes)
 - [ ] T017 [US1] Registrar los beans de UC7 en `UseCasesConfig` y actualizar [modelo-datos-der.md](./modelo-datos-der.md) con la tabla `status_change`, que el plan general había dejado pendiente
 

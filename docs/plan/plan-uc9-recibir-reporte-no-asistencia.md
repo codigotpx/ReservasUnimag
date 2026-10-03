@@ -318,7 +318,7 @@ No se guardan la persona ni el recurso: salen de `reservation` por la clave for�
 
 ### 4. `GET /api/reservations/mine` — el campo nuevo
 
-UC9 no añade endpoints. Lo que añade es la marca de FR-010 a la lista que ya existe desde [UC2 § Contratos §4](./plan-uc2-reservar-recursos.md#4-get-apireservationsmine):
+UC9 no añade endpoints. Lo que añade es la marca de FR-010 a la lista que ya existe desde [UC2 § Contratos §4](./plan-uc2-reservar-recursos.md#3-get-apireservationsmine):
 
 ```json
 {

@@ -161,7 +161,9 @@ La ocupación se libera **sin borrar nada**: la restricción `reservation_no_ove
 
 **Cancelar por mantenimiento (FR-010).** `CancelForMaintenanceUseCase` recibe un `resourceId` y cancela todas sus reservas `CONFIRMADA` cuyo `starts_at` sea futuro, en una transacción, con un evento por cada una. Un activo ya entregado se salta, igual que en la rama del titular: no se le puede quitar de las manos a nadie.
 
-Falta quién lo dispara. Hoy nadie nos avisa de que un recurso entró en mantenimiento: el daño va del Módulo 3 al Módulo 1 y a nosotros no nos llega (P-20 punto 2). Mientras eso siga abierto, este plan deja el caso de uso implementado y probado, con **un endpoint de Dirección de Programa** para ejecutarlo a mano, y no inventa un sondeo periódico del catálogo. (NEEDS CLARIFICATION: P-20 punto 2. Las opciones son que el Módulo 1 nos publique el cambio, que el check-out del Módulo 3 traiga la marca, o que sigamos a mano.)
+Quién lo dispara está **parcialmente resuelto**. La revisión general de specs añadió [spec-modulo2-13-cancelar-por-mantenimiento.md](../specs/spec-modulo2-13-cancelar-por-mantenimiento.md), que define la regla para **espacios**: cuando el check-out de UC12 registra el dictamen `REQUIERE_MANTENIMIENTO`, se cancelan las reservas estudiantiles confirmadas que ese espacio tenía por delante. Ese spec no es un caso de uso y se resuelve con las piezas que ya existen, así que su disparador es exactamente el `CancelForMaintenancePort` de este plan, invocado desde UC12.
+
+Lo que sigue sin disparador son los **otros caminos** por los que un recurso puede quedar fuera de servicio: un mantenimiento programado, un salón con una gotera que nadie reportó en un check-out, o un activo que el Módulo 1 pone en mantenimiento por su cuenta. De eso nadie nos avisa, y es P-20 punto 2. Mientras siga abierto, el endpoint de Dirección de Programa es la vía manual, y no se inventa un sondeo periódico del catálogo. (NEEDS CLARIFICATION: P-20 punto 2, para todo lo que no venga de un check-out de espacio.)
 
 **La no presentación no es una cancelación.** Cuando el Módulo 3 reporta que alguien no llegó, el recurso se libera por UC9 y **no** se emite un reporte de cancelación: la reserva no se canceló, se incumplió (UC11 FR-011, SC-006). UC4 no participa en eso, y la prueba que lo garantiza vive en el plan de UC9.
 
@@ -398,7 +400,7 @@ export interface CancellationError extends ErrorApi {
 }
 ```
 
-`MyReservationsList.tsx` decide si muestra el botón con la misma regla del backend, pero **solo para no ofrecer lo imposible**: la decisión es del servidor, y un `409` se muestra tal cual. Para eso cada reserva de la lista gana un `cancellable: boolean` calculado en el backend, que se añade a `GET /api/reservations/mine` de [UC2 § Contratos §4](./plan-uc2-reservar-recursos.md#4-get-apireservationsmine).
+`MyReservationsList.tsx` decide si muestra el botón con la misma regla del backend, pero **solo para no ofrecer lo imposible**: la decisión es del servidor, y un `409` se muestra tal cual. Para eso cada reserva de la lista gana un `cancellable: boolean` calculado en el backend, que se añade a `GET /api/reservations/mine` de [UC2 § Contratos §4](./plan-uc2-reservar-recursos.md#3-get-apireservationsmine).
 
 ---
 
@@ -519,6 +521,6 @@ El de UC3, `event-reservation-cancelled.json`, se renombra a `event-reservation-
 - **Decisiones de los contratos que el spec no fija**: el borde del plazo es inclusivo; cancelar la reserva de otra persona responde `404` y no `403`, para no confirmar que existe; la doble cancelación es `200` con `alreadyCancelled` y no un `409`; el titular no escribe un motivo libre; y el endpoint de mantenimiento existe solo mientras nadie nos avise del cambio de estado
 - **NEEDS CLARIFICATION abiertos en este plan**:
   - **Contradicción `CAN-001` / `CAN-002`**: el diccionario consolidado de `spec-modulo2.md` los define al revés de como los usan UC4 (FR-003, su tabla y su escenario 3) y UC11 (escenario 5). Se siguen los specs de los casos de uso y hay que corregir el consolidado; `CAN-002` queda sin emitir
-  - **P-20 punto 2**: nadie nos avisa de que un recurso pasó a `EN_MANTENIMIENTO`, así que FR-010 no tiene disparador automático
+  - **P-20 punto 2**: el spec 13 nuevo da el disparador para los espacios que vienen de un check-out con dictamen `REQUIERE_MANTENIMIENTO`, pero nadie nos avisa del mantenimiento programado ni del que decide el Módulo 1 por su cuenta. Para esos, FR-010 sigue sin disparador automático
   - **Sanción retroactiva**: el punto transversal de `spec-modulo2.md` pregunta si una sanción nueva cancela las reservas ya confirmadas. Si la respuesta es sí, nace un cuarto origen de cancelación y este plan es donde encaja
   - **P-13**: si el Módulo 3 premia la cancelación a tiempo, `noticeMinutes` pasa a ser un dato con consecuencia y habría que fijar su precisión
