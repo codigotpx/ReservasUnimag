@@ -299,6 +299,8 @@ Según el reparto de estados que aclaró el profesor ([spec-modulo2.md](../specs
 
 ### Modelo
 
+El diagrama entidad–relación completo de estas tablas está en [modelo-datos-der.md](./modelo-datos-der.md).
+
 ```text
 usuario 1───* reserva *───(recurso_id: Módulo 1)
                  │
