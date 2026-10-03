@@ -16,7 +16,7 @@ UC1 es la puerta de entrada del módulo. Estudiante, Monitor y Dirección de Pro
 4. Si quien consulta es Estudiante o Monitor, consulta sus sanciones con `CheckSanctionsPort` (el `<<include>>` a UC6) y agrega un aviso a la respuesta (FR-016).
 5. Si el Módulo 1 no responde, la consulta falla con un error explícito y nunca muestra una lista vieja (FR-008, P-14).
 
-Como UC1 es el primer caso de uso que se implementa, este plan también monta la base compartida del proyecto: dependencias, esquema inicial, seguridad, manejo de errores, reloj y el esqueleto del frontend. De UC8 y UC6 implementa solo la parte que UC1 necesita; sus propios planes la completan.
+Como UC1 es el primer caso de uso que se implementa, este plan también monta la base compartida del proyecto: dependencias, esquema inicial, seguridad, manejo de errores, reloj y el esqueleto del frontend. De UC8 y UC6 implementa solo la parte que UC1 necesita; la completan [plan-uc8-consultar-disponibilidad-recursos.md](./plan-uc8-consultar-disponibilidad-recursos.md) y [plan-uc6-consultar-sanciones.md](./plan-uc6-consultar-sanciones.md).
 
 ## Technical Context
 

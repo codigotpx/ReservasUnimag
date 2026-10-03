@@ -875,8 +875,8 @@ src/test/resources/contratos/
 ### Dependencias con otros casos de uso
 
 - **UC1 `Consultar recursos`**: es el plan previo. Aporta el esquema, `TimeSlot`, `Occupancy`, la seguridad, el `Clock`, los clientes de los Módulos 1 y 3 y la pantalla desde la que se reserva.
-- **UC8 `Consultar disponibilidad`**: este plan cierra lo que faltaba (un solo recurso y el "hasta cuándo", UC8 FR-012). Con esto UC8 queda completo.
-- **UC6 `Consultar sanciones`**: este plan añade la denegación `RES-003` y el registro con el que se audita por qué se denegó una reserva (UC6 FR-009), que sale de la tabla `denial` (T028) y del log de cada consulta al Módulo 3 (T039). Con esto UC6 queda completo.
+- **UC8 `Consultar disponibilidad`**: este plan cierra lo que faltaba (un solo recurso y el "hasta cuándo", UC8 FR-012). Su [propio plan](./plan-uc8-consultar-disponibilidad-recursos.md) consolida los doce FR, añade las pruebas de coherencia entre UC1 y UC2 y el endpoint individual.
+- **UC6 `Consultar sanciones`**: este plan añade la denegación `RES-003` y la tabla `denial` (T028). Su [propio plan](./plan-uc6-consultar-sanciones.md) construye el registro de cada consulta que pide UC6 FR-009, porque la tabla `denial` guarda la denegación pero no lo que el Módulo 3 contestó.
 - **UC7 `Actualizar estado de los recursos`**: se implementa solo el alcance vigente (dejar escrita la ocupación). Su propio plan añadirá el aviso al Módulo 1 y la tabla `StatusChange` cuando se responda P-20.
 - **UC10 `Reportar información de la reserva`**: este plan monta la *outbox*, el publicador y el evento de la ficha. Su plan añadirá la ficha de los bloqueos académicos que llegan por UC3 y el contrato definitivo del evento.
 - **UC3 `Importar horarios semestrales`**: reusa `ReserveResourcesUseCase` con `origen = ACADEMICO`. El campo ya queda listo; lo que se salta depende de P-19.
