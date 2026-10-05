@@ -183,9 +183,9 @@ frontend/src/
 |---|---|---|
 | `BLOQUEO_ACADEMICO` | `RES-001` | Es literalmente el conflicto académico del diccionario; cubre el edge case **Solapamiento parcial** (09:30–10:30 contra una clase de 08:00–10:00). |
 | `RESERVADO` o `EN_USO` de otra persona | `RES-004` | Desde la lista aparecía libre y ya no lo está; es "el recurso acaba de ser tomado". No se revela quién lo tiene (UC8 FR-005). |
-| `EN_MANTENIMIENTO` | `RES-004` provisional | NEEDS CLARIFICATION: el diccionario no tiene código para mantenimiento. Se responde con `RES-004` y un mensaje propio, y se propone al equipo un `RES-005`. |
+| `EN_MANTENIMIENTO` | `RES-005` | Se responde con `RES-005`, ya que al estar el recurso en mantenimiento no puede ser posible de reservar para nadie. |
 
-**Sanción que no se puede comprobar.** Si el Módulo 3 no responde, la reserva **no** se confirma: se responde `503` con "no se pudo comprobar tu situación". Es la opción conservadora del edge case de UC6 y de su FR-006, y la diferencia con UC1, donde la consulta sigue funcionando con un aviso. (NEEDS CLARIFICATION: P-10 sigue abierto; si la universidad elige seguir operando, cambia solo esta rama.) El **alcance** de la sanción (espacios, activos o ambos) tampoco está cerrado (P-11): hoy cualquier sanción vigente bloquea cualquier reserva, y el alcance se lee del reporte si viene.
+**Sanción que no se puede comprobar.** Si el Módulo 3 no responde, la reserva **no** se confirma: se responde `503` con "no se pudo comprobar tu situación". Es la opción conservadora del edge case de UC6 y de su FR-006, y la diferencia con UC1, donde la consulta sigue funcionando con un aviso. El **alcance** de la sanción (espacios, activos o ambos) se lee del reporte si viene.
 
 **Cómo se cuenta el cupo (FR-008).** Cuenta como vigente toda reserva `CONFIRMADA` de un espacio cuya franja no ha terminado, y todo préstamo de un activo mientras no tenga check-out, aunque esté vencido:
 
@@ -214,7 +214,7 @@ El puerto `ReservationRepositoryPort.confirmar(...)` devuelve un resultado de do
 
 **Préstamo vencido y no devuelto (FR-015).** La ocupación de un activo es `[pickup, dueAt)`, así que la restricción de exclusión deja de proteger justo cuando el plazo vence, y el activo sigue en manos de alguien. Por eso la comprobación de disponibilidad no se limita al rango: un préstamo con `picked_up_at` y sin `returned_at` ocupa desde su inicio y sin fin, igual que ya hace la consulta de UC1. Dentro de la transacción esos préstamos abiertos del recurso se leen con `FOR UPDATE`, para que un *check-out* concurrente no se cruce con una reserva nueva. Queda una ventana estrecha —dos peticiones nuevas sobre un activo vencido y no devuelto— que se cierra con esa misma comprobación; se documenta porque depende de P-08, que sigue abierto.
 
-**Cálculo del vencimiento (FR-012, FR-013, FR-014).** `DueDateCalculator` suma el plazo en días hábiles a partir del **día siguiente** a la recogida y fija la hora a las 22:00 de `America/Bogota`. Con el ejemplo del spec: recogida el martes 2026-09-01 a las 14:30 con plazo 7 → se saltan el sábado 5 y el domingo 6 → **jueves 2026-09-10 a las 22:00**. Un plazo `0` vence a las 22:00 del mismo día de la recogida (uso en sitio). Los días no hábiles salen del puerto `BusinessCalendar`, cuya primera implementación excluye sábados y domingos más una lista de festivos en `application.properties`. (NEEDS CLARIFICATION: FR-014 habla de "días en que la universidad no abre" y nadie nos da ese calendario; mientras no exista, la lista se mantiene a mano.)
+**Cálculo del vencimiento (FR-012, FR-013, FR-014).** `DueDateCalculator` suma el plazo en días hábiles a partir del **día siguiente** a la recogida y fija la hora a las 22:00 de `America/Bogota`. Con el ejemplo del spec: recogida el martes 2026-09-01 a las 14:30 con plazo 7 → se saltan el sábado 5 y el domingo 6 → **jueves 2026-09-10 a las 22:00**. Un plazo `0` vence a las 22:00 del mismo día de la recogida (uso en sitio). Los días no hábiles salen del puerto `BusinessCalendar`, cuya primera implementación excluye sábados y domingos más una lista de festivos en `application.properties`.
 
 **`Actualizar estado de los recursos` dentro de UC2 (FR-011).** Confirmar una reserva **no le manda nada** al Módulo 1: `RESERVADO` es nuestro y el único estado que sale hacia él es el inicio de uso (UC7 FR-004 y FR-012). El estado que este caso de uso "actualiza" es la ocupación de nuestra propia base, que es justamente la fila de `reservation` que se acaba de insertar. Se llama al puerto `UpdateResourceStatusPort` para que el `<<include>>` exista en el código y quede el registro de auditoría; la tabla `StatusChange` la crea el [plan de UC7](./plan-uc7-actualizar-estado-recursos.md).
 
@@ -222,7 +222,7 @@ El puerto `ReservationRepositoryPort.confirmar(...)` devuelve un resultado de do
 
 **Registro de denegaciones (FR-005).** Se escribe en `denial` en una transacción aparte (`REQUIRES_NEW`), porque una denegación por `RES-004` ocurre cuando la transacción de la reserva ya está condenada por la violación de la restricción. Las denegaciones alimentan la reportería y no llevan datos del titular más allá de su `user_id`.
 
-**Reservas de origen académico.** `ReservationRequest` lleva el `origin` desde ya, para que UC3 pueda reusar este caso de uso sin refactor. Con `origen = ACADEMICO` se saltan la sanción, el cupo y el tope de 2 horas, y no hay titular. (NEEDS CLARIFICATION: P-19 pregunta exactamente esto; lo de aquí es el supuesto de partida.)
+**Reservas de origen académico.** `ReservationRequest` lleva el `origin` desde ya, para que UC3 pueda reusar este caso de uso sin refactor. Con `origen = ACADEMICO` se saltan la sanción, el cupo y el tope de 2 horas, y no hay titular.
 
 ## Contratos
 
@@ -860,7 +860,6 @@ src/test/resources/contratos/
 - [ ] T039 [P] Registrar en logs cada confirmación, cada denegación y cada consulta de sanciones con su duración y su resultado, sin datos personales más allá del identificador del usuario (FR-005, FR-007, UC6 FR-009)
 - [ ] T040 [P] Medir la confirmación bajo concurrencia contra un Módulo 1 y un Módulo 3 simulados con su latencia prometida, y comprobar que no aparecen ocupaciones solapadas (SC-004)
 - [ ] T041 [P] Actualizar el README con `docker-compose up` para PostgreSQL y Kafka, y con cómo ver la *outbox* cuando el broker está caído
-- [ ] T042 Enviar al Módulo 1 la ficha de [Contratos §4](#4-módulo-1--ficha-de-un-recurso) (P-16, con el plazo de préstamo) y al Módulo 3 el evento de [§7](#6-evento-hacia-el-módulo-3--module2reservationrecordv1) con el tipo `ReservationRecordUpdated` para confirmarlo, y llevar a `pendientes-clarificacion.md` los NEEDS CLARIFICATION que este plan deja abiertos
 
 ---
 
@@ -909,12 +908,3 @@ src/test/resources/contratos/
 - Stop at any checkpoint to validate story independently
 - La sección **Contratos** es la única fuente del JSON de UC2: si algo cambia ahí, cambia en los *fixtures*, en el OpenAPI y en los tipos del frontend, no al revés. Las convenciones comunes no se repiten: viven en el plan de UC1.
 - **Decisiones de los contratos que el spec no fija**: el cuerpo de `POST /api/reservations` no lleva `category` ni `origin` (los pone el Módulo 1 y el JWT); `GET /api/reservations/mine` responde `200` con `catalogUnavailable: true` si el Módulo 1 no contesta, en vez de `503`, porque la reserva y el cupo son datos nuestros; y `detectedStatus: "EN_MANTENIMIENTO"` acompaña al `RES-004` provisional para poder migrarlo a `RES-005` sin romper al frontend.
-- **NEEDS CLARIFICATION abiertos en este plan**:
-  - **P-10**: si el Módulo 3 no responde, aquí se bloquea la reserva con `503`, que es la opción conservadora del spec
-  - **P-11**: el alcance de la sanción; hoy cualquier sanción vigente bloquea cualquier reserva
-  - **P-19**: qué reglas se salta una reserva de origen académico; el supuesto es sanción, cupo y tope de 2 horas
-  - **P-16**: el plazo máximo de préstamo tiene que venir en la ficha del Módulo 1; sin él, FR-012 no se puede implementar
-  - **P-02**: nadie nos informa todavía de que la persona se presentó o recogió el activo, así que una reserva recién confirmada se queda `RESERVADO` hasta que alguien registre el inicio de uso ([UC7 §3](./plan-uc7-actualizar-estado-recursos.md#3-post-apireservationsreservationidstart-use))
-  - **P-08**: un préstamo vencido y no devuelto sigue ocupando el activo sin fecha de fin; falta cuándo se da por perdido
-  - **Código para `EN_MANTENIMIENTO`**: el diccionario de errores no tiene uno; se responde `RES-004` con un mensaje propio y se propone un `RES-005`
-  - **Calendario de festivos**: FR-014 cuenta días hábiles y nadie nos da el calendario de la universidad; por ahora es una lista en `application.properties`

@@ -174,7 +174,7 @@ frontend/src/
 
 ### Decisiones de diseño de este caso de uso
 
-**El archivo trae clases semanales, no sesiones.** Una fila dice "Redes, ESP-0412, lunes de 08:00 a 10:00" y el sistema la expande a una sesión por semana del periodo. La alternativa —una fila por sesión— obligaría a escribir a mano dieciséis filas por clase, y un horario de cientos de clases sería un archivo de miles de líneas mantenido a mano. La expansión es también lo que hace que SC-001 tenga sentido: el trabajo del sistema es grande, el del archivo es pequeño. El periodo (`termStart` y `termEnd`) va en la petición, no en el archivo, porque es el mismo para todas las filas. (NEEDS CLARIFICATION: el spec dice "qué asignatura, en qué salón, qué día y a qué hora" sin fijar el formato; si la Dirección de Programa exporta sesiones ya expandidas, cambia solo `CsvScheduleReader`.)
+**El archivo trae clases semanales, no sesiones.** Una fila dice "Redes, ESP-0412, lunes de 08:00 a 10:00" y el sistema la expande a una sesión por semana del periodo. La alternativa —una fila por sesión— obligaría a escribir a mano dieciséis filas por clase, y un horario de cientos de clases sería un archivo de miles de líneas mantenido a mano. La expansión es también lo que hace que SC-001 tenga sentido: el trabajo del sistema es grande, el del archivo es pequeño. El periodo (`termStart` y `termEnd`) va en la petición, no en el archivo, porque es el mismo para todas las filas.
 
 **Los días no hábiles no tienen clase.** La expansión salta sábados, domingos y festivos usando el `BusinessCalendar` de UC2, así que una clase de lunes no genera sesión el lunes festivo. Es la misma lista de `application.properties` y arrastra el mismo pendiente: nadie nos ha dado el calendario de la universidad.
 
@@ -216,7 +216,7 @@ ALTER TABLE academic_block ADD COLUMN session_key varchar;
 CREATE UNIQUE INDEX academic_block_session_key ON academic_block (session_key);
 ```
 
-**Reconciliar una recarga.** Volver a cargar el mismo `academic_term` no es empezar de cero: `ScheduleReconciler` compara las claves del archivo con los bloqueos vigentes del periodo y reparte en tres montones — las que ya están (`UNCHANGED`, no se tocan), las nuevas (se crean) y las que **estaban y ya no vienen**, que se proponen para cancelar y entran en el impacto que hay que confirmar. Retirar una clase es una cancelación de una reserva de origen académico y se le reporta al Módulo 3 por la *outbox*, igual que cualquier otra. (NEEDS CLARIFICATION: P-19 pregunta exactamente esto —"si un cambio de horario retira una clase... no hay nada escrito sobre cómo se le avisa"—; aquí se asume que sí se le avisa, porque ya recibió su ficha.)
+**Reconciliar una recarga.** Volver a cargar el mismo `academic_term` no es empezar de cero: `ScheduleReconciler` compara las claves del archivo con los bloqueos vigentes del periodo y reparte en tres montones — las que ya están (`UNCHANGED`, no se tocan), las nuevas (se crean) y las que **estaban y ya no vienen**, que se proponen para cancelar y entran en el impacto que hay que confirmar. Retirar una clase es una cancelación de una reserva de origen académico y se le reporta al Módulo 3 por la *outbox*, igual que cualquier otra.
 
 **Cancelar y bloquear en la misma transacción (escenario 3, FR-008).** La restricción `reservation_no_overlap` no admite dos `CONFIRMADA` solapadas, así que el orden importa y no puede partirse:
 
@@ -228,7 +228,7 @@ CREATE UNIQUE INDEX academic_block_session_key ON academic_block (session_key);
 
 Una carga grande hace esto en **una sola transacción**, que es lo que FR-008 exige. Para que quepa en el presupuesto de SC-001, los pasos 3 y 4 van por lotes y la comprobación de cruces es una sola consulta por lote de recursos, no una por fila.
 
-**Qué reglas se salta el origen académico.** Las mismas que ya asumió el plan de UC2: sanción, cupo de 3 y tope de 2 horas —una clase de 3 horas es normal—. UC3 agrega que una sesión tampoco tiene titular, así que `user_id` va nulo y el `CHECK` de la tabla lo exige. (NEEDS CLARIFICATION: sigue siendo P-19.)
+**Qué reglas se salta el origen académico.** Las mismas que ya asumió el plan de UC2: sanción, cupo de 3 y tope de 2 horas —una clase de 3 horas es normal—. UC3 agrega que una sesión tampoco tiene titular, así que `user_id` va nulo y el `CHECK` de la tabla lo exige.
 
 **Una sola llamada al Módulo 1 por carga.** El catálogo no se pide fila por fila: se juntan todos los `resource_id` distintos del archivo y se usa la operación por lote de [UC1 § Contratos §2.2](./plan-uc1-consultar-recursos.md#2-módulo-1--inventoryport), que hasta ahora no tenía consumidor real. De ahí salen a la vez los `REJECTED_RESOURCE` (los que vuelven en `notFound`) y los `RESOURCE_UNDER_MAINTENANCE`. Si el Módulo 1 no responde, la validación falla completa con `503`: no se puede bloquear un salón sin saber si existe.
 
@@ -656,8 +656,7 @@ El `academicTerm` y las fechas del periodo **no** van en el archivo: viajan en l
 
 Una fila con `day_of_week: SABADO` es válida —hay clases los sábados—, pero sus sesiones se omiten si el sábado está en la lista de días no hábiles. Una columna extra en el CSV se ignora; una obligatoria que falte es `INVALID_HEADER` y la carga no empieza.
 
-**Decisión: CSV y no Excel.** Un `.xlsx` obligaría a sumar Apache POI y a tratar con celdas con formato de hora, que es donde aparecen los errores difíciles de explicar. Excel exporta a CSV en dos clics, y el reporte de [§1](#1-post-apischedulesvalidations) señala la fila y la columna exactas. (NEEDS CLARIFICATION: si la Dirección de Programa solo puede entregar `.xlsx`, cambia `CsvScheduleReader` y nada más; el puerto `ScheduleReader` existe para eso.)
-
+**Decisión: CSV y no Excel.** Un `.xlsx` obligaría a sumar Apache POI y a tratar con celdas con formato de hora, que es donde aparecen los errores difíciles de explicar. Excel exporta a CSV en dos clics, y el reporte de [§1](#1-post-apischedulesvalidations) señala la fila y la columna exactas.
 ---
 
 ### 6. Módulo 1 — estado operativo por lote
@@ -733,7 +732,7 @@ El `<<include>>` a UC11 que UC3 estrena. Un evento por cada reserva desplazada, 
 
 Si Kafka está caído la carga se aplica igual y los eventos salen después (UC11 FR-008): están en la *outbox*, que es la misma de UC2.
 
-**Retirar una clase también emite este evento**, con `estado: "CANCELADA_POR_PRIORIDAD_ACADEMICA"` y un `reason` que dice que la clase salió del horario. (NEEDS CLARIFICATION: P-19 no cierra si el Módulo 3 espera este aviso; se emite porque ya recibió la ficha del bloqueo.)
+**Retirar una clase también emite este evento**, con `estado: "CANCELADA"` y un `reason` que dice que la clase salió del horario.
 
 ---
 
@@ -1038,12 +1037,3 @@ Los CSV son también la entrada de `CsvScheduleReaderTest` (T021), así que el f
 - Stop at any checkpoint to validate story independently
 - La sección **Contratos** es la única fuente del JSON y del CSV de UC3: si algo cambia ahí, cambia en los *fixtures*, en el OpenAPI y en los tipos del frontend, no al revés
 - **Decisiones de los contratos que el spec no fija**: el archivo trae clases semanales y el sistema las expande a sesiones; la carga va en dos peticiones, validar y confirmar, con una vigencia de 30 minutos; un choque bloquea la carga entera igual que un error de formato; `IMPACT_CHANGED` rechaza la confirmación en vez de aplicar lo que nadie aprobó; el formato es CSV y no `.xlsx`; y el reporte de validación es la única respuesta del módulo que nombra al titular de una reserva, porque FR-008 exige mostrar cuáles se cancelarían y solo Dirección de Programa la ve
-- **NEEDS CLARIFICATION abiertos en este plan**:
-  - **P-19**: qué reglas de `Reservar recursos` se salta una reserva de origen académico. Aquí se asume que se saltan la sanción, el cupo y el tope de 2 horas, igual que en el plan de UC2
-  - **P-19**: si retirar una clase se le reporta al Módulo 3 como cancelación. Aquí se asume que sí, porque ya recibió su ficha
-  - **P-19**: nada impide que el Módulo 3 reporte una ausencia sobre una clase; el rechazo le corresponde a UC9
-  - **P-20 punto 3**: si `EN_MANTENIMIENTO` trae fechas. Mientras no las traiga, un recurso en mantenimiento hoy bloquea la carga de todas sus clases del semestre, que es conservador pero puede ser excesivo
-  - **P-20 punto 5**: quién le avisa al estudiante desplazado por una clase. El Módulo 2 cancela y se lo reporta al Módulo 3; el aviso a la persona no tiene dueño escrito
-  - **Formato del archivo**: el spec no lo fija. Se asume CSV de clases semanales; si llega `.xlsx` o sesiones ya expandidas, cambia solo `CsvScheduleReader`
-  - **Calendario de festivos**: el mismo pendiente que UC2. La expansión de sesiones depende de una lista mantenida a mano en `application.properties`
-  - **Vigencia de la carga validada**: los 30 minutos son una decisión de este plan; el spec no dice cuánto puede tardar la Dirección de Programa en confirmar

@@ -122,7 +122,6 @@ frontend/src/features/reservations/
 | Reserva `CANCELADA` por el titular | FR-005 | No registra nada | Acuse de rechazo |
 | Reserva `CANCELADA_POR_PRIORIDAD_ACADEMICA` | FR-006 | No registra nada | Acuse de rechazo |
 | Reserva `CANCELADA_POR_RECURSO_NO_DISPONIBLE` | SC-003 | No registra nada | Acuse de rechazo |
-| Ya hay una ausencia de esa reserva | FR-007 | No registra una segunda | Acuse de aceptación, porque el estado que el Módulo 3 quería ya existe |
 | El `reservationId` no existe, o el JSON no se puede leer | — | Nada | **DLT** (plan general) |
 
 **Decisión: un rechazo de negocio no va al DLT.** El plan general manda al *dead letter topic* los errores no recuperables, y un reporte anticipado lo parece. Pero no es un evento roto: es un evento bien formado que el Módulo 3 mandó demasiado pronto y que puede volver a mandar diez minutos después. Enviarlo al DLT lo escondería en una cola que nadie consume. En cambio se le responde, y el evento se da por procesado.
@@ -133,7 +132,7 @@ frontend/src/features/reservations/
 |---|---|---|
 | `module2.reservation.no-show-ack.v1` | `NoShowReportAcknowledged` | publicamos |
 
-Sale por la misma *outbox*, con la misma clave de partición `reservation_id`, de modo que el acuse de una reserva nunca adelanta a su propio reporte. Es la alternativa a abrir un endpoint REST de integración, que el plan general descartó a propósito ("no exponemos endpoints de integración"). (NEEDS CLARIFICATION: hay que acordar este topic con el Módulo 3. Si prefieren un endpoint nuestro, el caso de uso no cambia: cambia el adaptador.)
+Sale por la misma *outbox*, con la misma clave de partición `reservation_id`, de modo que el acuse de una reserva nunca adelanta a su propio reporte. Es la alternativa a abrir un endpoint REST de integración, que el plan general descartó a propósito ("no exponemos endpoints de integración").
 
 **El borde del minuto 10, y por qué coincide con el de UC4.** FR-011 admite el reporte "a partir de los 10 minutos siguientes", así que:
 
@@ -153,7 +152,7 @@ El borde es **inclusivo**: a los 10 minutos exactos el reporte ya se admite. Con
 | Dejarla `CONFIRMADA` y que la ausencia lo explique | La restricción de exclusión seguiría viendo la ocupación y el recurso **no** se liberaría, contra FR-004 |
 | **`FINALIZADA` más la fila en `absence`** | Ninguno de los dos |
 
-Se elige `FINALIZADA`: la reserva terminó —mal, pero terminó—, la restricción `reservation_no_overlap` deja de verla porque solo mira las `CONFIRMADA`, el recurso queda libre y el cupo también (UC2 FR-008). Lo que explica *por qué* terminó es la fila de `absence`, que es la constancia que pide FR-002. Así no se inventa un estado que obligaría a tocar UC1, UC2 y UC11. (NEEDS CLARIFICATION: es una propuesta para cerrar el pendiente del plan general; si el equipo prefiere el estado propio, cambia el `UPDATE` y hay que excluirlo en UC11.)
+Se elige `FINALIZADA`: la reserva terminó —mal, pero terminó—, la restricción `reservation_no_overlap` deja de verla porque solo mira las `CONFIRMADA`, el recurso queda libre y el cupo también (UC2 FR-008). Lo que explica *por qué* terminó es la fila de `absence`, que es la constancia que pide FR-002. Así no se inventa un estado que obligaría a tocar UC1, UC2 y UC11.
 
 **La exclusión con la cancelación la sostiene la base.** No se comprueba con un `SELECT` previo: se inserta `('ABSENCE')` en la tabla `reservation_closure` que creó UC11, y si la reserva ya estaba cerrada por una cancelación, la clave primaria lo rechaza. Eso cubre FR-005, FR-006 y SC-003 incluso cuando la cancelación y el reporte llegan a la vez, que es el caso que un `if` no cubre.
 
@@ -165,7 +164,7 @@ En un espacio FR-004 dice "queda disponible para el resto de su franja". No hace
 
 **La anulación deshace la constancia, no el reparto del recurso** (FR-012). `VoidNoShowUseCase` marca `absence.voided` y deja la fecha, suelta el cierre en `reservation_closure` —para que la reserva pueda cerrarse de otra forma más adelante— y **no** devuelve la reserva a `CONFIRMADA`: el recurso ya volvió a la oferta y puede que otra persona lo haya tomado, y resucitarla rompería la restricción de exclusión. Es exactamente lo que dice el edge case **Reporte equivocado**, y la consecuencia para la persona la deshace el Módulo 3 por su lado.
 
-**Avisarle a la persona** (FR-010). No hay canal de notificación en ningún spec del módulo: no hay correo, ni *push*, ni tabla de avisos. Lo que este plan hace es dejar la ausencia **visible donde la persona ya mira**: `GET /api/reservations/mine` devuelve la marca y `MyReservationsList.tsx` la muestra con la reserva que la originó. Es lo que se puede cumplir sin inventar infraestructura que nadie pidió. (NEEDS CLARIFICATION: FR-010 dice "informar", y si se espera un correo hay que decidir el canal; afecta también a UC4 y a UC3, que tampoco avisan a los desplazados.)
+**Avisarle a la persona** (FR-010). No hay canal de notificación en ningún spec del módulo: no hay correo, ni *push*, ni tabla de avisos. Lo que este plan hace es dejar la ausencia **visible donde la persona ya mira**: `GET /api/reservations/mine` devuelve la marca y `MyReservationsList.tsx` la muestra con la reserva que la originó. Es lo que se puede cumplir sin inventar infraestructura que nadie pidió.
 
 ## Contratos
 
@@ -466,9 +465,3 @@ src/test/resources/contratos/
 - La sección **Contratos** es la única fuente del JSON de UC9
 - **Decisiones de los contratos que el spec no fija**: nace el topic de acuse `module2.reservation.no-show-ack.v1`, porque FR-002 y FR-011 piden responderle al Módulo 3 y por Kafka no hay respuesta; un rechazo de negocio **no** va al DLT, porque el evento no está roto; el plazo se mide contra `verifiedAt` y no contra la hora de llegada; el borde de los 10 minutos es inclusivo, igual que el de UC4; un reporte repetido responde `accepted: true` con `duplicate`; y la clave primaria de `absence` pasa a ser `reservation_id`
 - **Propuesta para cerrar un pendiente**: una reserva con ausencia queda **`FINALIZADA`**, y la fila de `absence` es la que explica por qué. Así se libera el recurso sin inventar un estado que obligaría a tocar UC1, UC2 y UC11
-- **NEEDS CLARIFICATION abiertos en este plan**:
-  - **Topic de acuse**: hay que acordarlo con el Módulo 3. Si prefieren un endpoint nuestro, cambia el adaptador y no el caso de uso
-  - **FR-010, cómo se informa a la persona**: no hay canal de notificación en ningún spec. Aquí la ausencia se ve en `my-reservations`; si se espera un correo, afecta también a UC3 y UC4
-  - **Edge case *Recurso caído durante la franja***: si el recurso se fue a mantenimiento y por eso la persona no pudo usarlo, no debería contar como ausencia suya. Hoy solo se detecta si la reserva ya estaba cancelada por eso, y eso depende de P-20 punto 2
-  - **Umbral de ausencias que origina sanción**: lo deja abierto `spec-modulo2.md`. No afecta a este plan, porque la decisión es del Módulo 3
-  - **Particiones del topic**: la concurrencia del consumidor se iguala a ellas, y nadie ha fijado cuántas

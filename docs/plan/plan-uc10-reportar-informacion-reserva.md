@@ -307,6 +307,3 @@ Los dos de UC2 se renombran a `event-reservation-record-created-{student,academi
 - Commit after each task or logical group
 - Este plan **no redefine el evento**: su contrato vive en UC2, y lo que aquí se añade es la constancia de haberlo enviado
 - **Decisiones de los contratos que el spec no fija**: el historial va en su propia tabla y no se unifica con el de UC11, porque los datos del negocio no son los mismos; la clave primaria es el `reservation_id`, de modo que la base garantiza FR-005; el publicador se dispara al confirmar la transacción además del `Scheduled`, porque los 5 s de SC-002 no caben en el intervalo del reloj; y el `instructor` viaja en el evento pero no en el endpoint de auditoría
-- **NEEDS CLARIFICATION abiertos en este plan**:
-  - **Deduplicación en el Módulo 3**: FR-005 solo se cumple si ellos descartan por `eventId`. Hay que acordarlo explícitamente
-  - **Purga de la *outbox***: igual que en UC11, nadie ha fijado cuándo se borran los mensajes enviados; el historial existe para no depender de eso

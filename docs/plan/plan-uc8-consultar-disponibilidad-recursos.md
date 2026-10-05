@@ -342,7 +342,3 @@ src/test/resources/contratos/
 - **Este plan es de cierre, no de construcción.** Los doce FR ya estaban implementados por UC1 y UC2; lo que aporta es la trazabilidad, las pruebas transversales que ningún plan individual podía escribir, el borde enunciado en un sitio y el endpoint que faltaba
 - **Decisiones de los contratos que el spec no fija**: una franja fuera de la ventana operativa es `400` y no "no disponible", porque el problema está en la pregunta y no en el recurso; `occupiedUntil` se omite en un préstamo vencido y sin devolver, porque no hay fecha honesta; y el endpoint individual es una cortesía para la interfaz que **no** sustituye la revalidación de UC2 dentro de la transacción
 - **Decisión explícita de no hacer**: ninguna caché, por FR-006. La prueba de T008 lo fija
-- **NEEDS CLARIFICATION abiertos en este plan**:
-  - **P-20 punto 3**: si `EN_MANTENIMIENTO` trae fechas. Hoy se aplica a toda franja consultada y `occupiedUntil` se omite, porque no sabemos hasta cuándo
-  - **Redacción del último edge case**: pide responder "no disponible" a una franja nocturna; aquí es `400`
-  - **P-16, P-17**: el contrato y los tiempos del Módulo 1, de los que depende SC-001

@@ -201,7 +201,7 @@ WHERE r.status = 'CONFIRMADA'
 
 **Sugerencia de la siguiente franja (escenario 7).** Cuando ningún recurso del conjunto filtrado es seleccionable, se prueban franjas de la misma duración que la consultada, que empiezan desde el fin de esa franja en pasos de 30 minutos y llegan hasta las 22:00 del mismo día. Se usa la foto del catálogo ya obtenida y una sola consulta de ocupaciones que cubre el resto del día. Si no hay ninguna, la respuesta lo dice. El paso de 30 minutos y el límite al mismo día son una decisión de este plan, porque el spec no los fija; son parametrizables.
 
-**Sanciones durante la consulta (FR-016).** Solo para los roles `ESTUDIANTE` y `MONITOR`: Dirección de Programa no reserva. Si hay sanción vigente, la respuesta trae un aviso con su motivo y su fecha de fin (UC6 FR-004), pero la lista se muestra igual. Si el Módulo 3 no responde, la consulta **no falla**: trae un aviso de que no se pudo comprobar la situación de la persona (UC6 FR-006), porque la comprobación que decide es la de `Reservar recursos` al confirmar. (NEEDS CLARIFICATION: P-10 fija la política al reservar; aquí se asume que la consulta no se bloquea.)
+**Sanciones durante la consulta (FR-016).** Solo para los roles `ESTUDIANTE` y `MONITOR`: Dirección de Programa no reserva. Si hay sanción vigente, la respuesta trae un aviso con su motivo y su fecha de fin (UC6 FR-004), pero la lista se muestra igual. Si el Módulo 3 no responde, la consulta **no falla**: trae un aviso de que no se pudo comprobar la situación de la persona (UC6 FR-006), porque la comprobación que decide es la de `Reservar recursos` al confirmar.
 
 **Contrato con el Módulo 1.** `InventoryPort` expone dos operaciones pensadas desde nuestro lado: `buscarCatalogo(ResourceFilter)`, que devuelve la ficha de cada recurso con su estado operativo, y `operationalStatus(resourceIds)`. Si el Módulo 1 no filtra por aforo, el filtro se aplica en el caso de uso después de traer el catálogo. El JSON de las dos operaciones, su mapeo hacia el dominio y qué se hace con cada error están en [Contratos §2](#2-módulo-1--inventoryport).
 
@@ -831,7 +831,7 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - [ ] T041 [P] Medir el tiempo de la consulta con 100 y 500 usuarios concurrentes contra un Módulo 1 simulado con la latencia prometida, y verificar SC-001
 - [ ] T042 [P] Registrar en logs cada llamada a los Módulos 1 y 3, con su duración y su resultado, sin datos personales
 - [ ] T043 [P] Actualizar el README con el perfil local (`./gradlew bootTestRun --args='--spring.profiles.active=local'`) y con cómo levantar el frontend
-- [ ] T044 Enviar la sección **Contratos** (§2 y §3) a los equipos de los Módulos 1 y 3 como propuesta concreta de P-16 y P-20, revisar con el equipo las decisiones marcadas NEEDS CLARIFICATION de este plan y llevarlas a `pendientes-clarificacion.md` si siguen abiertas
+- [ ] T044 Enviar la sección **Contratos** (§2 y §3) a los equipos de los Módulos 1 y 3 como propuesta concreta de P-16 y P-20.
 
 ---
 
@@ -871,4 +871,3 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - La sección **Contratos** es la única fuente del JSON de UC1: si algo cambia ahí, cambia en los *fixtures*, en el OpenAPI y en los tipos del frontend, no al revés.
-- **NEEDS CLARIFICATION abiertos en este plan**: P-14 (se asume que la consulta falla sin el Módulo 1, como ya dice FR-008), P-16 (el contrato de §2 es nuestra propuesta mientras el Módulo 1 no responda), P-17 (timeouts), P-20 punto 3 (si el mantenimiento trae fechas) y P-10 (se asume que la consulta no se bloquea cuando el Módulo 3 falla).
