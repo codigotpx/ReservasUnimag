@@ -37,6 +37,7 @@ Antes de confirmar, el sistema revisa las reglas que deciden si puede apartarlo 
 | `RES-002` | Límite máximo de préstamos vigentes alcanzado. |
 | `RES-003` | Sanción activa sobre el usuario. |
 | `RES-004` | El recurso acaba de ser tomado (conflicto de concurrencia). |
+| `RES-005` | El recurso se encuentra en mantenimiento (no es posible reservarlo). |
 
 ## User Scenarios & Testing *(mandatory)*
 
