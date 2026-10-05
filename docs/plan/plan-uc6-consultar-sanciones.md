@@ -128,7 +128,7 @@ Se compara por **fecha** y no por instante, porque el Módulo 3 nos manda fechas
 
 **Una sanción sin fecha de fin se trata como vigente** (edge case **Respuesta del Módulo 3 incompleta**). No se inventa la fecha, no se descarta la sanción y no se falla: se considera vigente, se registra que faltó el dato y el mensaje que ve la persona omite el "hasta" en vez de poner un texto vacío. Las tres alternativas eran peores: inventar una fecha es mentir, descartarla deja reservar a alguien sancionado y fallar convierte un dato incompleto del otro módulo en una caída del nuestro.
 
-**El alcance se lee y todavía no filtra** (edge case **Sanciones que no aplican a lo que se está pidiendo**). El spec dice que hay castigos que solo bloquean espacios y otros solo activos. El campo `scope` se lee del reporte y se guarda en el registro, pero **hoy cualquier sanción vigente bloquea cualquier reserva**, que es la opción conservadora. Cuando P-11 se cierre, el cambio es una comparación en `CheckSanctionsUseCase` y la tabla ya tendrá el dato histórico para saber qué se hizo antes. (NEEDS CLARIFICATION: P-11.)
+**El alcance se lee y filtra** (edge case **Sanciones que no aplican a lo que se está pidiendo**). El spec dice que hay castigos que solo bloquean espacios y otros solo activos. El campo `scope` se lee del reporte y se guarda en el registro, y se aplica discriminando si la sanción se le aplica a un activo o a un espacio.
 
 **Dos usos, dos políticas ante una caída.** Es la decisión más visible de UC6 y está repartida entre dos planes, así que aquí se junta:
 
@@ -369,8 +369,3 @@ Los de la persona al día, la sancionada y la sin historial ya los creó UC1.
 - **De los diez FR, nueve ya estaban implementados por UC1 y UC2.** Lo que este plan construye es FR-009, el registro de cada consulta, más el borde de la vigencia, las dos respuestas incompletas y las pruebas de que no hay pantalla ni caché
 - **Decisiones de los contratos que el spec no fija**: una sanción sin fecha de fin se trata como **vigente** y se marca el dato que faltó; la vigencia se compara contra hoy y no contra la fecha de la reserva; el registro va en su propia transacción y un fallo suyo no tumba la consulta; las columnas se llaman `answered_*` para que no se confundan con una copia de las sanciones, que FR-005 prohíbe; y el endpoint de auditoría exige un rango de fechas junto al `personCode`, porque sin él sería pedir el expediente de una persona
 - **Decisión explícita de no hacer**: ninguna caché del reporte, por el edge case de la sanción que aparece justo después de consultar
-- **NEEDS CLARIFICATION abiertos en este plan**:
-  - **P-11**: el alcance de la sanción. Se lee y se registra, pero hoy cualquier sanción vigente bloquea cualquier reserva
-  - **P-10**: la política ante la caída del Módulo 3. Las dos ramas están implementadas —aviso al listar, bloqueo al confirmar— y es la lectura conservadora del spec
-  - **Formato de la vigencia**: el Módulo 3 nos manda fechas, no instantes. Si algún día manda instantes, el borde hay que decidirlo otra vez
-  - **Umbral de ausencias que origina sanción**: lo deja abierto `spec-modulo2.md`, y no afecta a este plan porque la decisión es del Módulo 3

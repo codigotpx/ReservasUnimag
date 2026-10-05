@@ -295,7 +295,7 @@ Los ocho `rejection` son los de la tabla de decisiones. `acceptedFrom` solo apar
 }
 ```
 
-Es el expediente que pide el edge case: persona, recurso, placa y días de mora. No lleva valoración económica ni propone sanción: eso lo decide el Módulo 3 (FR-005). (NEEDS CLARIFICATION: este evento no está en los cuatro topics del plan general y hay que acordarlo.)
+Es el expediente que pide el edge case: persona, recurso, placa y días de mora. No lleva valoración económica ni propone sanción: eso lo decide el Módulo 3 (FR-005).
 
 ---
 
@@ -513,9 +513,3 @@ src/test/resources/contratos/
 - La sección **Contratos** es la única fuente del JSON de UC12
 - **Decisiones de los contratos que el spec no fija**: el `kind` lo decide la categoría del recurso y no el evento; un dictamen en un activo se **rechaza** en vez de ignorarse, para que el Módulo 3 sepa que no debe mandarlo; los acuses de check-out van por su propio topic y no por el de UC9; el acuse devuelve `dueAt` para que la mora se mida con los dos datos juntos; `slotReleased: false` va explícito en los espacios; el `CHECK` de la tabla es lo que hace imposible guardar un dictamen donde no toca; y el umbral de pérdida corre con un trabajo diario, apagable
 - **La contradicción del spec**: FR-006 dice que el sistema no cierra préstamos por su cuenta y el edge case **Devolución que nunca llega** dice que a los 7 días sí. Se resuelve leyendo FR-006 como válido hasta que ese plazo se cumple, y la Phase 4 queda aislada y desactivable
-- **NEEDS CLARIFICATION abiertos en este plan**:
-  - **Aviso al Módulo 1 por un recurso perdido**: el edge case pide que le avisemos para que lo ponga `DADO_DE_BAJA`, pero el único estado que le mandamos es el inicio de uso y ese no es ninguno de sus tres (UC7 FR-012). **No se implementa el aviso**; la baja queda solo de nuestro lado, y ampliar el contrato para incluirla es conversación del punto 1 de P-20
-  - **`LoanDeclaredLost` y el topic de acuse**: ninguno de los dos está en los cuatro topics del plan general y hay que acordarlos con el Módulo 3
-  - **El dictamen `REQUIERE_MANTENIMIENTO` no hace nada**: queda registrado, pero quién pone el espacio en mantenimiento y qué pasa con sus reservas siguientes sigue siendo P-20 punto 2. Es el `NEEDS CLARIFICATION` que el propio spec marca en su último edge case
-  - **El umbral de 7 días es calendario**: el edge case dice "7 días calendario", así que no usa `BusinessCalendar`. Conviene confirmarlo, porque el plazo del préstamo sí es en días hábiles
-  - **La revisión de espacios es opcional**: nadie ha dicho que el Módulo 3 vaya a revisar todos los espacios, y la lista de FR-015 crecerá sin límite si no lo hace. Hay que acordar si es un proceso real o solo una posibilidad
