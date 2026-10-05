@@ -9,12 +9,13 @@
 
 UC8 es la pregunta que el módulo se hace a sí mismo: **¿está libre este recurso en esta franja?** No tiene actor humano y no se ve por fuera. La hacen UC1 para armar su lista y UC2 antes de confirmar, y es donde vive la única definición de "disponible" de todo el módulo.
 
-Este plan **no implementa nada nuevo**: UC1 y UC2 ya lo hicieron entre los dos, porque ninguno podía funcionar sin él. Lo que hace es lo que faltaba:
+Este plan **casi no añade lógica nueva**: UC1 y UC2 ya la escribieron entre los dos, porque ninguno podía funcionar sin ella. Lo que hace es lo que faltaba:
 
 1. **Reunir en un sitio** qué FR quedó resuelto dónde, para que no haya que leer dos planes y adivinar.
 2. **Las pruebas transversales** que ningún plan individual podía escribir: que UC1 y UC2 den exactamente la misma respuesta sobre el mismo recurso (SC-003, SC-004), que es la única forma de garantizar que no haya dos definiciones de "disponible" conviviendo.
 3. **El borde**, que el spec pide explícito y que estaba repartido entre dos planes sin estar enunciado en ninguno.
 4. **Un endpoint propio**, que hoy no existe y que el frontend necesita para revalidar antes de confirmar sin tener que pedir el catálogo entero.
+5. **Decidir con qué operación del Módulo 1 se pregunta**, que ningún plan decía: la ficha para un recurso, el lote para muchos, y una sola llamada por petición de reserva.
 
 > Si lo que buscas es el algoritmo, está en [UC1 § Decisiones de diseño](./plan-uc1-consultar-recursos.md#decisiones-de-diseño-de-este-caso-de-uso): la tabla de prioridad y la consulta de ocupaciones. Este plan no lo repite.
 
@@ -75,12 +76,12 @@ src/test/java/edu/unimagdalena/reservasunimag/
 | FR | Qué pide | Dónde se implementó |
 |---|---|---|
 | FR-001 | Responder por un recurso y una franja | UC2 T011 (versión individual) |
-| FR-002 | No disponible si está `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO` | UC1 T028, con la tabla de prioridad |
+| FR-002 | No disponible si está `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO` | UC1 T028, con la tabla de prioridad; el `EN_MANTENIMIENTO` sale de la ficha del Módulo 1 (ver la decisión de abajo) |
 | FR-003 | Cualquier cruce, aunque sea un minuto, contra reservas, bloqueos y préstamos abiertos | UC1 T032, la consulta de ocupaciones |
 | FR-004 | Indicar el motivo | UC1 T024, el campo `reason` derivado del estado |
 | FR-005 | No revelar al titular | UC1, el texto fijo del motivo; UC2 T020 lo prueba |
 | FR-006 | Estado del momento, sin reutilizar respuestas | UC1 T037, `Cache-Control: no-store` |
-| FR-007 | Si el Módulo 1 no responde, no dar por disponible | UC1 T033, `ExternalServiceUnavailableException` → `503` |
+| FR-007 | Si el Módulo 1 no responde, no dar por disponible | UC1 T033, `ExternalServiceUnavailableException` → `503`, igual en las dos operaciones |
 | FR-008 | Responder por varios de una vez | UC1 T027, la versión por lote |
 | FR-009 | No cambiar nada | UC1 T036, `@Transactional(readOnly = true)` |
 | FR-010 | Todo en `America/Bogota` | UC1 T009, `TimeSlot` |
@@ -88,6 +89,18 @@ src/test/java/edu/unimagdalena/reservasunimag/
 | FR-012 | Decir **hasta cuándo** está comprometido | UC2 T011 |
 
 No queda ningún FR sin implementar. Lo que queda son garantías sin probar y una pieza de interfaz que falta.
+
+**Con qué operación del Módulo 1 se pregunta, y por qué solo una vez por petición.** El plan hablaba de "preguntarle al Módulo 1" sin decir por dónde, y eso dejaba dos caminos abiertos para el mismo dato. Queda fijado así:
+
+| Quién pregunta | Operación del Módulo 1 | Por qué |
+|---|---|---|
+| La lista de UC1 | **Ninguna aparte**: el catálogo ya trae el `operationalStatus` de cada recurso | Pedirlo otra vez duplicaría la latencia del presupuesto de SC-001 |
+| La consulta individual, incluido el endpoint de §1 | La **ficha**, `GET /api/v1/resources/{id}` ([UC2 §4](./plan-uc2-reservar-recursos.md#4-módulo-1--ficha-de-un-recurso)) | Es una sola llamada que trae el estado, el nombre y la categoría, que es todo lo que la respuesta necesita. Un lote de un elemento daría el estado y obligaría a otra llamada para el nombre |
+| La carga de horarios de UC3 y la tarea de inicio de uso de UC7 | El **lote**, `POST /api/v1/resources/operational-status` ([UC1 §2.2](./plan-uc1-consultar-recursos.md#22-estado-operativo-por-lote--post-apiv1resourcesoperational-status)) | Son los dos que preguntan por muchos recursos de una vez y no necesitan la ficha completa |
+
+Y la consecuencia que importa: **dentro de una misma petición de reserva, la ficha se pide una sola vez.** UC2 ya la pide en el paso 0 de su tabla de decisiones —de ahí saca la categoría y el plazo de préstamo—, así que el paso 3 recibe ese estado ya resuelto y **no vuelve a salir a la red**. La operación individual del puerto acepta el estado operativo cuando quien llama ya lo tiene, y lo pide ella misma cuando no. No es solo ahorrar una llamada: si se preguntara dos veces en la misma petición, el estado podría cambiar entre una y otra y la respuesta quedaría incoherente consigo misma —un `RES-004` por mantenimiento cuyo `detectedStatus` dijera `DISPONIBLE`—.
+
+El endpoint público de §1 no viene de UC2, así que ahí sí pide la ficha él mismo.
 
 **El borde de los rangos, enunciado de una vez.** El spec lo pide explícito —"el criterio del borde debe ser el mismo siempre"— y hasta ahora vivía implícito en el `[inicio, fin)` del plan general. Dicho sin rodeos:
 
@@ -252,6 +265,7 @@ src/test/resources/contratos/
 
 - [ ] T001 Extraer `AvailabilityAnswer` en `domain/model/resource/` desde lo que hoy devuelve `CheckAvailabilityUseCase`, sin cambiar la lógica, y hacer que las dos operaciones del puerto lo usen
 - [ ] T002 [P] Revisar que `CheckAvailabilityUseCase` sigue sin escribir nada: `@Transactional(readOnly = true)` en su bean y ninguna llamada a un puerto de escritura (FR-009)
+- [ ] T002b Dejar que la operación individual del puerto reciba el estado operativo ya conocido y lo pida por la **ficha** solo si no lo trae, y enganchar el paso 3 de UC2 al estado que su paso 0 ya obtuvo (la decisión de la llamada única)
 
 **Checkpoint**: la respuesta tiene una forma única
 
@@ -273,6 +287,7 @@ src/test/resources/contratos/
 - [ ] T008 [P] [US1] Prueba de FR-006: dos consultas seguidas sobre el mismo recurso, con una reserva creada entre ambas, devuelven respuestas **distintas**; y la respuesta HTTP lleva `Cache-Control: no-store`. Es la prueba que impide añadir una caché
 - [ ] T009 [P] [US1] Prueba `AvailabilityControllerTest.java` contra los *fixtures*: los tres `200`, el `400` de la franja nocturna con su `code`, el `401`, el `404` del recurso inexistente y el `503` con su `detail`
 - [ ] T010 [P] [US1] Prueba `AvailabilityConsistencyIT.java` con Testcontainers, la prueba transversal de SC-003 y SC-004: para un conjunto de recursos con los cinco estados, **la respuesta de la lista de UC1 y la del endpoint individual coinciden recurso por recurso**; y un recurso que esta consulta reportó ocupado no puede reservarse con éxito en UC2
+- [ ] T010b [P] [US1] Prueba de la llamada única con WireMock: una reserva confirmada pide la ficha del recurso **una sola vez** —el paso 3 no genera una segunda llamada—, y el endpoint de §1, que no viene de UC2, sí la pide él mismo
 
 ### Implementation for User Story 1
 

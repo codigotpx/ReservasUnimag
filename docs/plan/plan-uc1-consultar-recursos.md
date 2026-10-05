@@ -470,13 +470,12 @@ Un `404` no existe en este endpoint: una consulta sin resultados es `200` con `t
 
 ### 2. Módulo 1 — `InventoryPort`
 
-Lo que sigue es **nuestra propuesta de contrato**, la misma que P-16 les pidió por escrito. Mientras no respondan, el adaptador real se escribe contra esto, el `InventoryFakeAdapter` lo imita y WireMock lo simula en T022; si el contrato final difiere, cambia solo `InventoryRestAdapter` y sus DTO. La autenticación entre módulos todavía no está acordada: se asume `Authorization: Bearer <token de servicio>` tomado de una variable de entorno (NEEDS CLARIFICATION, P-16).
+Lo que sigue es **nuestra propuesta de contrato**, la misma que P-16 les pidió por escrito. Mientras no respondan, el adaptador real se escribe contra esto, el `InventoryFakeAdapter` lo imita y WireMock lo simula en T022; si el contrato final difiere, cambia solo `InventoryRestAdapter` y sus DTO. Las llamadas entre módulos van sin autenticación: es un proyecto de curso y no entra en el alcance.
 
 #### 2.1 Catálogo filtrado — `GET /api/v1/resources`
 
 ```http
 GET /api/v1/resources?category=ESPACIO&type=LABORATORIO&minCapacity=20&page=1&size=100 HTTP/1.1
-Authorization: Bearer <token>
 ```
 
 ```json
@@ -562,7 +561,7 @@ No hay reintentos dentro de la misma consulta: el presupuesto de SC-001 ya está
 
 Es `POST` y no `GET` con los ids en la URL porque la lista puede traer cientos de identificadores y pasaría del límite práctico de longitud de una URL. No modifica nada (UC8 FR-009).
 
-UC1 **no llama a esta operación**: el catálogo ya trae `operationalStatus` de cada recurso en la misma respuesta, y pedirlo dos veces duplicaría la latencia del presupuesto de SC-001. Queda definida porque `InventoryPort.operationalStatus(resourceIds)` existe desde UC1 y la usan la revalidación de UC2 y la consulta de un solo recurso de UC8. Un `resourceId` que vuelva en `notFound` se trata como **no comprobable**, nunca como disponible (UC8 FR-007): el recurso se omite de la lista y queda registrado en el log, porque significa que el Módulo 1 lo dio de baja entre el catálogo y esta llamada (edge case *Cambio de estado entre páginas*).
+UC1 **no llama a esta operación**: el catálogo ya trae `operationalStatus` de cada recurso en la misma respuesta, y pedirlo dos veces duplicaría la latencia del presupuesto de SC-001. Queda definida porque `InventoryPort.operationalStatus(resourceIds)` existe desde UC1 y la usan quienes preguntan por **muchos** recursos de una vez: la carga de horarios de UC3 y la tarea de inicio de uso de UC7. La consulta de un solo recurso de UC8 y la revalidación de UC2 **no** la usan: van por la ficha individual de [UC2 §4](./plan-uc2-reservar-recursos.md#4-módulo-1--ficha-de-un-recurso), que trae el estado y el nombre en una sola llamada (ver [UC8 § Decisiones de diseño](./plan-uc8-consultar-disponibilidad-recursos.md#decisiones-de-diseño-de-este-caso-de-uso)). Un `resourceId` que vuelva en `notFound` se trata como **no comprobable**, nunca como disponible (UC8 FR-007): el recurso se omite de la lista y queda registrado en el log, porque significa que el Módulo 1 lo dio de baja entre el catálogo y esta llamada (edge case *Cambio de estado entre páginas*).
 
 ---
 
@@ -574,7 +573,6 @@ Se pide por el **código institucional** de una sola persona, nunca por lotes y 
 
 ```http
 GET /api/v1/compliance/people/2019114045 HTTP/1.1
-Authorization: Bearer <token>
 ```
 
 ```json
@@ -873,4 +871,4 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - La sección **Contratos** es la única fuente del JSON de UC1: si algo cambia ahí, cambia en los *fixtures*, en el OpenAPI y en los tipos del frontend, no al revés.
-- **NEEDS CLARIFICATION abiertos en este plan**: P-14 (se asume que la consulta falla sin el Módulo 1, como ya dice FR-008), P-16 (el contrato de §2 es nuestra propuesta, incluida la autenticación entre módulos, mientras el Módulo 1 no responda), P-17 (timeouts), P-20 punto 3 (si el mantenimiento trae fechas) y P-10 (se asume que la consulta no se bloquea cuando el Módulo 3 falla).
+- **NEEDS CLARIFICATION abiertos en este plan**: P-14 (se asume que la consulta falla sin el Módulo 1, como ya dice FR-008), P-16 (el contrato de §2 es nuestra propuesta mientras el Módulo 1 no responda), P-17 (timeouts), P-20 punto 3 (si el mantenimiento trae fechas) y P-10 (se asume que la consulta no se bloquea cuando el Módulo 3 falla).

@@ -496,7 +496,7 @@ El de UC3, `event-reservation-cancelled.json`, se renombra a `event-reservation-
 - **UC2 `Reservar recursos`**: aporta la reserva, el préstamo, la *outbox* y la pantalla `my-reservations`. El cupo que UC4 "libera" es la misma consulta de UC2 FR-008, que deja de contar una `CANCELADA` sin que nadie decremente nada.
 - **UC1 `Consultar recursos`**: es donde se ve el efecto. No hay que tocarlo: la consulta de ocupaciones ya filtra por `CONFIRMADA`.
 - **UC11 `Reportar cancelación de reserva`**: UC4 emite el evento con los campos que faltaban (`noticeMinutes`). Su plan añade el historial de envíos (UC11 FR-010) y la garantía de que una ausencia y una cancelación no coexistan (UC11 FR-011).
-- **UC7 `Actualizar estado de los recursos`**: el `<<include>>` de FR-002 se cumple dejando la ocupación liberada, igual que en UC2 y UC3, mientras P-20 siga abierto.
+- **UC7 `Actualizar estado de los recursos`**: el `<<include>>` de FR-002 se cumple dejando la ocupación liberada, igual que en UC2 y UC3. Cancelar no le manda nada al Módulo 1: el regreso a `DISPONIBLE` se lo reporta el Módulo 3 (UC7 FR-012).
 - **UC9 `Recibir reporte de no asistencia`**: es el camino **alternativo** de liberación y no pasa por aquí. Una ausencia no es una cancelación.
 - **UC12 `Recibir check-out`**: es lo que cierra un activo ya entregado, que UC4 se niega a cancelar (FR-008).
 

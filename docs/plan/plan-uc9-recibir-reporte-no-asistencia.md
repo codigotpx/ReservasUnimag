@@ -442,7 +442,7 @@ src/test/resources/contratos/
 - **UC2 `Reservar recursos`**: es el caso base del `<<extend>>` —sin reserva no hay ausencia— y de ahí sale el plazo de 10 minutos (UC2 FR-010). Aporta la *outbox* por la que sale el acuse.
 - **UC11 `Reportar cancelación de reserva`**: creó `reservation_closure`, que es lo que hace cumplir FR-005, FR-006 y SC-003 sin un `if`. UC9 es la otra mitad de UC11 FR-011 y SC-006.
 - **UC4 `Cancelar reserva`**: es el cierre contrario. Cancelar a tiempo es la forma de no aparecer aquí, y los dos bordes de 10 minutos —el de cancelar y el de reportar— encajan sin solaparse.
-- **UC7 `Actualizar estado de los recursos`**: el `<<include>>` se cumple liberando la ocupación, como en UC2, UC3 y UC4, mientras P-20 siga abierto.
+- **UC7 `Actualizar estado de los recursos`**: el `<<include>>` se cumple liberando la ocupación, como en UC2, UC3 y UC4. Una ausencia no le manda nada al Módulo 1 (UC7 FR-012); lo que sí deja es su fila en `status_change` con el motivo `NO_SHOW_REGISTERED`.
 - **UC12 `Recibir check-out`**: el otro consumidor de Kafka. `InboxGuard` y `KafkaConsumerConfig` se crean aquí y su plan los reusa; es el único trabajo de este plan que no es de UC9.
 - **UC6 `Consultar sanciones`**: el camino de vuelta. Las ausencias que aquí se registran son parte de lo que el Módulo 3 devuelve como cumplimiento, y por eso UC9 no decide nada (FR-003).
 

@@ -85,7 +85,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
 │   ├── port/
 │   │   ├── in/
 │   │   │   ├── ReserveResourcesPort.java
-│   │   │   ├── UpdateResourceStatusPort.java   # UC7 (la parte vigente mientras P-20 esté abierto)
+│   │   │   ├── UpdateResourceStatusPort.java   # UC7 (lo que UC2 necesita: la ocupación escrita)
 │   │   │   └── ReportReservationPort.java # UC10
 │   │   └── out/
 │   │       ├── ReservationRepositoryPort.java          # confirmar, vigentes, buscar préstamo
@@ -174,7 +174,7 @@ frontend/src/
 | 0 | Ficha del recurso en el Módulo 1; un activo sin **plazo máximo de préstamo** no se puede prestar (FR-012, P-16) | `404` si no existe, `503` si el Módulo 1 no responde |
 | 1 | Sanción vigente del titular, contra el Módulo 3 (UC6) | `RES-003` con motivo y fecha de fin |
 | 2 | Cupo de 3 reservas vigentes (FR-008) | `RES-002` con "3 de 3" y cuándo se libera la próxima |
-| 3 | Conflicto académico u ocupación, contra UC8 y contra la propia base (FR-006) | `RES-001` o `RES-004` |
+| 3 | Conflicto académico u ocupación, contra UC8 y contra la propia base (FR-006), con el estado operativo que ya trajo el paso 0 | `RES-001` o `RES-004` |
 | 4 | La restricción de exclusión al insertar (FR-004) | `RES-004` |
 
 **De qué motivo sale cada código.** UC8 responde con un motivo, y este caso de uso lo traduce:
@@ -216,7 +216,7 @@ El puerto `ReservationRepositoryPort.confirmar(...)` devuelve un resultado de do
 
 **Cálculo del vencimiento (FR-012, FR-013, FR-014).** `DueDateCalculator` suma el plazo en días hábiles a partir del **día siguiente** a la recogida y fija la hora a las 22:00 de `America/Bogota`. Con el ejemplo del spec: recogida el martes 2026-09-01 a las 14:30 con plazo 7 → se saltan el sábado 5 y el domingo 6 → **jueves 2026-09-10 a las 22:00**. Un plazo `0` vence a las 22:00 del mismo día de la recogida (uso en sitio). Los días no hábiles salen del puerto `BusinessCalendar`, cuya primera implementación excluye sábados y domingos más una lista de festivos en `application.properties`. (NEEDS CLARIFICATION: FR-014 habla de "días en que la universidad no abre" y nadie nos da ese calendario; mientras no exista, la lista se mantiene a mano.)
 
-**`Actualizar estado de los recursos` dentro de UC2 (FR-011).** Mientras P-20 siga abierto, el Módulo 2 **no le envía nada** al Módulo 1: el estado que este caso de uso "actualiza" es la ocupación de nuestra propia base, que es justamente la fila de `reservation` que se acaba de insertar. Se llama igual al puerto `UpdateResourceStatusPort` para que el `<<include>>` exista en el código y quede el registro de auditoría; la tabla `StatusChange` y el aviso al Módulo 1 se diseñan cuando se responda P-20.
+**`Actualizar estado de los recursos` dentro de UC2 (FR-011).** Confirmar una reserva **no le manda nada** al Módulo 1: `RESERVADO` es nuestro y el único estado que sale hacia él es el inicio de uso (UC7 FR-004 y FR-012). El estado que este caso de uso "actualiza" es la ocupación de nuestra propia base, que es justamente la fila de `reservation` que se acaba de insertar. Se llama al puerto `UpdateResourceStatusPort` para que el `<<include>>` exista en el código y quede el registro de auditoría; la tabla `StatusChange` la crea el [plan de UC7](./plan-uc7-actualizar-estado-recursos.md).
 
 **`Reportar información de la reserva` dentro de UC2 (FR-018).** El evento `ReservationRecordCreated` se inserta en `outbox_message` en la misma transacción que la reserva, y un publicador `@Scheduled` lo lleva al topic `module2.reservation.record.v1` con la clave de partición `reservation_id`, según el plan general. Si Kafka o el Módulo 3 están caídos, la reserva se confirma igual y el evento sale cuando vuelvan (UC10 FR-005).
 
@@ -260,6 +260,8 @@ Tres reglas propias de este caso de uso:
 | `date` | `yyyy-MM-dd` | las dos | obligatorio |
 | `start`, `end` | `HH:mm` | espacio | obligatorios; dentro de 06:00–22:00, `fin > inicio`, máximo 2 horas (FR-009) |
 | `pickup` | `HH:mm` | activo | obligatorio; dentro de 06:00–22:00 |
+
+**Decisión: al Módulo 1 se le pregunta una sola vez por petición.** El paso 0 pide la ficha del recurso y de ahí salen la categoría, el plazo de préstamo y el `operationalStatus`. El paso 3, que cruza la disponibilidad con UC8, **recibe ese estado** en vez de volver a preguntarlo: dos llamadas por el mismo dato en la misma petición no solo cuestan latencia, también podrían contestar distinto entre una y otra y dejar la respuesta incoherente consigo misma —un `RES-004` por mantenimiento cuyo `detectedStatus` dijera `DISPONIBLE`—. La ocupación por reservas, préstamos y bloqueos sí se vuelve a leer, y dentro de la transacción (paso 4), porque es nuestra y es la que cambia mientras la persona decide. La regla vale igual cuando quien llama es UC3: al aplicar una carga ya resolvió todos los recursos con la operación por lote, así que le pasa la ficha a cada reserva y el paso 0 no vuelve a salir a la red —es lo que mantiene su "una sola llamada al Módulo 1 por carga"—. Está escrito en [UC8 § Decisiones de diseño](./plan-uc8-consultar-disponibilidad-recursos.md#decisiones-de-diseño-de-este-caso-de-uso).
 
 **Decisión: el cuerpo no lleva `category`.** La categoría la manda el Módulo 1 en la ficha (paso 0 de la tabla de decisiones), no el cliente, así que nadie puede forzar la forma equivocada. El backend compara: si llega `start`/`end` para un activo, o `pickup` para un espacio, responde `400` con `codigo: "SHAPE_DOES_NOT_MATCH_CATEGORY"`. El `origin` tampoco viaja en el cuerpo: `POST /api/reservations` siempre crea una reserva `ESTUDIANTIL` con el titular del JWT. Las reservas `ACADEMICO` entran por UC3 llamando al caso de uso, nunca por este endpoint; por eso `ReservationRequest` tiene el campo y el `CreateReservationRequest` no.
 
@@ -546,7 +548,6 @@ Tercera operación de `InventoryPort`, además de las dos que definió [UC1 § C
 
 ```http
 GET /api/v1/resources/ACT-004512 HTTP/1.1
-Authorization: Bearer <token>
 ```
 
 ```json
@@ -833,7 +834,7 @@ src/test/resources/contratos/
 - [ ] T022 [P] [US1] Definir `Module3NotifierPort` en `domain/port/out/` recibiendo la ficha como objeto de dominio, sin nada de Kafka
 - [ ] T023 [P] [US1] Definir los puertos de entrada `ReserveResourcesPort`, `UpdateResourceStatusPort` y `ReportReservationPort` en `domain/port/in/`
 - [ ] T024 [US1] Implementar `DueDateCalculator` sobre `BusinessCalendar` y el `Clock` (FR-012 a FR-014) (depende de T007, T012)
-- [ ] T025 [US1] Implementar `UpdateResourceStatusUseCase` con el alcance vigente: deja escrita la ocupación y registra el cambio, sin avisar al Módulo 1 mientras P-20 esté abierto (UC7 FR-002, FR-005, FR-006)
+- [ ] T025 [US1] Implementar `UpdateResourceStatusUseCase` con el alcance que UC2 necesita: deja escrita la ocupación y registra el cambio, sin avisar al Módulo 1, porque confirmar no es un inicio de uso (UC7 FR-002, FR-005, FR-006, FR-012)
 - [ ] T026 [US1] Implementar `ReportReservationUseCase`: arma la `ReservationRecord` —con titular, o con asignatura, programa y docente si el origen es académico— y la entrega a `Module3NotifierPort` (UC10 FR-002, FR-009)
 - [ ] T027 [US1] Implementar `ReserveResourcesUseCase` con los pasos 0 a 4 de la tabla de decisiones: validación de forma, ficha del recurso, sanción, cupo, disponibilidad, confirmación y los dos `<<include>>` (depende de T021 a T026)
 - [ ] T028 [US1] Implementar el registro de denegaciones en el caso de uso y en `DenialPersistenceAdapter`, con su propia transacción (FR-005)
@@ -877,7 +878,7 @@ src/test/resources/contratos/
 - **UC1 `Consultar recursos`**: es el plan previo. Aporta el esquema, `TimeSlot`, `Occupancy`, la seguridad, el `Clock`, los clientes de los Módulos 1 y 3 y la pantalla desde la que se reserva.
 - **UC8 `Consultar disponibilidad`**: este plan cierra lo que faltaba (un solo recurso y el "hasta cuándo", UC8 FR-012). Su [propio plan](./plan-uc8-consultar-disponibilidad-recursos.md) consolida los doce FR, añade las pruebas de coherencia entre UC1 y UC2 y el endpoint individual.
 - **UC6 `Consultar sanciones`**: este plan añade la denegación `RES-003` y la tabla `denial` (T028). Su [propio plan](./plan-uc6-consultar-sanciones.md) construye el registro de cada consulta que pide UC6 FR-009, porque la tabla `denial` guarda la denegación pero no lo que el Módulo 3 contestó.
-- **UC7 `Actualizar estado de los recursos`**: se implementa solo el alcance vigente (dejar escrita la ocupación). Su propio plan añadirá el aviso al Módulo 1 y la tabla `StatusChange` cuando se responda P-20.
+- **UC7 `Actualizar estado de los recursos`**: se implementa solo lo que UC2 necesita (dejar escrita la ocupación). Su propio plan añade la tabla `StatusChange` y el aviso de inicio de uso al Módulo 1, que no se dispara al confirmar.
 - **UC10 `Reportar información de la reserva`**: este plan monta la *outbox*, el publicador y el evento de la ficha. Su plan añadirá la ficha de los bloqueos académicos que llegan por UC3 y el contrato definitivo del evento.
 - **UC3 `Importar horarios semestrales`**: reusa `ReserveResourcesUseCase` con `origen = ACADEMICO`. El campo ya queda listo; lo que se salta depende de P-19.
 - **UC4 `Cancelar reserva`** y **UC9 `Recibir reporte de no asistencia`**: cuelgan de la reserva creada aquí. UC2 no los necesita; mientras no existan, una reserva solo se libera al pasar su franja o con el check-out del préstamo. La pantalla `my-reservations` que se crea aquí es donde UC4 pondrá su botón.
@@ -913,7 +914,7 @@ src/test/resources/contratos/
   - **P-11**: el alcance de la sanción; hoy cualquier sanción vigente bloquea cualquier reserva
   - **P-19**: qué reglas se salta una reserva de origen académico; el supuesto es sanción, cupo y tope de 2 horas
   - **P-16**: el plazo máximo de préstamo tiene que venir en la ficha del Módulo 1; sin él, FR-012 no se puede implementar
-  - **P-20 punto 1**: mientras no se responda, `Actualizar estado de los recursos` no le envía nada al Módulo 1
+  - **P-02**: nadie nos informa todavía de que la persona se presentó o recogió el activo, así que una reserva recién confirmada se queda `RESERVADO` hasta que alguien registre el inicio de uso ([UC7 §3](./plan-uc7-actualizar-estado-recursos.md#3-post-apireservationsreservationidstart-use))
   - **P-08**: un préstamo vencido y no devuelto sigue ocupando el activo sin fecha de fin; falta cuándo se da por perdido
   - **Código para `EN_MANTENIMIENTO`**: el diccionario de errores no tiene uno; se responde `RES-004` con un mensaje propio y se propone un `RES-005`
   - **Calendario de festivos**: FR-014 cuenta días hábiles y nadie nos da el calendario de la universidad; por ahora es una lista en `application.properties`

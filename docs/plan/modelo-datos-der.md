@@ -7,7 +7,7 @@ Este documento solo dibuja el modelo de datos ya definido en el plan de arquitec
 
 ## Alcance
 
-El Módulo 2 es dueño de los usuarios, las reservas (estudiantiles y académicas), los préstamos, los reportes de cumplimiento que recibe y las tablas de mensajería. **No** guarda el recurso ni su estado operativo, que son del Módulo 1, ni las sanciones, que son del Módulo 3. Por eso `resource_id` aparece como un `varchar` sin tabla propia: es una referencia a una entidad externa, y en el diagrama se dibuja como `resource_module1` con borde conceptual, no como una tabla de nuestro esquema.
+El Módulo 2 es dueño de los usuarios, las reservas (estudiantiles y académicas), los préstamos, los reportes de cumplimiento que recibe y las tablas de mensajería. **No** guarda el recurso ni su estado operativo, que son del Módulo 1 —de ese estado solo marca cuándo empezó el uso, que es lo que le avisa—, ni las sanciones, que son del Módulo 3. Por eso `resource_id` aparece como un `varchar` sin tabla propia: es una referencia a una entidad externa, y en el diagrama se dibuja como `resource_module1` con borde conceptual, no como una tabla de nuestro esquema.
 
 ## Diagrama
 
@@ -34,6 +34,7 @@ erDiagram
         timestamptz starts_at                   "inicio de la franja, o entrega del prestamo"
         timestamptz ends_at                     "fin de la franja, o vencimiento del prestamo"
         tstzrange   occupancy                   "generada: tstzrange(starts_at, ends_at, [)"
+        timestamptz use_started_at              "nulo: cuando empezo el uso; es lo que se avisa al Modulo 1"
         varchar     cancellation_reason         "nulo"
         timestamptz cancelled_at                "nulo"
         timestamptz created_at
@@ -79,6 +80,21 @@ erDiagram
         timestamptz received_at
     }
 
+    status_change {
+        uuid        id                      PK
+        varchar     resource_id                 "identificador del Modulo 1"
+        varchar     resource_category           "ESPACIO | ACTIVO"
+        uuid        reservation_id          FK  "nulo si el cambio no viene de una reserva"
+        timestamptz occupancy_starts_at         "la franja, o el periodo del prestamo"
+        timestamptz occupancy_ends_at
+        varchar     previous_status_module2     "DISPONIBLE | RESERVADO | BLOQUEO_ACADEMICO"
+        varchar     new_status                  "uno de los cinco estados"
+        varchar     reason                      "RESERVATION_CONFIRMED | ACADEMIC_BLOCK_CREATED | USE_STARTED | RESERVATION_CANCELLED | NO_SHOW_REGISTERED | CHECK_OUT_RECEIVED | LOAN_DECLARED_LOST"
+        timestamptz changed_at
+        varchar     notified_status             "NOT_SENT | PENDING | SENT | FAILED"
+        uuid        outbox_message_id       FK  "nulo; el aviso al Modulo 1, si lo hubo"
+    }
+
     denial {
         uuid        id                      PK
         uuid        user_id                 FK
@@ -89,7 +105,7 @@ erDiagram
 
     outbox_message {
         uuid        id                      PK  "tambien es el eventId publicado"
-        varchar     type                        "RESERVATION_RECORD | CANCELLATION; determina el topic"
+        varchar     type                        "RESERVATION_RECORD | CANCELLATION | NO_SHOW_ACK | CHECK_OUT_ACK | RESOURCE_USE_STARTED; determina el topic y el destinatario"
         uuid        reservation_id          FK  "clave de particion en Kafka"
         jsonb       payload                     "el evento serializado"
         varchar     status                      "PENDING | SENT | FAILED"
@@ -123,13 +139,16 @@ erDiagram
     reservation            ||--o| academic_block : "detalla si es ACADEMICO"
     reservation            ||--o| absence          : "recibe (UC9)"
     reservation            ||--o| check_out         : "recibe (UC12)"
-    reservation            ||--o{ outbox_message  : "origina (UC10, UC11)"
+    reservation            ||--o{ status_change     : "deja historial (UC7)"
+    reservation            ||--o{ outbox_message  : "origina (UC10, UC11, UC7)"
     reservation            |o--o{ inbox_message  : "referida por"
 
     semester_schedule  ||--o{ academic_block : "genera"
 
     resource_module1    ||--o{ reservation           : "se reserva (por resource_id, sin FK)"
     resource_module1    ||--o{ denial        : "se deniega (por resource_id, sin FK)"
+    resource_module1    ||--o{ status_change     : "cambia de estado (por resource_id, sin FK)"
+    status_change       |o--o| outbox_message  : "apunta al aviso enviado"
 ```
 
 ## Cómo leer las relaciones
@@ -141,7 +160,9 @@ erDiagram
 | `reservation` → `academic_block` | 1 a 0..1 | Solo las de origen `ACADEMICO`. Mismo patrón: PK compartida con `reservation`. |
 | `semester_schedule` → `academic_block` | 1 a 0..* | Una carga semestral genera muchos bloqueos; un bloqueo extraordinario no viene de ninguna carga, de ahí que `semester_schedule_id` admita nulo. |
 | `reservation` → `absence` / `check_out` | 1 a 0..1 | El `reservation_id` es único en las dos tablas: un solo reporte por reserva. |
-| `reservation` → `outbox_message` | 1 a 0..* | Una reserva produce la ficha (UC10) y, si se cancela, el reporte de cancelación (UC11). |
+| `reservation` → `status_change` | 1 a 0..* | Cada cambio de ocupación deja una fila: confirmación, inicio de uso, cancelación, ausencia y check-out (UC7 FR-009). |
+| `reservation` → `outbox_message` | 1 a 0..* | Una reserva produce la ficha (UC10) y, si se cancela, el reporte de cancelación (UC11); el inicio de uso añade el aviso al Módulo 1 (UC7). |
+| `status_change` → `outbox_message` | 0..1 a 0..1 | Solo el cambio con motivo `USE_STARTED` tiene aviso, y `outbox_message_id` permite ir del historial a la entrega y al revés. |
 | `reservation` → `inbox_message` | 0..1 a 0..* | Varios eventos del Módulo 3 pueden referirse a la misma reserva, y `reservation_id` queda nulo si el evento se rechazó porque la reserva no existe. |
 | `resource_module1` → `reservation` / `denial` | conceptual | No hay clave foránea: el recurso vive en el Módulo 1 y nosotros guardamos solo su `resource_id` y su categoría. La integridad se valida contra el `InventoryPort`, no contra la base. |
 
@@ -174,7 +195,6 @@ Los mismos del plan de arquitectura, acotados a lo que cambiaría este diagrama:
 
 | Pendiente | Qué tabla afectaría |
 |---|---|
-| UC7 | Falta la tabla de historial de cambios de estado (`StatusChange`); se diseña cuando se responda P-20. |
 | UC9 | En qué estado queda una reserva con ausencia: la lista de `reservation.status` no tiene uno propio. |
 | P-08 | Un préstamo que nunca se devuelve: hoy `reservation.ends_at` y la ocupación duran hasta el check-out. |
 | Registro | El spec de registro e inicio de sesión puede añadir columnas a `app_user` (dominio de correo permitido, datos obligatorios). |
