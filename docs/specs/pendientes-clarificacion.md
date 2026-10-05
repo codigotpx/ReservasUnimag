@@ -2,7 +2,7 @@
 
 Lista de decisiones que faltan por definir. Cada entrada dice **qué hay que preguntar** y **exactamente dónde se aplica** una vez se tenga la respuesta, para no volver a rastrear los archivos.
 
-**Última revisión**: 2026-09-14
+**Última revisión**: 2026-10-05
 
 ---
 
@@ -35,12 +35,15 @@ La contradicción interna de UC2 quedó resuelta: el edge case y FR-010 ahora di
 
 **Qué preguntar**: cuando alguien llega a usar un salón o a recoger un activo, ¿qué lo registra — el propio estudiante desde la app, alguien en el punto de préstamo, un lector de carné? ¿Y ese registro lo recibe el Módulo 2 directamente, o también viene del Módulo 3, que es quien comprueba la asistencia?
 
+> Importa más que antes: de ese registro depende el único aviso que el Módulo 2 le manda al Módulo 1, el paso a `EN_USO` (UC7 FR-004). Mientras no se responda, lo registra el titular desde la app.
+
 **Dónde aplicarlo**:
 
 | Archivo | Punto | Qué cambiar |
 |---|---|---|
 | `spec-modulo2-uc2-reservar-recursos.md` | **Functional Requirements** | Añadir el FR que describa el registro de presentación y de entrega, ahora que se sabe quién lo hace. |
 | `spec-modulo2-uc9-recibir-reporte-no-asistencia.md` | **FR-001** | Precisar por qué medio llega el reporte del Módulo 3. |
+| `../plan/plan-uc7-actualizar-estado-recursos.md` | **Contratos §3** | Reemplazar o conservar el `POST /api/reservations/{id}/start-use`, que hoy es la entrada provisional al registro de inicio de uso. El camino de ahí hacia dentro —marca, registro y aviso al Módulo 1— no cambia con la respuesta. |
 
 ---
 
@@ -263,24 +266,23 @@ Como `Importar horarios semestrales` incluye a `Reservar recursos`, cada clase i
 
 ## P-20 — Lo que hay que acordar con el Módulo 1 tras el reparto de estados
 
-**Estado**: abierto. Nace del reparto de estados del 2026-09-14 (ver `spec-modulo2.md`).
+**Estado**: abierto en los puntos 2 a 5. Nace del reparto de estados del 2026-09-14 (ver `spec-modulo2.md`). El punto 1 ya está resuelto (ver Resueltos) y se conserva aquí porque los planes lo citan.
 
 Con el nuevo reparto, el Módulo 1 es dueño de `DISPONIBLE`, `EN_USO` y `EN_MANTENIMIENTO`, y el Módulo 2 de `RESERVADO`, `BLOQUEO_ACADEMICO` y los estados de la reserva. Eso cambia varias cosas que habíamos acordado con el Módulo 1:
 
-1. **¿El Módulo 2 le sigue avisando algo al Módulo 1?** Los cambios físicos —alguien llega, recoge o devuelve un recurso— los constata el Módulo 3, que podría reportárselos directo al Módulo 1, igual que ya hace con los daños. Si es así, al Módulo 2 no le queda nada que enviarle, solo consultarlo, y la flecha `Actualizar estado de los recursos` → Módulo 1 del diagrama se queda sin contenido. Relacionado con P-02, que pregunta quién registra la presentación.
+1. **¿El Módulo 2 le sigue avisando algo al Módulo 1?** *Resuelto: sí, un solo aviso.* El inicio de uso es un hecho de la reserva y es nuestro, así que el Módulo 2 le comunica el paso a `EN_USO` (UC7 FR-004), tanto el de una reserva con titular como el de una clase cuando llega su hora. El aviso lleva el tramo de uso, con el que el Módulo 1 libera un espacio por sí solo (UC7 FR-004a); la devolución de un activo y la entrada a `EN_MANTENIMIENTO` las constata el Módulo 3 y se las reporta directamente, igual que los daños (UC7 FR-012). La flecha `Actualizar estado de los recursos` → Módulo 1 del diagrama se queda, con ese único contenido. Lo que falta es acordar con su equipo el medio y los datos del aviso; el registro de la llegada de una persona sigue en P-02.
 2. **Que el Módulo 1 nos avise cuando un recurso deja de estar disponible.** Si un recurso entra a `EN_MANTENIMIENTO` —porque volvió dañado, porque un salón tiene una gotera o porque hay mantenimiento programado—, las reservas que ya estaban confirmadas sobre él tienen que cancelarse (UC4 FR-010). Como el daño va del Módulo 3 al Módulo 1, nadie nos lo dice. Al consultar sí lo vemos; el hueco son las reservas hechas antes. Como alternativa de respaldo, el check-out del Módulo 3 podría traer solo una marca de "volvió con daño", pero no cubriría los espacios ni el mantenimiento programado.
 3. **¿`EN_MANTENIMIENTO` trae fechas?** Su estado es el de ahora, pero nosotros preguntamos por franjas futuras. Si un salón entra hoy a mantenimiento, ¿sigue bloqueado para la reserva del martes?
 4. **Quitar `RESERVADO` y `BLOQUEO_ACADEMICO` de su spec**, donde todavía aparecen como estados suyos.
 5. **Quién le avisa al estudiante desplazado por una clase.** UC3 decía que el Módulo 1 recibía las cancelaciones "para informar a los estudiantes afectados"; con el reparto ya no se le envían.
 
-**Qué preguntar**: las cinco preguntas de arriba, al equipo del Módulo 1 y, en la primera, también al profesor.
+**Qué preguntar**: los puntos 2 a 5 al equipo del Módulo 1, y de la pregunta 1 lo que queda, el medio y los datos con que espera recibir el inicio de uso.
 
 **Dónde aplicarlo**:
 
 | Archivo | Punto | Qué cambiar |
 |---|---|---|
-| `spec-modulo2-uc7-actualizar-estado-recursos.md` | Todo el spec, empezando por la marca de clarificación del contexto | Reescribirlo según la respuesta 1. |
-| `unimag.drawio` | Flecha `Actualizar estado de los recursos` → Módulo 1 | Mantenerla o quitarla según la respuesta 1. |
+| `spec-modulo2-uc7-actualizar-estado-recursos.md` | **FR-004** | Precisar el medio y los datos del aviso de inicio de uso (resto de la respuesta 1). |
 | `spec-modulo2-uc4-cancelar-reserva.md` | **FR-010** | Nombrar el aviso del Módulo 1 según la respuesta 2. |
 | `spec-modulo2-uc1-consultar-recursos.md` | Edge case **Mantenimiento que empieza dentro de la franja** | Ajustar según la respuesta 3. |
 | `spec-modulo2-uc8-consultar-disponibilidad-recursos.md` | **FR-002** | Igual. |
@@ -289,6 +291,8 @@ Con el nuevo reparto, el Módulo 1 es dueño de `DISPONIBLE`, `EN_USO` y `EN_MAN
 ---
 
 ## Resueltos
+
+- **El Módulo 2 le sigue comunicando el `EN_USO` al Módulo 1** — se cierra el primer punto de **P-20** y con él la marca de clarificación de UC7. El Módulo 3 le reporta directamente al Módulo 1 los cambios físicos que constata en el sitio, pero el inicio de uso es un hecho de la reserva y es nuestro: cuando la persona llega y empieza a usar lo que apartó, el Módulo 2 se lo comunica al Módulo 1 para que pase el recurso a `EN_USO`. El regreso a `DISPONIBLE` y la entrada a `EN_MANTENIMIENTO` no salen de aquí. La flecha `Actualizar estado de los recursos` → Módulo 1 del diagrama se queda, con ese único contenido. Se reescribió UC7 entero: contexto, actores, tabla de estados con su dueño, user story, los seis escenarios, los edge cases, FR-001 a FR-005 y FR-007 a FR-011, el nuevo FR-012 que prohíbe enviarle cualquier otro estado, las entidades y SC-001, SC-003 y SC-004. Lo que falta ahora es solo acordar el medio y los datos del aviso con el equipo del Módulo 1. *(2026-10-05)*
 
 - **Se retira la renovación de préstamos** — el equipo decidió que no entra en este proyecto. Un préstamo vence en la fecha que calcula `Reservar recursos` y no se puede prorrogar: quien necesite el activo más tiempo lo devuelve y lo vuelve a pedir. Se quitaron de UC2 los antiguos FR-016 y FR-017, el edge case de la renovación pedida el día del vencimiento y el atributo de renovación de `PeriodoDePrestamo`, y el antiguo FR-018 pasó a ser FR-016. También se quitó de los parámetros definidos de `spec-modulo2.md`. *(2026-09-21)*
 
