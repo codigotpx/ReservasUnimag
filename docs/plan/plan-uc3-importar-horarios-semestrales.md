@@ -404,7 +404,7 @@ Paso 1 de la carga. `multipart/form-data`, porque va un archivo:
       "end": "11:00",
       "verdict": "ACADEMIC_CLASH",
       "sessions": 0,
-      "problem": "Se cruza con otra clase ya bloqueada en este recurso: IS-402 group 1, lunes de 08:00 a 10:00.",
+      "problem": "Se cruza con otra clase ya bloqueada en este recurso: IS-402 grupo 1, lunes de 08:00 a 10:00.",
       "conflictingBlock": { "course": "Redes de Computadores", "courseCode": "IS-402", "group": "1" }
     },
     {
@@ -418,7 +418,7 @@ Paso 1 de la carga. `multipart/form-data`, porque va un archivo:
       "end": "16:00",
       "verdict": "ASSET_ALREADY_PICKED_UP",
       "sessions": 0,
-      "problem": "El active ya está en manos de una person until el 2026-09-12 a las 22:00. Hay que pedirlo de vuelta antes de bloquearlo para la clase."
+      "problem": "El activo ya está en manos de una persona hasta el 2026-09-12 a las 22:00. Hay que pedirlo de vuelta antes de bloquearlo para la clase."
     },
     {
       "row": 92,
@@ -445,9 +445,9 @@ El `estado: "REJECTED"` queda guardado: la constancia de FR-009 vale también pa
 
 | Código | Cuándo |
 |---|---|
-| `400` con `codigo: "EMPTY_FILE"` | El CSV no trae ninguna fila de datos (edge case **Archivo vacío**). Nunca se responde con un resumen de éxito. |
-| `400` con `codigo: "INVALID_HEADER"` | Faltan columnas obligatorias o el archivo no es un CSV legible; lleva `missingColumns`. |
-| `400` con `codigo: "INVALID_TERM"` | `termEnd` no es posterior a `termStart`. |
+| `400` con `code: "EMPTY_FILE"` | El CSV no trae ninguna fila de datos (edge case **Archivo vacío**). Nunca se responde con un resumen de éxito. |
+| `400` con `code: "INVALID_HEADER"` | Faltan columnas obligatorias o el archivo no es un CSV legible; lleva `missingColumns`. |
+| `400` con `code: "INVALID_TERM"` | `termEnd` no es posterior a `termStart`. |
 | `401` / `403` | Sin sesión / con sesión pero sin el rol `DIRECCION_PROGRAMA`. |
 | `413` | El archivo pasa de `reservations.upload.max-size`. |
 | `503` con `modulo: "MODULO_1"` | El inventario no respondió y no se puede validar ni una fila. |
@@ -505,9 +505,9 @@ Paso 2. Sin cuerpo: lo que se aplica es exactamente la carga que se validó y qu
 ```json
 {
   "type": "https://reservasunimag.unimagdalena.edu.co/errors/upload-not-applicable",
-  "title": "La upload no se puede aplicar",
+  "title": "La carga no se puede aplicar",
   "status": 409,
-  "detail": "El impacto cambió desde que se validó: ahora se cancelarían 5 reservations en vez de 3. Vuelve a validar el archivo.",
+  "detail": "El impacto cambió desde que se validó: ahora se cancelarían 5 reservas en vez de 3. Vuelve a validar el archivo.",
   "instance": "/api/schedules/7e2a4c81-3f95-4d60-b8a7-1c9e5d0f2a63/confirmation",
   "code": "IMPACT_CHANGED",
   "reservationsToCancelAtValidation": 3,
@@ -593,9 +593,9 @@ Un bloqueo extraordinario es una reserva como las demás, así que su `reservati
 ```json
 {
   "type": "https://reservasunimag.unimagdalena.edu.co/errors/conflicting-academic-block",
-  "title": "La timeSlot ya tiene actividad instructor",
+  "title": "La franja ya tiene actividad docente",
   "status": 409,
-  "detail": "Se cruza con la clase IS-402 group 1, de 08:00 a 10:00. Una clase no desplaza a otra: resuélvanlo entre los responsables.",
+  "detail": "Se cruza con la clase IS-402 grupo 1, de 08:00 a 10:00. Una clase no desplaza a otra: resuélvanlo entre los responsables.",
   "instance": "/api/schedules/extraordinary-needs",
   "verdict": "ACADEMIC_CLASH",
   "conflictingBlock": { "course": "Redes de Computadores", "courseCode": "IS-402", "group": "1" }
@@ -698,7 +698,7 @@ El `<<include>>` a UC11 que UC3 estrena. Un evento por cada reserva desplazada, 
     "reservationId": "a1b2c3d4-5e6f-4789-9abc-def012345678",
     "status": "CANCELADA_POR_PRIORIDAD_ACADEMICA",
     "cancellationOrigin": "ACADEMIC_PRIORITY",
-    "reason": "La timeSlot se asignó a actividad instructor: IS-510 group 1.",
+    "reason": "La franja se asignó a actividad docente: IS-510 grupo 1.",
     "attributableToPerson": false,
     "cancelledAt": "2026-10-02T15:47:35-05:00",
     "resource": {
@@ -728,7 +728,7 @@ El `<<include>>` a UC11 que UC3 estrena. Un evento por cada reserva desplazada, 
 | `reason` | Texto legible que nombra la clase que desplazó la reserva, sin el docente. | UC11 FR-002 |
 | `eventId` | El `outbox_message.id`. Es lo que permite al Módulo 3 descartar una reentrega y lo que cumple "una misma cancelación no se reporta dos veces". | UC11 FR-007 |
 
-`antelacionMinutos`, que UC11 FR-004 pide para la cancelación del titular, **no va** en estos eventos: no tiene sentido en una cancelación que la persona no pidió. Lo agrega el plan de UC4 cuando implemente esa rama.
+`noticeMinutes`, que UC11 FR-004 pide para la cancelación del titular, **no va** en estos eventos: no tiene sentido en una cancelación que la persona no pidió. Lo agrega el plan de UC4 cuando implemente esa rama.
 
 Si Kafka está caído la carga se aplica igual y los eventos salen después (UC11 FR-008): están en la *outbox*, que es la misma de UC2.
 
@@ -738,12 +738,12 @@ Si Kafka está caído la carga se aplica igual y los eventos salen después (UC1
 
 ### 8. Tipos del frontend
 
-En `frontend/src/features/schedules/types.ts`. Reusa `Categoria` y `ErrorApi` de `features/resources/types.ts`.
+En `frontend/src/features/schedules/types.ts`. Reusa `Category` y `ApiError` de `features/resources/types.ts`.
 
 ```ts
-import type { Categoria, ErrorApi } from "../resources/tipos";
+import type { Category, ApiError } from "../resources/types";
 
-export type DiaSemana =
+export type DayOfWeek =
   | "LUNES" | "MARTES" | "MIERCOLES" | "JUEVES" | "VIERNES" | "SABADO";
 
 export type Verdict =
@@ -753,18 +753,18 @@ export type Verdict =
 
 export type UploadStatus = "VALIDATED" | "APPLIED" | "REJECTED" | "EXPIRED";
 
-/** Los dictámenes que impiden aplicar la upload. */
+/** Los dictámenes que impiden aplicar la carga. */
 export const BLOCKING_VERDICTS: Verdict[] = [
   "REJECTED_FORMAT", "REJECTED_RESOURCE",
   "ACADEMIC_CLASH", "ASSET_ALREADY_PICKED_UP", "RESOURCE_UNDER_MAINTENANCE",
 ];
 
-export interface ReservaAfectada {
+export interface AffectedReservation {
   reservationId: string;
   holder: { code: string; name: string };
   start: string;
   end: string;
-  category: Categoria;
+  category: Category;
 }
 
 export interface ValidatedRow {
@@ -774,7 +774,7 @@ export interface ValidatedRow {
   course: string;
   courseCode: string;
   group: string;
-  dayOfWeek: DiaSemana;
+  dayOfWeek: DayOfWeek;
   start: string;
   end: string;
   verdict: Verdict;
@@ -782,10 +782,10 @@ export interface ValidatedRow {
   problem?: string;
   column?: string;
   conflictingBlock?: { course: string; courseCode: string; group: string };
-  affectedReservations?: ReservaAfectada[];
+  affectedReservations?: AffectedReservation[];
 }
 
-export interface ResumenValidacion {
+export interface ValidationSummary {
   rowsRead: number;
   rowsOk: number;
   rowsUnchanged: number;
@@ -796,7 +796,7 @@ export interface ResumenValidacion {
   reservationsToCancel: number;
 }
 
-export interface ValidacionResponse {
+export interface ValidationResponse {
   uploadId: string;
   academicTerm: string;
   term: { start: string; end: string };
@@ -805,11 +805,11 @@ export interface ValidacionResponse {
   expiresAt?: string;
   applicable: boolean;
   requiresConfirmation: boolean;
-  summary: ResumenValidacion;
+  summary: ValidationSummary;
   rows: ValidatedRow[];
 }
 
-export interface ConfirmacionResponse {
+export interface ConfirmationResponse {
   uploadId: string;
   academicTerm: string;
   status: "APPLIED";
@@ -837,14 +837,14 @@ export interface ExtraordinaryNeedRequest {
   confirm?: boolean;
 }
 
-export interface NecesidadExtraordinariaResponse {
+export interface ExtraordinaryNeedResponse {
   applied: boolean;
   verdict: Verdict;
   resourceId?: string;
   resourceName?: string;
   start?: string;
   end?: string;
-  affectedReservations?: ReservaAfectada[];
+  affectedReservations?: AffectedReservation[];
   block?: {
     reservationId: string;
     resourceId: string;
@@ -859,7 +859,7 @@ export interface NecesidadExtraordinariaResponse {
   eventsQueued?: number;
 }
 
-export interface ErrorHorario extends ErrorApi {
+export interface ScheduleError extends ApiError {
   code?: "EMPTY_FILE" | "INVALID_HEADER" | "INVALID_TERM"
          | "UPLOAD_NOT_APPLICABLE" | "UPLOAD_EXPIRED" | "UPLOAD_ALREADY_APPLIED" | "IMPACT_CHANGED";
   verdict?: Verdict;
@@ -959,7 +959,7 @@ Los CSV son también la entrada de `CsvScheduleReaderTest` (T021), así que el f
 - [ ] T029 [P] [US1] Implementar `ScheduleUploadPersistenceAdapter` y `AcademicBlockPersistenceAdapter`, con la consulta de cruces por lote, la búsqueda por `session_key` y la escritura por lotes
 - [ ] T030 [US1] Registrar los beans y las transacciones de UC3 en `UseCasesConfig`, con la validación en `readOnly` y la aplicación en una sola transacción de escritura (depende de T027 a T029)
 - [ ] T031 [US1] Implementar `ScheduleController` con `POST /api/schedules/validations`, `POST /api/schedules/{uploadId}/confirmation`, `GET /api/schedules` y `GET /api/schedules/{uploadId}`, exactamente como los fija [Contratos §1, §2 y §4](#1-post-apischedulesvalidations), documentado con OpenAPI
-- [ ] T032 [P] [US1] Frontend: copiar los tipos de [Contratos §8](#8-tipos-del-frontend) a `frontend/src/features/schedules/types.ts` y escribir `api.ts` con la subida `multipart` y el mapeo a `ErrorHorario`
+- [ ] T032 [P] [US1] Frontend: copiar los tipos de [Contratos §8](#8-tipos-del-frontend) a `frontend/src/features/schedules/types.ts` y escribir `api.ts` con la subida `multipart` y el mapeo a `ScheduleError`
 - [ ] T033 [US1] Frontend: `FileUpload.tsx` (archivo, periodo académico y fechas), `ImportReportView.tsx` (tabla por fila, agrupada por dictamen y con los bloqueantes primero) y `ConfirmImpact.tsx`, que solo aparece si `requiresConfirmation` y lista todas las `affectedReservations` juntas
 - [ ] T034 [US1] Frontend: `app/(direction)/schedules/page.tsx`, que encadena validar → revisar → confirmar, y muestra el resultado, el archivo vacío, la carga expirada y el `IMPACT_CHANGED` que obliga a revalidar
 
@@ -1008,7 +1008,7 @@ Los CSV son también la entrada de `CsvScheduleReaderTest` (T021), así que el f
 - **UC2 `Reservar recursos`**: es la dependencia fuerte. UC3 **no inserta reservas por su cuenta**: cada sesión entra por `ReserveResourcesPort` con `origen = ACADEMICO`, que es la flecha `<<include>>` del diagrama (P-06). De ahí hereda gratis los `<<include>>` a UC7 y UC10.
 - **UC1 `Consultar recursos`**: consume lo que este plan produce. Los bloqueos aparecen como `BLOQUEO_ACADEMICO`, que es el estado de mayor prioridad después del mantenimiento, sin tocar nada de UC1.
 - **UC4 `Cancelar reserva`**: este plan implementa **solo** la rama de prioridad académica (UC4 FR-002, FR-004 a FR-006, FR-009). Su plan añadirá la cancelación del titular con `CAN-001` y `CAN-002`, la antelación de 10 minutos, la prohibición de cancelar un activo ya entregado (UC4 FR-008) y la cancelación por recurso no disponible (UC4 FR-010).
-- **UC11 `Reportar cancelación de reserva`**: este plan monta el evento y lo encola. Su plan añadirá `antelacionMinutos` para la cancelación del titular (UC11 FR-004) y el historial de envíos (UC11 FR-010).
+- **UC11 `Reportar cancelación de reserva`**: este plan monta el evento y lo encola. Su plan añadirá `noticeMinutes` para la cancelación del titular (UC11 FR-004) y el historial de envíos (UC11 FR-010).
 - **UC7 `Actualizar estado de los recursos`**: entra por UC2 y hace lo que le toca, dejar escrita la ocupación. Crear el bloqueo no le avisa nada al Módulo 1, porque `BLOQUEO_ACADEMICO` es nuestro (UC7 FR-012); lo que sí sale es el `EN_USO` de cada clase **cuando llega su hora de inicio**, y de eso se encarga la tarea de [UC7](./plan-uc7-actualizar-estado-recursos.md), no este plan.
 - **UC10 `Reportar información de la reserva`**: la ficha de cada bloqueo sale por la *outbox* de UC2, marcada con `origen: ACADEMICO` y `sancionable: false`, que es la forma ya definida en [UC2 § Contratos §7](./plan-uc2-reservar-recursos.md#6-evento-hacia-el-módulo-3--module2reservationrecordv1).
 - **UC9 `Recibir reporte de no asistencia`**: no se toca aquí, pero este plan crea la situación que P-19 señala —nada impide hoy que el Módulo 3 reporte una ausencia sobre una clase—. El rechazo le toca a UC9.

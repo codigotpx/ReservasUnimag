@@ -92,7 +92,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
 │   │       ├── DenialRepositoryPort.java       # FR-005
 │   │       ├── Module3NotifierPort.java         # outbox: ficha y (más adelante) cancelación
 │   │       ├── BusinessCalendar.java                # días hábiles de FR-014
-│   │       └── InventoryPort.java                 # (existe) + ficha(resourceId) con el plazo
+│   │       └── InventoryPort.java                 # (existe) + details(resourceId) con el plazo
 │   └── usecase/
 │       ├── reserveresources/
 │       │   ├── ReserveResourcesUseCase.java
@@ -210,7 +210,7 @@ Para el mensaje de `RES-002` se toma el `end` más próximo entre las vigentes; 
 3. Volver a comprobar la ocupación en nuestra base, que cuesta milisegundos.
 4. `INSERT` de `reservation`, del `loan` si es un activo, y del evento en `outbox_message`.
 
-El puerto `ReservationRepositoryPort.confirmar(...)` devuelve un resultado de dominio (`Confirmada`, `CupoAgotado`, `RecursoTomado`) y el caso de uso lo traduce al código. Así la regla sigue leyéndose en el dominio y la atomicidad vive donde puede garantizarse. Los casos de uso siguen sin `@Service` ni `@Transactional`: eso se configura en `infrastructure/config` (plan general).
+El puerto `ReservationRepositoryPort.confirm(...)` devuelve un resultado de dominio (`Confirmed`, `QuotaExhausted`, `ResourceTaken`) y el caso de uso lo traduce al código. Así la regla sigue leyéndose en el dominio y la atomicidad vive donde puede garantizarse. Los casos de uso siguen sin `@Service` ni `@Transactional`: eso se configura en `infrastructure/config` (plan general).
 
 **Préstamo vencido y no devuelto (FR-015).** La ocupación de un activo es `[pickup, dueAt)`, así que la restricción de exclusión deja de proteger justo cuando el plazo vence, y el activo sigue en manos de alguien. Por eso la comprobación de disponibilidad no se limita al rango: un préstamo con `picked_up_at` y sin `returned_at` ocupa desde su inicio y sin fin, igual que ya hace la consulta de UC1. Dentro de la transacción esos préstamos abiertos del recurso se leen con `FOR UPDATE`, para que un *check-out* concurrente no se cruce con una reserva nueva. Queda una ventana estrecha —dos peticiones nuevas sobre un activo vencido y no devuelto— que se cierra con esa misma comprobación; se documenta porque depende de P-08, que sigue abierto.
 
@@ -234,7 +234,7 @@ Tres reglas propias de este caso de uso:
 
 | Regla | Detalle |
 |---|---|
-| Horas de entrada, instantes de salida | La persona manda `date` + `HH:mm`, igual que en UC1. Las respuestas devuelven **instantes completos**, porque un préstamo cruza días y `"fin": "22:00"` no diría de qué día. |
+| Horas de entrada, instantes de salida | La persona manda `date` + `HH:mm`, igual que en UC1. Las respuestas devuelven **instantes completos**, porque un préstamo cruza días y `"end": "22:00"` no diría de qué día. |
 | Un código por respuesta | Una denegación lleva **un solo** `code`, el primero que falla en el orden de FR-002 (edge case **Múltiples causas de denegación simultáneas**). Nunca una lista. |
 | Forma mal puesta es `400` | Una franja mal formada o un cuerpo que no corresponde a la categoría del recurso es `400` **sin** `code`: no es una regla de negocio (FR-009). Los `RES-00X` van siempre en `409`. |
 
@@ -263,7 +263,7 @@ Tres reglas propias de este caso de uso:
 
 **Decisión: al Módulo 1 se le pregunta una sola vez por petición.** El paso 0 pide la ficha del recurso y de ahí salen la categoría, el plazo de préstamo y el `operationalStatus`. El paso 3, que cruza la disponibilidad con UC8, **recibe ese estado** en vez de volver a preguntarlo: dos llamadas por el mismo dato en la misma petición no solo cuestan latencia, también podrían contestar distinto entre una y otra y dejar la respuesta incoherente consigo misma —un `RES-004` por mantenimiento cuyo `detectedStatus` dijera `DISPONIBLE`—. La ocupación por reservas, préstamos y bloqueos sí se vuelve a leer, y dentro de la transacción (paso 4), porque es nuestra y es la que cambia mientras la persona decide. La regla vale igual cuando quien llama es UC3: al aplicar una carga ya resolvió todos los recursos con la operación por lote, así que le pasa la ficha a cada reserva y el paso 0 no vuelve a salir a la red —es lo que mantiene su "una sola llamada al Módulo 1 por carga"—. Está escrito en [UC8 § Decisiones de diseño](./plan-uc8-consultar-disponibilidad-recursos.md#decisiones-de-diseño-de-este-caso-de-uso).
 
-**Decisión: el cuerpo no lleva `category`.** La categoría la manda el Módulo 1 en la ficha (paso 0 de la tabla de decisiones), no el cliente, así que nadie puede forzar la forma equivocada. El backend compara: si llega `start`/`end` para un activo, o `pickup` para un espacio, responde `400` con `codigo: "SHAPE_DOES_NOT_MATCH_CATEGORY"`. El `origin` tampoco viaja en el cuerpo: `POST /api/reservations` siempre crea una reserva `ESTUDIANTIL` con el titular del JWT. Las reservas `ACADEMICO` entran por UC3 llamando al caso de uso, nunca por este endpoint; por eso `ReservationRequest` tiene el campo y el `CreateReservationRequest` no.
+**Decisión: el cuerpo no lleva `category`.** La categoría la manda el Módulo 1 en la ficha (paso 0 de la tabla de decisiones), no el cliente, así que nadie puede forzar la forma equivocada. El backend compara: si llega `start`/`end` para un activo, o `pickup` para un espacio, responde `400` con `code: "SHAPE_DOES_NOT_MATCH_CATEGORY"`. El `origin` tampoco viaja en el cuerpo: `POST /api/reservations` siempre crea una reserva `ESTUDIANTIL` con el titular del JWT. Las reservas `ACADEMICO` entran por UC3 llamando al caso de uso, nunca por este endpoint; por eso `ReservationRequest` tiene el campo y el `CreateReservationRequest` no.
 
 **`201 Created`** — espacio (escenario 1)
 
@@ -331,7 +331,7 @@ El estado `RESERVADO` o `EN_USO` del recurso **no** aparece aquí: es la etiquet
   "type": "https://reservasunimag.unimagdalena.edu.co/errors/invalid-time-slot",
   "title": "Franja horaria inválida",
   "status": 400,
-  "detail": "Una reserva de espacio puede durar como máximo 2 horas. Ajusta la timeSlot.",
+  "detail": "Una reserva de espacio puede durar como máximo 2 horas. Ajusta la franja.",
   "instance": "/api/reservations",
   "code": "DURATION_EXCEEDED",
   "limitMinutes": 120,
@@ -363,7 +363,7 @@ El `code` de los `400` toma uno de `TIME_SLOT_OUTSIDE_WINDOW`, `TIME_SLOT_CROSSE
   "type": "https://reservasunimag.unimagdalena.edu.co/errors/reservation-denied",
   "title": "Reservation denegada",
   "status": 409,
-  "detail": "El recurso está reservado para actividad instructor en la timeSlot solicitada.",
+  "detail": "El recurso está reservado para actividad docente en la franja solicitada.",
   "instance": "/api/reservations",
   "code": "RES-001",
   "resourceId": "ESP-0412",
@@ -378,7 +378,7 @@ El `code` de los `400` toma uno de `TIME_SLOT_OUTSIDE_WINDOW`, `TIME_SLOT_CROSSE
   "type": "https://reservasunimag.unimagdalena.edu.co/errors/reservation-denied",
   "title": "Reservation denegada",
   "status": 409,
-  "detail": "Tienes 3 de 3 reservations active. La próxima se libera el 2026-09-01 a las 12:00.",
+  "detail": "Tienes 3 de 3 reservas activas. La próxima se libera el 2026-09-01 a las 12:00.",
   "instance": "/api/reservations",
   "code": "RES-002",
   "active": 3,
@@ -396,7 +396,7 @@ Cuando la vigente más próxima es un **préstamo vencido y sin devolver**, no h
   "type": "https://reservasunimag.unimagdalena.edu.co/errors/reservation-denied",
   "title": "Reservation denegada",
   "status": 409,
-  "detail": "Tienes una sanción vigente until el 2026-09-15 y no puedes reservar.",
+  "detail": "Tienes una sanción vigente hasta el 2026-09-15 y no puedes reservar.",
   "instance": "/api/reservations",
   "code": "RES-003",
   "sanctionReason": "Dos ausencias no justificadas en el semestre",
@@ -457,13 +457,13 @@ El campo `detectedStatus` existe precisamente para que esta rama se pueda separa
   "type": "https://reservasunimag.unimagdalena.edu.co/errors/sanctions-not-verifiable",
   "title": "No se pudo comprobar tu situación",
   "status": 503,
-  "detail": "No se pudo comprobar si tienes sanciones active, así que la reserva no se confirmó. Intenta de nuevo en unos minutos.",
+  "detail": "No se pudo comprobar si tienes sanciones activas, así que la reserva no se confirmó. Intenta de nuevo en unos minutos.",
   "instance": "/api/reservations",
   "module": "MODULO_3"
 }
 ```
 
-Esta es **la diferencia con UC1**: allí la caída del Módulo 3 era un aviso y la consulta seguía; aquí bloquea, porque confirmar sería dar por buena una situación que no se comprobó (UC6 FR-006). Un tercer `503` con `codigo: "INCOMPLETE_RESOURCE_DETAILS"` cubre el activo cuyo `loanTermBusinessDays` no viene en la ficha: no es culpa de la persona ni una regla de negocio, es el contrato del Módulo 1 incompleto (FR-012, P-16).
+Esta es **la diferencia con UC1**: allí la caída del Módulo 3 era un aviso y la consulta seguía; aquí bloquea, porque confirmar sería dar por buena una situación que no se comprobó (UC6 FR-006). Un tercer `503` con `code: "INCOMPLETE_RESOURCE_DETAILS"` cubre el activo cuyo `loanTermBusinessDays` no viene en la ficha: no es culpa de la persona ni una regla de negocio, es el contrato del Módulo 1 incompleto (FR-012, P-16).
 
 Kafka caído **no** produce error: la reserva se confirma y la ficha espera en la *outbox* (UC10 FR-005).
 
@@ -492,7 +492,7 @@ GET /api/loans/expected-due-date?resourceId=ACT-004512&date=2026-09-01&pickup=14
 
 > El bosquejo anterior de este plan usaba `recogida=2026-09-01T14:30`. Se parte en `date` + `pickup` para que la entrada sea idéntica a la de `POST /api/reservations` y a la de UC1, y el frontend no tenga que armar dos formatos.
 
-Errores: `400` si la hora cae fuera de la ventana, `404` si el recurso no existe, `409` con `codigo: "NOT_AN_ASSET"` si se pregunta por un espacio, y `503` si el Módulo 1 no responde.
+Errores: `400` si la hora cae fuera de la ventana, `404` si el recurso no existe, `409` con `code: "NOT_AN_ASSET"` si se pregunta por un espacio, y `503` si el Módulo 1 no responde.
 
 ---
 
@@ -566,14 +566,14 @@ GET /api/v1/resources/ACT-004512 HTTP/1.1
 
 Es el mismo objeto que el Módulo 1 pone dentro de `contenido[]` en el catálogo de UC1, servido de a uno. No se inventa una forma nueva: así un solo DTO y un solo mapper sirven para las dos operaciones.
 
-**`loanTermBusinessDays` es el campo que FR-012 necesita y que hoy no existe.** Los valores acordados con el Módulo 1 son Libro 7, Kit de dibujo 3, Videobeam 1 y Microscopio 0. El Módulo 2 **no** guarda esa tabla: si el campo no viene en un activo, el préstamo no se puede calcular y la respuesta es `503` con `codigo: "INCOMPLETE_RESOURCE_DETAILS"`, nunca un valor por defecto nuestro. Un `0` legítimo significa uso en sitio y es distinto de que el campo falte, así que el DTO lo modela como `Integer`, no como `int`.
+**`loanTermBusinessDays` es el campo que FR-012 necesita y que hoy no existe.** Los valores acordados con el Módulo 1 son Libro 7, Kit de dibujo 3, Videobeam 1 y Microscopio 0. El Módulo 2 **no** guarda esa tabla: si el campo no viene en un activo, el préstamo no se puede calcular y la respuesta es `503` con `code: "INCOMPLETE_RESOURCE_DETAILS"`, nunca un valor por defecto nuestro. Un `0` legítimo significa uso en sitio y es distinto de que el campo falte, así que el DTO lo modela como `Integer`, no como `int`.
 
 | Respuesta del Módulo 1 | Qué hace el adaptador | Qué ve la persona |
 |---|---|---|
 | `200` | Ficha normal. | Sigue el flujo. |
 | `404` | El recurso no existe. | `404` |
 | `5xx`, timeout, conexión rechazada | `ExternalServiceUnavailableException`. | `503` con `modulo: MODULO_1` |
-| `200` sin `loanTermBusinessDays` en un activo | Se registra como contrato incompleto. | `503` con `codigo: INCOMPLETE_RESOURCE_DETAILS` |
+| `200` sin `loanTermBusinessDays` en un activo | Se registra como contrato incompleto. | `503` con `code: INCOMPLETE_RESOURCE_DETAILS` |
 
 ---
 
@@ -682,10 +682,10 @@ El campo `payload` de `outbox_message` guarda este JSON **tal cual**, completo y
 
 ### 7. Tipos del frontend
 
-Traducción literal de las secciones 1 a 4, en `frontend/src/features/reservations/types.ts`. Reusa `Categoria` y `ErrorApi` de `features/resources/types.ts` (UC1).
+Traducción literal de las secciones 1 a 4, en `frontend/src/features/reservations/types.ts`. Reusa `Category` y `ApiError` de `features/resources/types.ts` (UC1).
 
 ```ts
-import type { Categoria, ErrorApi } from "../resources/tipos";
+import type { Category, ApiError } from "../resources/types";
 
 export type ReservationStatus =
   | "CONFIRMADA" | "CANCELADA" | "CANCELADA_POR_PRIORIDAD_ACADEMICA"
@@ -738,7 +738,7 @@ export interface MyReservationsResponse {
 }
 
 /** Extensiones que puede traer un ProblemDetail de este caso de uso. */
-export interface ReservationError extends ErrorApi {
+export interface ReservationError extends ApiError {
   code?: DenialCode | string;
   detectedStatus?: "EN_MANTENIMIENTO";
   active?: number;
@@ -801,9 +801,9 @@ src/test/resources/contracts/
 - [ ] T005 Escribir `src/main/resources/db/migration/V3__denial_and_outbox.sql` con las tablas `denial` y `outbox_message` y el índice parcial de pendientes del plan general; verificar que la restricción `reservation_no_overlap` y el `CHECK` de titular según origen ya están en `V1`
 - [ ] T006 [P] Crear `infrastructure/config/KafkaConfig.java`: productor con `acks=all` y `enable.idempotence=true`, serialización JSON y los nombres de los topics desde las propiedades
 - [ ] T007 [P] Crear el puerto `BusinessCalendar` en `domain/port/out/` y su implementación en `infrastructure/config`, que excluye sábados, domingos y los festivos de las propiedades
-- [ ] T008 [P] Extender `TimeSlot` con el tope de duración de FR-009, que lanza `DurationExceededException` con el tope aplicado, y mapear esa excepción a `400` con `codigo: DURATION_EXCEEDED`, `limitMinutes` y `requestedMinutes` ([Contratos §1](#1-post-apireservations))
+- [ ] T008 [P] Extender `TimeSlot` con el tope de duración de FR-009, que lanza `DurationExceededException` con el tope aplicado, y mapear esa excepción a `400` con `code: DURATION_EXCEEDED`, `limitMinutes` y `requestedMinutes` ([Contratos §1](#1-post-apireservations))
 - [ ] T009 [P] Crear `DenialCode` y `ReservationDeniedException` en `domain/model/error/`, y traducirlas a `409` con `ProblemDetail` en `GlobalErrorHandler` con las extensiones que fija [Contratos §1](#1-post-apireservations): el `code` y los campos de cada mensaje (SC-003)
-- [ ] T010 Extender `InventoryPort` y sus adaptadores (real, falso) con `ficha(resourceId)` según [Contratos §4](#4-módulo-1--ficha-de-un-recurso): devuelve `ResourceDetails` con la categoría y el **plazo máximo de préstamo** de los activos como `Integer` —`0` es uso en sitio y ausente es ficha incompleta— y traduce la falta del campo a `503` con `codigo: INCOMPLETE_RESOURCE_DETAILS` (FR-012, P-16)
+- [ ] T010 Extender `InventoryPort` y sus adaptadores (real, falso) con `details(resourceId)` según [Contratos §4](#4-módulo-1--ficha-de-un-recurso): devuelve `ResourceDetails` con la categoría y el **plazo máximo de préstamo** de los activos como `Integer` —`0` es uso en sitio y ausente es ficha incompleta— y traduce la falta del campo a `503` con `code: INCOMPLETE_RESOURCE_DETAILS` (FR-012, P-16)
 - [ ] T011 Completar `CheckAvailabilityUseCase` con la consulta de **un solo recurso** y el "hasta cuándo está comprometido" de UC8 FR-012, que el plan de UC1 dejó pendiente
 - [ ] T012 [P] Crear `Reservation`, `ReservationStatus`, `ReservationOrigin`, `Loan` y `LoanPeriod` en `domain/model/reservation/`, con las transiciones de estado y sin nada de Spring ni JPA
 
@@ -830,7 +830,7 @@ src/test/resources/contracts/
 
 ### Implementation for User Story 1
 
-- [ ] T021 [P] [US1] Definir `ReservationRepositoryPort` y `DenialRepositoryPort` en `domain/port/out/`, con el resultado de dominio de la confirmación (`Confirmada`, `CupoAgotado`, `RecursoTomado`)
+- [ ] T021 [P] [US1] Definir `ReservationRepositoryPort` y `DenialRepositoryPort` en `domain/port/out/`, con el resultado de dominio de la confirmación (`Confirmed`, `QuotaExhausted`, `ResourceTaken`)
 - [ ] T022 [P] [US1] Definir `Module3NotifierPort` en `domain/port/out/` recibiendo la ficha como objeto de dominio, sin nada de Kafka
 - [ ] T023 [P] [US1] Definir los puertos de entrada `ReserveResourcesPort`, `UpdateResourceStatusPort` y `ReportReservationPort` en `domain/port/in/`
 - [ ] T024 [US1] Implementar `DueDateCalculator` sobre `BusinessCalendar` y el `Clock` (FR-012 a FR-014) (depende de T007, T012)
@@ -838,7 +838,7 @@ src/test/resources/contracts/
 - [ ] T026 [US1] Implementar `ReportReservationUseCase`: arma la `ReservationRecord` —con titular, o con asignatura, programa y docente si el origen es académico— y la entrega a `Module3NotifierPort` (UC10 FR-002, FR-009)
 - [ ] T027 [US1] Implementar `ReserveResourcesUseCase` con los pasos 0 a 4 de la tabla de decisiones: validación de forma, ficha del recurso, sanción, cupo, disponibilidad, confirmación y los dos `<<include>>` (depende de T021 a T026)
 - [ ] T028 [US1] Implementar el registro de denegaciones en el caso de uso y en `DenialPersistenceAdapter`, con su propia transacción (FR-005)
-- [ ] T029 [P] [US1] Implementar `ReservationPersistenceAdapter` con la transacción de confirmación: bloqueo de la fila del titular, conteo del cupo, recomprobación de la ocupación (incluidos los préstamos abiertos sin devolver) e inserción de `reservation`, `loan` y el evento; traducir la violación de `reservation_no_overlap` a `RecursoTomado`
+- [ ] T029 [P] [US1] Implementar `ReservationPersistenceAdapter` con la transacción de confirmación: bloqueo de la fila del titular, conteo del cupo, recomprobación de la ocupación (incluidos los préstamos abiertos sin devolver) e inserción de `reservation`, `loan` y el evento; traducir la violación de `reservation_no_overlap` a `ResourceTaken`
 - [ ] T030 [P] [US1] Crear las entidades y repositorios JPA que faltan (`LoanJpa`, `DenialJpa`, `OutboxMessageJpa`) y sus mappers dominio ↔ JPA
 - [ ] T031 [P] [US1] Implementar `OutboxNotifierAdapter`, que serializa `ReservationRecordEvent` según [Contratos §6](#6-evento-hacia-el-módulo-3--module2reservationrecordv1) —envoltorio completo, `holder` o `academic` según el origen, `loan` solo en activos— y lo inserta en `outbox_message` con ese mismo JSON como `payload`
 - [ ] T032 [P] [US1] Implementar `OutboxPublisher` con `@Scheduled`: lee los `PENDING` con `FOR UPDATE SKIP LOCKED`, publica con la clave `reservation_id`, marca `SENT`, y en el fallo sube `intentos` con espera creciente hasta `FAILED`

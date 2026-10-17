@@ -239,7 +239,7 @@ La respuesta de un activo trae además el periodo que se liberó en forma de pr�
   "status": 409,
   "detail": "Esta reserva empieza en menos de 10 minutos. El plazo mínimo para cancelar es de 10 minutos de antelación.",
   "instance": "/api/reservations/9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
-  "codigo": "CAN-001",
+  "code": "CAN-001",
   "minNoticeMinutes": 10,
   "referenceAt": "2026-09-01T10:00:00-05:00"
 }
@@ -256,13 +256,13 @@ La respuesta de un activo trae además el periodo que se liberó en forma de pr�
   "status": 409,
   "detail": "Ya tienes este activo en tu poder, así que no se cancela: hay que devolverlo. El préstamo se cierra cuando se registre la devolución.",
   "instance": "/api/reservations/4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
-  "codigo": "CAN-001",
+  "code": "CAN-001",
   "reason": "ASSET_ALREADY_PICKED_UP",
   "pickedUpAt": "2026-09-03T14:35:00-05:00"
 }
 ```
 
-Mismo `codigo` y distinto `reason`, porque para el diccionario de errores las dos son "ya no es cancelable" pero lo que la persona tiene que hacer es muy distinto.
+Mismo `code` y distinto `reason`, porque para el diccionario de errores las dos son "ya no es cancelable" pero lo que la persona tiene que hacer es muy distinto.
 
 | Resto | Cuándo |
 |---|---|
@@ -386,8 +386,8 @@ export interface CancellationResponse {
   alreadyCancelled?: boolean;
 }
 
-export interface CancellationError extends ErrorApi {
-  codigo?: "CAN-001";
+export interface CancellationError extends ApiError {
+  code?: "CAN-001";
   reason?: "ASSET_ALREADY_PICKED_UP";
   minNoticeMinutes?: number;
   referenceAt?: string;
@@ -430,8 +430,8 @@ El de UC3, `event-reservation-cancelled.json`, se renombra a `event-reservation-
 - [ ] T002 [P] Crear `CancellationOrigin` en `domain/model/reservation/` con los tres orígenes, y el par estado–origen que le corresponde a cada uno
 - [ ] T003 [P] Crear `CancellationPolicy` en `domain/model/reservation/`: decide si una reserva es cancelable según su categoría, el instante de referencia, la antelación mínima y si el activo ya se recogió; y calcula `noticeMinutes`
 - [ ] T004 [P] Crear `Cancellation` (origen, motivo, antelación, instante) y extender `Reservation` con las transiciones a los tres estados de cancelación, rechazando las que salgan de un estado ya final
-- [ ] T005 [P] Extender `DenialCode` con `CAN-001` —y `CAN-002`, que queda declarado pero sin emitir— crear `CancellationDeniedException` y traducirla a `409` en `GlobalErrorHandler` con `codigo`, `reason`, `minNoticeMinutes` y `referenceAt`
-- [ ] T006 Extender `ReservationRepositoryPort` y `ReservationPersistenceAdapter` con `cancelar(...)`: bloqueo de la fila, salida temprana si ya está cancelada, lectura del préstamo y `UPDATE` del estado, el motivo y la marca
+- [ ] T005 [P] Extender `DenialCode` con `CAN-001` —y `CAN-002`, que queda declarado pero sin emitir— crear `CancellationDeniedException` y traducirla a `409` en `GlobalErrorHandler` con `code`, `reason`, `minNoticeMinutes` y `referenceAt`
+- [ ] T006 Extender `ReservationRepositoryPort` y `ReservationPersistenceAdapter` con `cancel(...)`: bloqueo de la fila, salida temprana si ya está cancelada, lectura del préstamo y `UPDATE` del estado, el motivo y la marca
 
 **Checkpoint**: la regla y la transición existen; se puede empezar la historia
 
@@ -450,7 +450,7 @@ El de UC3, `event-reservation-cancelled.json`, se renombra a `event-reservation-
 - [ ] T009 [P] [US1] Pruebas de las otras dos ramas: `ACADEMIC_PRIORITY` no comprueba titular ni plazo y deja `CANCELADA_POR_PRIORIDAD_ACADEMICA` sin `noticeMinutes` y con `attributableToPerson: false` (escenario 4, FR-005); `RESOURCE_UNAVAILABLE` hace lo mismo con su estado (FR-010); y ninguna de las dos penaliza (SC-003)
 - [ ] T010 [P] [US1] Pruebas en `CancelForMaintenanceUseCaseTest.java`: cancela solo las `CONFIRMADA` futuras del recurso, deja fuera las pasadas y las ya canceladas, **se salta** el activo ya entregado informándolo en `skipped`, y emite un evento por cada una
 - [ ] T011 [P] [US1] Prueba `CancellationIT.java` con Testcontainers: tras cancelar, otra reserva **sí** puede ocupar la misma franja —la restricción de exclusión deja de verla—, la fila sigue existiendo para la auditoría, dos cancelaciones concurrentes de la misma reserva dejan un solo evento en `outbox_message` (UC11 SC-003), y un *rollback* no deja ni el estado cambiado ni el evento
-- [ ] T012 [P] [US1] Prueba `CancelReservationControllerTest.java` con `@WebMvcTest`, contra los *fixtures*: `200` de espacio y de activo, `200` idempotente con `alreadyCancelled`, los dos `409` con `codigo: "CAN-001"` y su `reason`, `401` sin sesión, `404` de una reserva de otra persona —comprobando que el cuerpo **no** revela que existe—, y el `200` y la previsualización del endpoint de mantenimiento
+- [ ] T012 [P] [US1] Prueba `CancelReservationControllerTest.java` con `@WebMvcTest`, contra los *fixtures*: `200` de espacio y de activo, `200` idempotente con `alreadyCancelled`, los dos `409` con `code: "CAN-001"` y su `reason`, `401` sin sesión, `404` de una reserva de otra persona —comprobando que el cuerpo **no** revela que existe—, y el `200` y la previsualización del endpoint de mantenimiento
 
 ### Implementation for User Story 1
 
