@@ -267,7 +267,7 @@ GET /api/sanction-checks?personCode=2019114045&outcome=SANCTIONED&from=2026-09-0
 ### 4. Fixtures compartidos
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── module3-report-sanctioned-no-end-date.json   # el edge case de la respuesta incompleta
 ├── module3-report-scope-assets.json             # el alcance que todavía no filtra
 ├── module3-report-expired-sanction.json         # el escenario 3

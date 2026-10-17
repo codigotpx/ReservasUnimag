@@ -68,7 +68,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │   ├── messaging/
     │   │   │   ├── CheckOutListener.java       # @KafkaListener
     │   │   │   ├── InboxGuard.java             # (existe, de UC9) se reusa
-    │   │   │   └── evento/CheckOutRegisteredEvent.java
+    │   │   │   └── event/CheckOutRegisteredEvent.java
     │   │   └── web/loan/
     │   │       ├── PendingReturnsController.java    # FR-009 y FR-015
     │   │       └── PendingResponse.java
@@ -78,7 +78,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │       │   ├── repository/CheckOutJpaRepository.java
     │       │   └── CheckOutPersistenceAdapter.java
     │       └── messaging/
-    │           └── evento/CheckOutAckEvent.java
+    │           └── event/CheckOutAckEvent.java
     └── config/
         └── UseCasesConfig.java
 
@@ -96,7 +96,7 @@ src/test/java/edu/unimagdalena/reservasunimag/
     └── out/persistence/CheckOutIT.java
 
 frontend/src/
-├── app/(direccion)/pendientes/page.tsx         # las dos listas
+├── app/(direction)/pending-reviews/page.tsx         # las dos listas
 └── features/checkout/
     ├── PendingReturns.tsx
     ├── PendingReviews.tsx
@@ -388,7 +388,7 @@ El `CHECK` es lo que hace imposible guardar un dictamen en un activo (FR-011) y 
 ### 6. Fixtures compartidos
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── event-check-out-asset.json
 ├── event-check-out-space.json
 ├── event-check-out-asset-with-verdict.json    # el que debe rechazarse (FR-011)
@@ -446,7 +446,7 @@ src/test/resources/contratos/
 - [ ] T019 [US1] Implementar `PendingReturnsController` con los dos endpoints de [Contratos §3 y §4](#3-get-apiloanspending-returns), paginados y con el nombre del recurso pedido al Módulo 1
 - [ ] T020 [US1] Registrar los beans y las transacciones de UC12 en `UseCasesConfig`, y actualizar [modelo-datos-der.md](./modelo-datos-der.md) con la clave primaria y las columnas nuevas de `check_out`
 - [ ] T021 [P] [US1] Frontend: `features/checkout/types.ts` y `api.ts`, `PendingReturns.tsx` con el aviso de los que están cerca del umbral, y `PendingReviews.tsx` que deja claro que la revisión es opcional
-- [ ] T022 [US1] Frontend: `app/(direccion)/pendientes/page.tsx` con las dos listas en pestañas
+- [ ] T022 [US1] Frontend: `app/(direction)/pending-reviews/page.tsx` con las dos listas en pestañas
 
 **Checkpoint**: el check-out cierra préstamos y registra revisiones; UC12 es demostrable
 

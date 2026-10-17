@@ -118,11 +118,11 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │       │   ├── entity/                         # ReservationJpa, LoanJpa, AcademicBlockJpa, UserJpa
     │       │   ├── repository/OccupancyJpaRepository.java
     │       │   └── OccupancyPersistenceAdapter.java
-    │       ├── modulo1/
+    │       ├── module1/
     │       │   ├── InventoryRestAdapter.java
     │       │   ├── InventoryFakeAdapter.java      # perfil local, mientras el Módulo 1 no esté
     │       │   └── dto/
-    │       └── modulo3/
+    │       └── module3/
     │           ├── ComplianceRestAdapter.java
     │           ├── ComplianceFakeAdapter.java    # perfil local
     │           └── dto/
@@ -154,7 +154,7 @@ src/test/java/edu/unimagdalena/reservasunimag/
     ├── out/module1/InventoryRestAdapterTest.java
     └── out/module3/ComplianceRestAdapterTest.java
 
-src/test/resources/contratos/                       # los JSON de la sección Contratos (T022)
+src/test/resources/contracts/                       # los JSON de la sección Contratos (T022)
 
 frontend/
 ├── package.json, next.config.ts, tsconfig.json
@@ -203,11 +203,11 @@ WHERE r.status = 'CONFIRMADA'
 
 **Sanciones durante la consulta (FR-016).** Solo para los roles `ESTUDIANTE` y `MONITOR`: Dirección de Programa no reserva. Si hay sanción vigente, la respuesta trae un aviso con su motivo y su fecha de fin (UC6 FR-004), pero la lista se muestra igual. Si el Módulo 3 no responde, la consulta **no falla**: trae un aviso de que no se pudo comprobar la situación de la persona (UC6 FR-006), porque la comprobación que decide es la de `Reservar recursos` al confirmar.
 
-**Contrato con el Módulo 1.** `InventoryPort` expone dos operaciones pensadas desde nuestro lado: `buscarCatalogo(ResourceFilter)`, que devuelve la ficha de cada recurso con su estado operativo, y `operationalStatus(resourceIds)`. Si el Módulo 1 no filtra por aforo, el filtro se aplica en el caso de uso después de traer el catálogo. El JSON de las dos operaciones, su mapeo hacia el dominio y qué se hace con cada error están en [Contratos §2](#2-módulo-1--inventoryport).
+**Contrato con el Módulo 1.** `InventoryPort` expone dos operaciones pensadas desde nuestro lado: `searchCatalog(ResourceFilter)`, que devuelve la ficha de cada recurso con su estado operativo, y `operationalStatus(resourceIds)`. Si el Módulo 1 no filtra por aforo, el filtro se aplica en el caso de uso después de traer el catálogo. El JSON de las dos operaciones, su mapeo hacia el dominio y qué se hace con cada error están en [Contratos §2](#2-módulo-1--inventoryport).
 
 ## Contratos
 
-Todo lo que entra y sale de UC1 queda definido aquí: la API que consume el frontend, lo que le pedimos al Módulo 1 y al Módulo 3, y el login mínimo que necesita T013. Los ejemplos de esta sección son el contrato: las pruebas de T022 y T023 se escriben contra ellos y los mismos JSON viven como *fixtures* en `src/test/resources/contratos/`.
+Todo lo que entra y sale de UC1 queda definido aquí: la API que consume el frontend, lo que le pedimos al Módulo 1 y al Módulo 3, y el login mínimo que necesita T013. Los ejemplos de esta sección son el contrato: las pruebas de T022 y T023 se escriben contra ellos y los mismos JSON viven como *fixtures* en `src/test/resources/contracts/`.
 
 **Convenciones comunes**
 
@@ -269,7 +269,7 @@ Cookie: session=<jwt>
       "equipment": ["PROYECTOR", "AIRE_ACONDICIONADO"],
       "status": "BLOQUEO_ACADEMICO",
       "selectable": false,
-      "reason": "El recurso está reservado para actividad instructor en la timeSlot consultada."
+      "reason": "El recurso está reservado para actividad docente en la franja consultada."
     },
     {
       "id": "ACT-000912",
@@ -361,7 +361,7 @@ El orden del ejemplo no es casual: es por `name` y, ante nombres iguales, por `i
   "anySelectable": false,
   "catalogTruncated": false,
   "queriedAt": "2026-09-01T09:14:22-05:00",
-  "message": "Ninguno de los 4 resources que cumplen los filters está disponible entre las 10:00 y las 12:00.",
+  "message": "Ninguno de los 4 recursos que cumplen los filtros está disponible entre las 10:00 y las 12:00.",
   "nextTimeSlot": { "date": "2026-09-01", "start": "14:00", "end": "16:00" },
   "resources": [
     {
@@ -375,7 +375,7 @@ El orden del ejemplo no es casual: es por `name` y, ante nombres iguales, por `i
       "equipment": ["PROYECTOR"],
       "status": "BLOQUEO_ACADEMICO",
       "selectable": false,
-      "reason": "El recurso está reservado para actividad instructor en la timeSlot consultada."
+      "reason": "El recurso está reservado para actividad docente en la franja consultada."
     }
   ]
 }
@@ -390,14 +390,14 @@ Cuando no hay ninguna franja libre hasta las 22:00, `nextTimeSlot` se omite y el
   "type": "ACTIVE_SANCTION",
   "reason": "Dos ausencias no justificadas en el semestre",
   "until": "2026-09-30",
-  "message": "Tienes una sanción vigente until el 2026-09-30. Puedes consultar los resources, pero no podrás confirm una reserva."
+  "message": "Tienes una sanción vigente hasta el 2026-09-30. Puedes consultar los recursos, pero no podrás confirmar una reserva."
 }
 ```
 
 ```json
 "sanctionNotice": {
   "type": "NOT_VERIFIED",
-  "message": "No se pudo comprobar tu situación de sanciones en este momento. Se volverá a comprobar al confirm una reserva."
+  "message": "No se pudo comprobar tu situación de sanciones en este momento. Se volverá a comprobar al confirmar una reserva."
 }
 ```
 
@@ -412,7 +412,7 @@ Cuando no hay ninguna franja libre hasta las 22:00, `nextTimeSlot` se omite y el
   "type": "https://reservasunimag.unimagdalena.edu.co/errors/invalid-time-slot",
   "title": "Franja horaria inválida",
   "status": 400,
-  "detail": "La timeSlot debe estar entre las 06:00 y las 22:00 del mismo día.",
+  "detail": "La franja debe estar entre las 06:00 y las 22:00 del mismo día.",
   "instance": "/api/resources",
   "code": "TIME_SLOT_OUTSIDE_WINDOW",
   "timeSlot": { "date": "2026-09-01", "start": "05:00", "end": "07:00" }
@@ -444,7 +444,7 @@ Cuando no hay ninguna franja libre hasta las 22:00, `nextTimeSlot` se omite y el
   "type": "https://reservasunimag.unimagdalena.edu.co/errors/unauthenticated",
   "title": "Sesión requerida",
   "status": 401,
-  "detail": "Inicia sesión para consultar los resources.",
+  "detail": "Inicia sesión para consultar los recursos.",
   "instance": "/api/resources"
 }
 ```
@@ -456,7 +456,7 @@ Cuando no hay ninguna franja libre hasta las 22:00, `nextTimeSlot` se omite y el
   "type": "https://reservasunimag.unimagdalena.edu.co/errors/inventory-unavailable",
   "title": "Inventario no disponible",
   "status": 503,
-  "detail": "La información de resources no está disponible en este momento. Intenta de nuevo en unos minutos.",
+  "detail": "La información de recursos no está disponible en este momento. Intenta de nuevo en unos minutos.",
   "instance": "/api/resources",
   "module": "MODULO_1"
 }
@@ -658,25 +658,25 @@ El `CurrentUser` que reciben los casos de uso se arma con `sub`, `code` y `role`
 Son la traducción literal del contrato de la sección 1 y viven en `frontend/src/features/resources/types.ts`. Lo que el backend omite es opcional aquí; nada es `| null` salvo los filtros, que sí distinguen "no filtré".
 
 ```ts
-export type Categoria = "ESPACIO" | "ACTIVO";
+export type Category = "ESPACIO" | "ACTIVO";
 
 export type DisplayedStatus =
   | "DISPONIBLE" | "RESERVADO" | "EN_USO"
   | "BLOQUEO_ACADEMICO" | "EN_MANTENIMIENTO";
 
-export interface Franja { date: string; start: string; end: string }
+export interface TimeSlot { date: string; start: string; end: string }
 
 export interface ResourceWithStatus {
   id: string;
   name: string;
-  category: Categoria;
+  category: Category;
   type: string;
   location: string;
   faculty?: string;                   // espacio
   maxCapacity?: number;                // espacio
   equipment?: string[];             // espacio
-  condition?: string;               // active
-  loanTermBusinessDays?: number;   // active
+  condition?: string;               // activo
+  loanTermBusinessDays?: number;   // activo
   status: DisplayedStatus;
   selectable: boolean;
   reason?: string;
@@ -694,27 +694,27 @@ export interface SearchResourcesParams {
   date: string;
   start: string;
   end: string;
-  category?: Categoria;
+  category?: Category;
   type?: string;
   minCapacity?: number;
   page?: number;
 }
 
 export interface SearchResourcesResponse {
-  timeSlot: Franja;
-  filters: { category: Categoria | null; type: string | null; minCapacity: number | null };
+  timeSlot: TimeSlot;
+  filters: { category: Category | null; type: string | null; minCapacity: number | null };
   pagination: { page: number; pageSize: number; totalPages: number; total: number };
   anySelectable: boolean;
   catalogTruncated: boolean;
   queriedAt: string;
   resources: ResourceWithStatus[];
   message?: string;
-  nextTimeSlot?: Franja;
+  nextTimeSlot?: TimeSlot;
   sanctionNotice?: SanctionNotice;
 }
 
 /** ProblemDetail (RFC 9457) tal como lo traduce GlobalErrorHandler. */
-export interface ErrorApi {
+export interface ApiError {
   type: string;
   title: string;
   status: number;
@@ -726,7 +726,7 @@ export interface ErrorApi {
 }
 ```
 
-`frontend/src/lib/api/client.ts` (T015) convierte cualquier respuesta `>= 400` en un error tipado con este `ErrorApi`, así que las pantallas distinguen el `503` del inventario del `400` de la franja sin leer textos.
+`frontend/src/lib/api/client.ts` (T015) convierte cualquier respuesta `>= 400` en un error tipado con este `ApiError`, así que las pantallas distinguen el `503` del inventario del `400` de la franja sin leer textos.
 
 ---
 
@@ -735,7 +735,7 @@ export interface ErrorApi {
 Los JSON de esta sección se guardan una sola vez y los usan las pruebas y el perfil local, para que el contrato no se reescriba en cada test:
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── module1-catalog-page1.json        # y -pagina2, -pagina3 (UC8 FR-011)
 ├── module1-catalog-empty.json
 ├── module1-operational-status.json
@@ -771,7 +771,7 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - [ ] T006 Escribir `src/main/resources/db/migration/V1__initial_schema.sql` con la extensión `btree_gist` y las tablas `app_user`, `reservation` (con `occupancy` generada, la restricción de exclusión y el `CHECK` de titular según origen), `loan` y `academic_block`, según el modelo del plan general
 - [ ] T007 [P] Crear `ArchitectureTest.java` con ArchUnit: `domain` no depende de `infrastructure` ni de `org.springframework`, `jakarta.persistence` o `com.fasterxml`
 - [ ] T008 [P] Crear el puerto `Clock` en `domain/port/out/Clock.java` y su implementación sobre `java.time.Clock` en `infrastructure/config/ClockConfig.java`
-- [ ] T009 [P] Crear `domain/model/reservation/TimeSlot.java`: fecha, hora de inicio y hora de fin en `America/Bogota`; rechaza con `InvalidTimeSlotException` una franja fuera de 06:00 a 22:00, que cruce la medianoche o con inicio ≥ fin (FR-010, FR-011); expone `seCruzaCon(inicio, fin)`
+- [ ] T009 [P] Crear `domain/model/reservation/TimeSlot.java`: fecha, hora de inicio y hora de fin en `America/Bogota`; rechaza con `InvalidTimeSlotException` una franja fuera de 06:00 a 22:00, que cruce la medianoche o con inicio ≥ fin (FR-010, FR-011); expone `overlaps(start, end)`
 - [ ] T010 [P] Crear `domain/model/common/Page.java` y `PageRequest.java`, con tamaño por defecto de 20 tomado de `ReservationProperties`
 - [ ] T011 Crear `infrastructure/adapter/in/web/error/GlobalErrorHandler.java`, que traduce `InvalidTimeSlotException` a 400 y `ExternalServiceUnavailableException` a 503 como `ProblemDetail`
 - [ ] T012 Configurar `infrastructure/config/SecurityConfig.java`: validación del JWT desde la cookie `httpOnly`, roles `ESTUDIANTE`, `MONITOR` (hereda de `ESTUDIANTE`, FR-005) y `DIRECCION_PROGRAMA`; y un resolvedor que entrega `CurrentUser` a los controladores
@@ -797,7 +797,7 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - [ ] T019 [P] [US1] Pruebas en `SearchResourcesUseCaseTest.java`: orden por nombre e identificador (FR-014), 47 recursos en páginas de 20, 20 y 7 sin repetir (escenario 8), 20 o menos en una sola página (FR-009), filtro de aforo mínimo, aviso de sanción para Estudiante y no para Dirección (FR-016), y el Módulo 3 caído sin tumbar la consulta
 - [ ] T020 [P] [US1] Pruebas en `NextFreeSlotFinderTest.java`: ningún laboratorio seleccionable con una franja libre más tarde (escenario 7), y sin franja libre hasta las 22:00
 - [ ] T021 [P] [US1] Prueba de integración `OccupancyPersistenceAdapterIT.java` con Testcontainers: la consulta de ocupaciones con rangos, las reservas canceladas que no ocupan, el préstamo vencido sin devolver que sí ocupa, y los bloqueos académicos
-- [ ] T022 [P] [US1] Guardar los JSON de [Contratos §2 y §3](#2-módulo-1--inventoryport) como *fixtures* en `src/test/resources/contratos/` y escribir con ellos `InventoryRestAdapterTest.java` y `ComplianceRestAdapterTest.java` con WireMock: respuesta normal, catálogo en varias páginas que se recorren todas (UC8 FR-011), tope de `max-pages` que marca `catalogTruncated`, `operationalStatus` desconocido, timeout y 5xx convertidos en `ExternalServiceUnavailableException`, y persona sin historial —`200` vacío y `404`— leída como "sin sanciones" (UC6 FR-008)
+- [ ] T022 [P] [US1] Guardar los JSON de [Contratos §2 y §3](#2-módulo-1--inventoryport) como *fixtures* en `src/test/resources/contracts/` y escribir con ellos `InventoryRestAdapterTest.java` y `ComplianceRestAdapterTest.java` con WireMock: respuesta normal, catálogo en varias páginas que se recorren todas (UC8 FR-011), tope de `max-pages` que marca `catalogTruncated`, `operationalStatus` desconocido, timeout y 5xx convertidos en `ExternalServiceUnavailableException`, y persona sin historial —`200` vacío y `404`— leída como "sin sanciones" (UC6 FR-008)
 - [ ] T023 [P] [US1] Prueba `ResourceControllerTest.java` con `@WebMvcTest`, comparando contra los *fixtures* `api-recursos-*.json`: parámetros válidos, `minCapacity` con `categoria=ACTIVO` y `pagina=0` como 400 de parámetros, 400 por franja inválida con su `code`, 401 sin sesión, 503 con el Módulo 1 caído, las dos formas de `sanctionNotice`, y que ningún campo opcional viaje como `null` ni se filtre el titular de una reserva (UC8 FR-005)
 
 ### Implementation for User Story 1
