@@ -8,9 +8,9 @@ Académica**, el motor de reglas de negocio que gestiona el uso de los recursos 
 resuelve los conflictos entre la actividad académica institucional y el apartado
 estudiantil.
 
-> **Estado actual:** el proyecto está en fase de especificación. El código es todavía
-> el esqueleto generado por Spring Initializr; la documentación funcional es la parte
-> viva del repositorio.
+> **Estado actual:** la especificación y los planes técnicos están cerrados y empezó la
+> implementación. Ya está la base del backend —arquitectura hexagonal, esquema inicial,
+> sesión con JWT y manejo de errores—; los casos de uso se van sumando uno por uno.
 
 ## Documentación
 
@@ -51,10 +51,14 @@ estudiantil.
 ## Stack
 
 - Java 21
-- Spring Boot 4.1.1 (Web MVC, Data JPA, RestClient, Web Services)
-- PostgreSQL
-- Testcontainers para las pruebas de integración
+- Spring Boot 4.1.1 (Web MVC, Data JPA, Security con JWT propio, Validation, RestClient)
+- PostgreSQL con Flyway para las migraciones
+- springdoc-openapi: la API se documenta en `/swagger-ui.html`
+- JUnit 5, Testcontainers, ArchUnit y WireMock para las pruebas
 - Gradle con Groovy DSL (con wrapper incluido)
+
+La arquitectura, las capas y el modelo de datos están en
+[docs/plan/plan-arquitectura.md](docs/plan/plan-arquitectura.md).
 
 ## Requisitos
 
@@ -69,6 +73,23 @@ gestionado automáticamente por Testcontainers:
 ```bash
 ./gradlew bootTestRun
 ```
+
+Con el perfil `local` se siembran además tres usuarios de prueba, uno por rol, todos
+con la contraseña `unimag2026`:
+
+```bash
+./gradlew bootTestRun --args='--spring.profiles.active=local'
+```
+
+| Correo | Rol |
+|---|---|
+| `estudiante@unimagdalena.edu.co` | `ESTUDIANTE` |
+| `monitor@unimagdalena.edu.co` | `MONITOR` |
+| `direccion@unimagdalena.edu.co` | `DIRECCION_PROGRAMA` |
+
+La sesión se abre con `POST /api/auth/login` y queda en una cookie `httpOnly`. El JWT
+solo se usa entre el frontend y nuestra API: las llamadas a los Módulos 1 y 3 van sin
+autenticación.
 
 Ejecutar las pruebas:
 
@@ -91,9 +112,14 @@ docs/
   modulo2.md              Resumen funcional del módulo
   unimag.png              Diagrama de casos de uso
   specs/                  Especificaciones por caso de uso
+  plan/                   Planes técnicos: arquitectura y uno por caso de uso
 src/
   main/java/edu/unimagdalena/reservasunimag/
+    domain/               Modelo, puertos y casos de uso, sin Spring ni JPA
+    infrastructure/       Adaptadores (REST, JPA, seguridad) y configuración
   main/resources/
+    db/migration/         Migraciones de Flyway
+    db/local/             Datos que solo se cargan con el perfil local
   test/java/edu/unimagdalena/reservasunimag/
 build.gradle
 ```
