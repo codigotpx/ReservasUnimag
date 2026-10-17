@@ -127,7 +127,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │       └── messaging/
     │           ├── OutboxNotifierAdapter.java   # → Module3NotifierPort
     │           ├── OutboxPublisher.java           # @Scheduled: outbox_message → Kafka
-    │           └── evento/ReservationRecordEvent.java
+    │           └── event/ReservationRecordEvent.java
     └── config/
         ├── ReservationProperties.java                # (existe) + cupo, tope de franja, festivos
         ├── KafkaConfig.java                        # productor idempotente, acks=all
@@ -147,9 +147,9 @@ src/test/java/edu/unimagdalena/reservasunimag/
     ├── in/web/reservation/ReservationControllerTest.java
     ├── out/persistence/ReservationPersistenceAdapterIT.java
     ├── out/persistence/ReservationConcurrencyIT.java
-    └── out/mensajeria/OutboxPublisherIT.java
+    └── out/messaging/OutboxPublisherIT.java
 
-src/test/resources/contratos/                       # + los JSON de la sección Contratos (T020)
+src/test/resources/contracts/                       # + los JSON de la sección Contratos (T020)
 
 frontend/src/
 ├── app/(app)/resources/page.tsx                     # (existe) + botón reservar sobre los seleccionables
@@ -226,7 +226,7 @@ El puerto `ReservationRepositoryPort.confirmar(...)` devuelve un resultado de do
 
 ## Contratos
 
-Aquí queda definido todo el JSON de UC2: los tres endpoints que consume el frontend, la ficha que le pedimos al Módulo 1, lo que cambia respecto a UC1 en la consulta de sanciones y el evento que sale hacia el Módulo 3. Los ejemplos son el contrato: las pruebas de T019 y T020 se escriben contra ellos y los mismos JSON viven como *fixtures* en `src/test/resources/contratos/`.
+Aquí queda definido todo el JSON de UC2: los tres endpoints que consume el frontend, la ficha que le pedimos al Módulo 1, lo que cambia respecto a UC1 en la consulta de sanciones y el evento que sale hacia el Módulo 3. Los ejemplos son el contrato: las pruebas de T019 y T020 se escriben contra ellos y los mismos JSON viven como *fixtures* en `src/test/resources/contracts/`.
 
 Se aplican sin repetirlas las **convenciones comunes** de [plan-uc1-consultar-recursos.md § Contratos](./plan-uc1-consultar-recursos.md#contratos): `camelCase`, enumeraciones en mayúsculas, **nunca `null`** (lo que no aplica se omite), `date` como `yyyy-MM-dd` y horas como `HH:mm` en `America/Bogota`, instantes ISO-8601 con `-05:00`, franjas `[inicio, fin)`, `resourceId` como cadena y errores RFC 9457 con `type` bajo `https://reservasunimag.unimagdalena.edu.co/errors/`.
 
@@ -763,7 +763,7 @@ export interface ReservationError extends ErrorApi {
 Se suman a los que creó el plan de UC1 en la misma carpeta:
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── module1-asset-details.json            # con loanTermBusinessDays
 ├── module1-asset-details-no-term.json  # el 503 INCOMPLETE_RESOURCE_DETAILS (P-16)
 ├── module1-space-details.json
@@ -826,7 +826,7 @@ src/test/resources/contratos/
 - [ ] T017 [P] [US1] Prueba de integración `ReservationPersistenceAdapterIT.java` con Testcontainers: la restricción de exclusión rechaza la ocupación solapada, el `INSERT` de la reserva y del evento en `outbox_message` ocurren en la misma transacción, un *rollback* no deja ni reserva ni evento, y la denegación sí queda registrada
 - [ ] T018 [P] [US1] Prueba `ReservationConcurrencyIT.java`: N hilos piden a la vez el mismo recurso con tiempos que se cruzan y exactamente uno queda `CONFIRMADA`, el resto recibe `RES-004` (SC-004); y dos peticiones del mismo usuario con cupo 3 no se cuelan las dos
 - [ ] T019 [P] [US1] Prueba `OutboxPublisherIT.java` con Testcontainers de Kafka: el mensaje que llega al topic coincide con los *fixtures* `evento-ficha-*.json` de [Contratos §6](#6-evento-hacia-el-módulo-3--module2reservationrecordv1) —envoltorio, clave de partición `reservation_id` y las dos formas, estudiantil y académica—, publica el pendiente y lo marca `SENT`, reintenta con espera creciente y sube `intentos`, queda `FAILED` al agotar `max-attempts`, y dos instancias no publican el mismo evento (`SKIP LOCKED`)
-- [ ] T020 [P] [US1] Guardar los JSON de [Contratos §1 a §8](#contratos) como *fixtures* en `src/test/resources/contratos/` y escribir con ellos `ReservationControllerTest.java` con `@WebMvcTest`: `201` con `Location` y el cuerpo de las dos formas (espacio y activo), `400` por franja de más de 2 horas y por cuerpo que no corresponde a la categoría, `401` sin sesión, `404` si el recurso no existe, `409` con el `code` y las extensiones de cada una de las cuatro denegaciones —incluida la de mantenimiento con `detectedStatus`—, los dos `503` (`MODULO_1` y `MODULO_3`), y que ninguna respuesta nombre al titular de otra reserva (UC8 FR-005)
+- [ ] T020 [P] [US1] Guardar los JSON de [Contratos §1 a §8](#contratos) como *fixtures* en `src/test/resources/contracts/` y escribir con ellos `ReservationControllerTest.java` con `@WebMvcTest`: `201` con `Location` y el cuerpo de las dos formas (espacio y activo), `400` por franja de más de 2 horas y por cuerpo que no corresponde a la categoría, `401` sin sesión, `404` si el recurso no existe, `409` con el `code` y las extensiones de cada una de las cuatro denegaciones —incluida la de mantenimiento con `detectedStatus`—, los dos `503` (`MODULO_1` y `MODULO_3`), y que ninguna respuesta nombre al titular de otra reserva (UC8 FR-005)
 
 ### Implementation for User Story 1
 

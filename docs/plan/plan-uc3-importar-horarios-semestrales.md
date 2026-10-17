@@ -133,7 +133,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │       ├── file/
     │       │   └── CsvScheduleReader.java        # → ScheduleReader
     │       └── messaging/
-    │           └── evento/ReservationCancelledEvent.java   # UC11
+    │           └── event/ReservationCancelledEvent.java   # UC11
     └── config/
         ├── ReservationProperties.java                # (existe) + vigencia de la carga validada
         └── UseCasesConfig.java                   # (existe) + los beans de UC3
@@ -152,15 +152,15 @@ src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/usecase/cancelreservation/CancelReservationUseCaseTest.java
 └── infrastructure/adapter/
     ├── in/web/schedule/ScheduleControllerTest.java
-    ├── out/archivo/CsvScheduleReaderTest.java
+    ├── out/file/CsvScheduleReaderTest.java
     ├── out/persistence/ScheduleUploadPersistenceAdapterIT.java
     └── out/persistence/AcademicPriorityIT.java
 
-src/test/resources/contratos/                       # + los JSON y el CSV de la sección Contratos
+src/test/resources/contracts/                       # + los JSON y el CSV de la sección Contratos
 
 frontend/src/
-├── app/(direccion)/schedules/page.tsx               # cargar, revisar el reporte y confirmar
-├── app/(direccion)/horarios/extraordinary/page.tsx
+├── app/(direction)/schedules/page.tsx               # cargar, revisar el reporte y confirmar
+├── app/(direction)/schedules/extraordinary/page.tsx
 └── features/schedules/
     ├── FileUpload.tsx
     ├── ImportReportView.tsx                      # tabla fila por fila
@@ -236,7 +236,7 @@ Una carga grande hace esto en **una sola transacción**, que es lo que FR-008 ex
 
 ## Contratos
 
-Aquí queda definido todo el JSON de UC3: los cuatro endpoints de Dirección de Programa, el formato del archivo, lo que se le pregunta al Módulo 1 y el evento de cancelación que sale hacia el Módulo 3. Los ejemplos son el contrato: las pruebas de T019, T020 y T023 se escriben contra ellos y los mismos JSON viven como *fixtures* en `src/test/resources/contratos/`.
+Aquí queda definido todo el JSON de UC3: los cuatro endpoints de Dirección de Programa, el formato del archivo, lo que se le pregunta al Módulo 1 y el evento de cancelación que sale hacia el Módulo 3. Los ejemplos son el contrato: las pruebas de T019, T020 y T023 se escriben contra ellos y los mismos JSON viven como *fixtures* en `src/test/resources/contracts/`.
 
 Se aplican sin repetirlas las **convenciones comunes** de [plan-uc1-consultar-recursos.md § Contratos](./plan-uc1-consultar-recursos.md#contratos). Cuatro reglas propias de este caso de uso:
 
@@ -880,7 +880,7 @@ export interface ErrorHorario extends ErrorApi {
 Se suman a los de UC1 y UC2 en la misma carpeta:
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── schedule-valid.csv                      # 3 clases limpias
 ├── schedule-with-errors.csv                 # una fila por cada dictamen bloqueante
 ├── schedule-empty.csv                       # solo la cabecera
@@ -961,7 +961,7 @@ Los CSV son también la entrada de `CsvScheduleReaderTest` (T021), así que el f
 - [ ] T031 [US1] Implementar `ScheduleController` con `POST /api/schedules/validations`, `POST /api/schedules/{uploadId}/confirmation`, `GET /api/schedules` y `GET /api/schedules/{uploadId}`, exactamente como los fija [Contratos §1, §2 y §4](#1-post-apischedulesvalidations), documentado con OpenAPI
 - [ ] T032 [P] [US1] Frontend: copiar los tipos de [Contratos §8](#8-tipos-del-frontend) a `frontend/src/features/schedules/types.ts` y escribir `api.ts` con la subida `multipart` y el mapeo a `ErrorHorario`
 - [ ] T033 [US1] Frontend: `FileUpload.tsx` (archivo, periodo académico y fechas), `ImportReportView.tsx` (tabla por fila, agrupada por dictamen y con los bloqueantes primero) y `ConfirmImpact.tsx`, que solo aparece si `requiresConfirmation` y lista todas las `affectedReservations` juntas
-- [ ] T034 [US1] Frontend: `app/(direccion)/schedules/page.tsx`, que encadena validar → revisar → confirmar, y muestra el resultado, el archivo vacío, la carga expirada y el `IMPACT_CHANGED` que obliga a revalidar
+- [ ] T034 [US1] Frontend: `app/(direction)/schedules/page.tsx`, que encadena validar → revisar → confirmar, y muestra el resultado, el archivo vacío, la carga expirada y el `IMPACT_CHANGED` que obliga a revalidar
 
 **Checkpoint**: At this point, the semester upload works end to end and can be demoed on its own
 
@@ -974,7 +974,7 @@ Los CSV son también la entrada de `CsvScheduleReaderTest` (T021), así que el f
 - [ ] T035 [P] Pruebas en `RegisterExtraordinaryNeedUseCaseTest.java`: con `confirmar: false` no cambia nada y devuelve el impacto; con `confirm: true` cancela la reserva estudiantil y crea el bloqueo `EXTRAORDINARIO` (escenario 3); una franja con otra clase responde `ACADEMIC_CLASH` sin cancelar el bloqueo que ya estaba (escenario 4, FR-006); un activo ya entregado responde `ASSET_ALREADY_PICKED_UP` (FR-010); y una franja de 3 horas se acepta, porque el tope de 2 horas no aplica a lo académico
 - [ ] T036 Implementar `RegisterExtraordinaryNeedUseCase` reusando `RowClassifier` y `CancelReservationUseCase`, con `BlockType.EXTRAORDINARIO` y `semester_schedule_id` nulo (depende de T025, T010)
 - [ ] T037 Implementar `POST /api/schedules/extraordinary-needs` en `ScheduleController` según [Contratos §3](#3-post-apischedulesextraordinary-needs), con el `Location` apuntando a `/api/reservations/{id}`
-- [ ] T038 Frontend: `ExtraordinaryNeedForm.tsx` y `app/(direccion)/horarios/extraordinary/page.tsx`, con la previsualización del impacto antes de confirmar
+- [ ] T038 Frontend: `ExtraordinaryNeedForm.tsx` y `app/(direction)/schedules/extraordinary/page.tsx`, con la previsualización del impacto antes de confirmar
 
 **Checkpoint**: El spec de UC3 queda cubierto de punta a punta
 

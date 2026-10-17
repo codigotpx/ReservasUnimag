@@ -118,11 +118,11 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │       │   ├── entity/                         # ReservationJpa, LoanJpa, AcademicBlockJpa, UserJpa
     │       │   ├── repository/OccupancyJpaRepository.java
     │       │   └── OccupancyPersistenceAdapter.java
-    │       ├── modulo1/
+    │       ├── module1/
     │       │   ├── InventoryRestAdapter.java
     │       │   ├── InventoryFakeAdapter.java      # perfil local, mientras el Módulo 1 no esté
     │       │   └── dto/
-    │       └── modulo3/
+    │       └── module3/
     │           ├── ComplianceRestAdapter.java
     │           ├── ComplianceFakeAdapter.java    # perfil local
     │           └── dto/
@@ -154,7 +154,7 @@ src/test/java/edu/unimagdalena/reservasunimag/
     ├── out/module1/InventoryRestAdapterTest.java
     └── out/module3/ComplianceRestAdapterTest.java
 
-src/test/resources/contratos/                       # los JSON de la sección Contratos (T022)
+src/test/resources/contracts/                       # los JSON de la sección Contratos (T022)
 
 frontend/
 ├── package.json, next.config.ts, tsconfig.json
@@ -207,7 +207,7 @@ WHERE r.status = 'CONFIRMADA'
 
 ## Contratos
 
-Todo lo que entra y sale de UC1 queda definido aquí: la API que consume el frontend, lo que le pedimos al Módulo 1 y al Módulo 3, y el login mínimo que necesita T013. Los ejemplos de esta sección son el contrato: las pruebas de T022 y T023 se escriben contra ellos y los mismos JSON viven como *fixtures* en `src/test/resources/contratos/`.
+Todo lo que entra y sale de UC1 queda definido aquí: la API que consume el frontend, lo que le pedimos al Módulo 1 y al Módulo 3, y el login mínimo que necesita T013. Los ejemplos de esta sección son el contrato: las pruebas de T022 y T023 se escriben contra ellos y los mismos JSON viven como *fixtures* en `src/test/resources/contracts/`.
 
 **Convenciones comunes**
 
@@ -735,7 +735,7 @@ export interface ErrorApi {
 Los JSON de esta sección se guardan una sola vez y los usan las pruebas y el perfil local, para que el contrato no se reescriba en cada test:
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── module1-catalog-page1.json        # y -pagina2, -pagina3 (UC8 FR-011)
 ├── module1-catalog-empty.json
 ├── module1-operational-status.json
@@ -797,7 +797,7 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - [ ] T019 [P] [US1] Pruebas en `SearchResourcesUseCaseTest.java`: orden por nombre e identificador (FR-014), 47 recursos en páginas de 20, 20 y 7 sin repetir (escenario 8), 20 o menos en una sola página (FR-009), filtro de aforo mínimo, aviso de sanción para Estudiante y no para Dirección (FR-016), y el Módulo 3 caído sin tumbar la consulta
 - [ ] T020 [P] [US1] Pruebas en `NextFreeSlotFinderTest.java`: ningún laboratorio seleccionable con una franja libre más tarde (escenario 7), y sin franja libre hasta las 22:00
 - [ ] T021 [P] [US1] Prueba de integración `OccupancyPersistenceAdapterIT.java` con Testcontainers: la consulta de ocupaciones con rangos, las reservas canceladas que no ocupan, el préstamo vencido sin devolver que sí ocupa, y los bloqueos académicos
-- [ ] T022 [P] [US1] Guardar los JSON de [Contratos §2 y §3](#2-módulo-1--inventoryport) como *fixtures* en `src/test/resources/contratos/` y escribir con ellos `InventoryRestAdapterTest.java` y `ComplianceRestAdapterTest.java` con WireMock: respuesta normal, catálogo en varias páginas que se recorren todas (UC8 FR-011), tope de `max-pages` que marca `catalogTruncated`, `operationalStatus` desconocido, timeout y 5xx convertidos en `ExternalServiceUnavailableException`, y persona sin historial —`200` vacío y `404`— leída como "sin sanciones" (UC6 FR-008)
+- [ ] T022 [P] [US1] Guardar los JSON de [Contratos §2 y §3](#2-módulo-1--inventoryport) como *fixtures* en `src/test/resources/contracts/` y escribir con ellos `InventoryRestAdapterTest.java` y `ComplianceRestAdapterTest.java` con WireMock: respuesta normal, catálogo en varias páginas que se recorren todas (UC8 FR-011), tope de `max-pages` que marca `catalogTruncated`, `operationalStatus` desconocido, timeout y 5xx convertidos en `ExternalServiceUnavailableException`, y persona sin historial —`200` vacío y `404`— leída como "sin sanciones" (UC6 FR-008)
 - [ ] T023 [P] [US1] Prueba `ResourceControllerTest.java` con `@WebMvcTest`, comparando contra los *fixtures* `api-recursos-*.json`: parámetros válidos, `minCapacity` con `categoria=ACTIVO` y `pagina=0` como 400 de parámetros, 400 por franja inválida con su `code`, 401 sin sesión, 503 con el Módulo 1 caído, las dos formas de `sanctionNotice`, y que ningún campo opcional viaje como `null` ni se filtre el titular de una reserva (UC8 FR-005)
 
 ### Implementation for User Story 1

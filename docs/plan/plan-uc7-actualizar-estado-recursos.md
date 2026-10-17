@@ -328,7 +328,7 @@ Sale por la *outbox*, con clave de partición `reservation_id` y el envoltorio c
 ### 5. Fixtures compartidos
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── api-status-changes.json
 ├── api-start-use.json
 └── event-resource-use-started.json

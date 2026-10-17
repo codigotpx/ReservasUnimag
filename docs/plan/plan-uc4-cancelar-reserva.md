@@ -402,7 +402,7 @@ export interface CancellationError extends ErrorApi {
 ### 5. Fixtures compartidos
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── api-cancellation-200.json                # espacio
 ├── api-cancellation-200-asset.json          # activo, con el periodo liberado
 ├── api-cancellation-200-idempotent.json     # alreadyCancelled

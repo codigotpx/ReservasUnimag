@@ -62,7 +62,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │       │   └── ReservationRecordPersistenceAdapter.java
     │       └── messaging/
     │           ├── OutboxPublisher.java            # (existe) + disparo tras el commit
-    │           └── evento/ReservationRecordEvent.java   # (existe) sin cambios
+    │           └── event/ReservationRecordEvent.java   # (existe) sin cambios
     └── config/
         └── UseCasesConfig.java
 
@@ -209,7 +209,7 @@ Los datos académicos **no se copian**: salen de `academic_block` por la clave f
 ### 5. Fixtures compartidos
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── api-reservation-record-academic.json
 ├── api-reservation-records-list.json
 ```

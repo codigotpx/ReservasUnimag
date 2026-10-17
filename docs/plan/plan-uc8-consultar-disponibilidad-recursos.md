@@ -246,7 +246,7 @@ La versión por lote devuelve una por `resourceId` y **omite** los que el Módul
 ### 3. Fixtures compartidos
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── api-availability-free.json
 ├── api-availability-academic-block.json
 ├── api-availability-asset-on-loan.json

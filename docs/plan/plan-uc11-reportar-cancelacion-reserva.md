@@ -84,7 +84,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │       │   └── CancellationReportPersistenceAdapter.java
     │       └── messaging/
     │           ├── OutboxPublisher.java            # (existe) + marcar el reporte
-    │           └── evento/ReservationCancelledEvent.java   # (existe) sin cambios
+    │           └── event/ReservationCancelledEvent.java   # (existe) sin cambios
     └── config/
         └── UseCasesConfig.java                     # (existe) + el bean de UC11
 
@@ -290,7 +290,7 @@ El nombre del recurso **no se guarda**: no es nuestro (UC1 FR-006). El endpoint 
 ### 5. Fixtures compartidos
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── api-cancellation-report-sent.json
 ├── api-cancellation-report-pending.json
 ├── api-cancellation-reports-list.json
