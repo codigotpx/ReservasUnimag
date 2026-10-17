@@ -81,14 +81,14 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   ├── in/messaging/
     │   │   ├── NoShowListener.java             # @KafkaListener del topic del Módulo 3
     │   │   ├── InboxGuard.java                 # la idempotencia, compartida con UC12
-    │   │   └── evento/NoShowReportedEvent.java
+    │   │   └── event/NoShowReportedEvent.java
     │   └── out/
     │       ├── persistence/
     │       │   ├── entity/AbsenceJpa.java
     │       │   ├── repository/AbsenceJpaRepository.java
     │       │   └── AbsencePersistenceAdapter.java
     │       └── messaging/
-    │           └── evento/NoShowAckEvent.java  # el acuse de FR-002
+    │           └── event/NoShowAckEvent.java  # el acuse de FR-002
     └── config/
         ├── KafkaConsumerConfig.java            # nuevo: consumidor, DLT y error handler
         └── UseCasesConfig.java                 # (existe) + los beans de UC9
@@ -359,7 +359,7 @@ La concurrencia se iguala al número de particiones del topic, como dice el plan
 ### 6. Fixtures compartidos
 
 ```text
-src/test/resources/contratos/
+src/test/resources/contracts/
 ├── event-no-show-reported.json
 ├── event-no-show-voided.json
 ├── event-no-show-ack-accepted.json
