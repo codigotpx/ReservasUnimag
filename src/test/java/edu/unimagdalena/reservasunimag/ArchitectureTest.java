@@ -27,6 +27,7 @@ class ArchitectureTest {
                     "jakarta.persistence..",
                     "jakarta.servlet..",
                     "org.hibernate..",
+                    "org.apache.kafka..",
                     "com.fasterxml..",
                     "tools.jackson..",
                     "lombok..");

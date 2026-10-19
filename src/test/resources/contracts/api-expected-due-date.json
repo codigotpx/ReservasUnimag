@@ -1,0 +1,8 @@
+{
+  "resourceId": "ACT-004512",
+  "name": "Libro de Cálculo I",
+  "pickup": "2026-09-01T14:30:00-05:00",
+  "dueAt": "2026-09-10T22:00:00-05:00",
+  "termBusinessDays": 7,
+  "skippedNonBusinessDays": ["2026-09-05", "2026-09-06"]
+}

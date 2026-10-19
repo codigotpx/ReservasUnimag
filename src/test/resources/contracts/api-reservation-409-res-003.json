@@ -1,0 +1,10 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/reservation-denied",
+  "title": "Reserva denegada",
+  "status": 409,
+  "detail": "Tienes una sanción vigente hasta el 2026-09-15 y no puedes reservar.",
+  "instance": "/api/reservations",
+  "code": "RES-003",
+  "sanctionReason": "Dos ausencias no justificadas en el semestre",
+  "sanctionUntil": "2026-09-15"
+}

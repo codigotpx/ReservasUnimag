@@ -1,0 +1,10 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/invalid-time-slot",
+  "title": "Franja horaria inválida",
+  "status": 400,
+  "detail": "Una reserva de espacio puede durar como máximo 2 horas. Ajusta la franja.",
+  "instance": "/api/reservations",
+  "code": "DURATION_EXCEEDED",
+  "limitMinutes": 120,
+  "requestedMinutes": 180
+}

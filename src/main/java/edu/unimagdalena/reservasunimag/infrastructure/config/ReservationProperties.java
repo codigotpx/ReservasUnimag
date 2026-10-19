@@ -10,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.net.URI;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 
 /** Parámetros del negocio y de las integraciones, bajo el prefijo {@code reservations}. */
@@ -18,10 +19,15 @@ import java.util.List;
 public record ReservationProperties(
         @Min(1) int pageSize,
         @NotNull Duration nextSlotStep,
+        @Min(1) int maxQuota,
+        @NotNull Duration maxSpaceDuration,
+        @NotNull List<LocalDate> holidays,
         @NotNull List<String> resourceTypes,
         @Valid @NotNull Module1 module1,
         @Valid @NotNull Module3 module3,
-        @Valid @NotNull Jwt jwt) {
+        @Valid @NotNull Jwt jwt,
+        @Valid @NotNull Kafka kafka,
+        @Valid @NotNull Outbox outbox) {
 
     /**
      * {@code pageSize} es el tamaño de página que se le pide al Módulo 1 y {@code maxPages} el tope de páginas del
@@ -40,5 +46,16 @@ public record ReservationProperties(
             @NotNull Duration ttl,
             @NotBlank String cookieName,
             boolean cookieSecure) {
+    }
+
+    public record Kafka(@Valid @NotNull Topic topic) {
+
+        /** Nombres de los topics que publicamos; el prefijo es el módulo dueño del evento. */
+        public record Topic(@NotBlank String record) {
+        }
+    }
+
+    /** El publicador que lleva {@code outbox_message} a Kafka (plan general, Mensajería). */
+    public record Outbox(boolean enabled, @NotNull Duration interval, @Min(1) int batch, @Min(1) int maxAttempts) {
     }
 }

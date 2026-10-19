@@ -2,6 +2,7 @@ package edu.unimagdalena.reservasunimag.domain.usecase.checkavailability;
 
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Occupancy;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.TimeSlot;
+import edu.unimagdalena.reservasunimag.domain.model.resource.Availability;
 import edu.unimagdalena.reservasunimag.domain.model.resource.DisplayedStatus;
 import edu.unimagdalena.reservasunimag.domain.model.resource.Resource;
 import edu.unimagdalena.reservasunimag.domain.model.resource.ResourceWithStatus;
@@ -10,6 +11,7 @@ import edu.unimagdalena.reservasunimag.domain.port.out.Clock;
 import edu.unimagdalena.reservasunimag.domain.port.out.OccupancyRepositoryPort;
 
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,5 +44,22 @@ public class CheckAvailabilityUseCase implements CheckAvailabilityPort {
                 .map(resource -> new ResourceWithStatus(resource, DisplayedStatus.resolve(
                         resource.operationalStatus(), byResource.getOrDefault(resource.id(), List.of()), slot, now)))
                 .toList();
+    }
+
+    @Override
+    public Availability checkOne(Resource resource, Instant from, Instant to) {
+        List<Occupancy> overlapping = occupancies.findOccupancies(List.of(resource.id()), from, to).stream()
+                .filter(occupancy -> occupancy.overlaps(from, to))
+                .toList();
+        DisplayedStatus status = DisplayedStatus.resolve(resource.operationalStatus(), overlapping, from, to,
+                clock.now());
+        // "Hasta cuándo" solo se promete cuando lo decide una ocupación nuestra y esa ocupación tiene fin.
+        List<Occupancy> deciding = overlapping.stream()
+                .filter(occupancy -> occupancy.type().displayedStatus() == status)
+                .toList();
+        Instant occupiedUntil = deciding.isEmpty() || deciding.stream().anyMatch(o -> o.endsAt() == null)
+                ? null
+                : deciding.stream().map(Occupancy::endsAt).max(Comparator.naturalOrder()).orElse(null);
+        return new Availability(status, occupiedUntil);
     }
 }

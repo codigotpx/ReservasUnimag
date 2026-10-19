@@ -1,0 +1,33 @@
+{
+  "eventId": "c3a7f1d2-4e58-4b09-9a61-7d2e8f0b5c34",
+  "type": "ReservationRecordCreated",
+  "version": 1,
+  "occurredAt": "2026-08-30T09:14:22-05:00",
+  "data": {
+    "reservationId": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+    "origin": "ESTUDIANTIL",
+    "sanctionable": true,
+    "resource": {
+      "id": "ACT-004512",
+      "name": "Libro de Cálculo I",
+      "category": "ACTIVO",
+      "type": "LIBRO",
+      "location": "Biblioteca, estantería C-4"
+    },
+    "holder": {
+      "userId": "5f1b9c2d-7a34-4e81-b0f6-3c8d1e9a4b72",
+      "code": "2019114045",
+      "name": "Camilo Cerpa",
+      "role": "ESTUDIANTE"
+    },
+    "occupancy": {
+      "start": "2026-09-01T14:30:00-05:00",
+      "end": "2026-09-10T22:00:00-05:00"
+    },
+    "loan": {
+      "pickup": "2026-09-01T14:30:00-05:00",
+      "dueAt": "2026-09-10T22:00:00-05:00",
+      "termBusinessDays": 7
+    }
+  }
+}

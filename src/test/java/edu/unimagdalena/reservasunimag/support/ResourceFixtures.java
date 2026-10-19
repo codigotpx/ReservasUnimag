@@ -55,7 +55,12 @@ public final class ResourceFixtures {
     }
 
     public static Resource asset(String id, String name) {
-        return Resource.asset(id, name, "MICROSCOPIO", "Laboratorio", OperationalStatus.DISPONIBLE, "BUENO", 3);
+        return asset(id, name, 3);
+    }
+
+    public static Resource asset(String id, String name, Integer loanTermBusinessDays) {
+        return Resource.asset(id, name, "MICROSCOPIO", "Laboratorio", OperationalStatus.DISPONIBLE, "BUENO",
+                loanTermBusinessDays);
     }
 
     public static Occupancy occupancy(String resourceId, OccupancyType type, int startHour, int endHour) {
@@ -69,7 +74,11 @@ public final class ResourceFixtures {
         public int queries;
 
         public InMemoryOccupancies(Occupancy... occupancies) {
-            this.occupancies = List.of(occupancies);
+            this.occupancies = new java.util.ArrayList<>(List.of(occupancies));
+        }
+
+        public void add(Occupancy occupancy) {
+            occupancies.add(occupancy);
         }
 
         @Override

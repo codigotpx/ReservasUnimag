@@ -42,15 +42,21 @@ public enum DisplayedStatus {
      */
     public static DisplayedStatus resolve(OperationalStatus operational, Collection<Occupancy> occupancies,
                                           TimeSlot slot, Instant now) {
+        return resolve(operational, occupancies, slot.startsAt(), slot.endsAt(), now);
+    }
+
+    /** Lo mismo para un intervalo cualquiera: un préstamo dura días y no cabe en una {@link TimeSlot}. */
+    public static DisplayedStatus resolve(OperationalStatus operational, Collection<Occupancy> occupancies,
+                                          Instant from, Instant to, Instant now) {
         if (operational == OperationalStatus.EN_MANTENIMIENTO) {
             return EN_MANTENIMIENTO;
         }
         DisplayedStatus result = DISPONIBLE;
-        if (operational == OperationalStatus.EN_USO && slot.contains(now)) {
+        if (operational == OperationalStatus.EN_USO && !now.isBefore(from) && now.isBefore(to)) {
             result = EN_USO;
         }
         for (Occupancy occupancy : occupancies) {
-            if (occupancy.overlaps(slot.startsAt(), slot.endsAt())) {
+            if (occupancy.overlaps(from, to)) {
                 result = stronger(result, occupancy.type().displayedStatus());
             }
         }

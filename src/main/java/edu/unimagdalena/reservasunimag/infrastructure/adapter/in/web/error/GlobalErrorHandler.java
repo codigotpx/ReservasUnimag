@@ -1,9 +1,16 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.error;
 
 import edu.unimagdalena.reservasunimag.domain.model.error.ExternalServiceUnavailableException;
+import edu.unimagdalena.reservasunimag.domain.model.error.DurationExceededException;
+import edu.unimagdalena.reservasunimag.domain.model.error.IncompleteResourceDetailsException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidCredentialsException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidFilterException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException;
+import edu.unimagdalena.reservasunimag.domain.model.error.NotAnAssetException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ReservationDeniedException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ReservationShapeException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ResourceNotFoundException;
+import edu.unimagdalena.reservasunimag.infrastructure.time.IsoTimes;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -22,6 +29,8 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -61,11 +70,70 @@ class GlobalErrorHandler extends ResponseEntityExceptionHandler {
             case MODULO_1 -> problem(HttpStatus.SERVICE_UNAVAILABLE, "inventory-unavailable",
                     "Inventario no disponible",
                     "La información de recursos no está disponible en este momento. Intenta de nuevo en unos minutos.");
-            case MODULO_3 -> problem(HttpStatus.SERVICE_UNAVAILABLE, "compliance-unavailable",
-                    "Sanciones no disponibles",
-                    "No se pudo comprobar la situación de sanciones en este momento. Intenta de nuevo en unos minutos.");
+            // Solo llega aquí al reservar: en la consulta (UC1) la caída del Módulo 3 es un aviso, no un error.
+            case MODULO_3 -> problem(HttpStatus.SERVICE_UNAVAILABLE, "sanctions-not-verifiable",
+                    "No se pudo comprobar tu situación",
+                    "No se pudo comprobar si tienes sanciones activas, así que la reserva no se confirmó. "
+                            + "Intenta de nuevo en unos minutos.");
         };
         problem.setProperty("module", exception.module().name());
+        return problem;
+    }
+
+    /** Las cuatro denegaciones del diccionario: un solo {@code code} y los campos que su mensaje necesita. */
+    @ExceptionHandler(ReservationDeniedException.class)
+    ProblemDetail reservationDenied(ReservationDeniedException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "reservation-denied", "Reserva denegada",
+                exception.getMessage());
+        problem.setProperty("code", exception.code().code());
+        exception.extensions().forEach((name, value) -> problem.setProperty(name, formatted(value)));
+        return problem;
+    }
+
+    @ExceptionHandler(DurationExceededException.class)
+    ProblemDetail durationExceeded(DurationExceededException exception) {
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "invalid-time-slot", "Franja horaria inválida",
+                "Una reserva de espacio puede durar como máximo " + formatHours(exception.limitMinutes())
+                        + ". Ajusta la franja.");
+        problem.setProperty("code", "DURATION_EXCEEDED");
+        problem.setProperty("limitMinutes", exception.limitMinutes());
+        problem.setProperty("requestedMinutes", exception.requestedMinutes());
+        return problem;
+    }
+
+    @ExceptionHandler(ReservationShapeException.class)
+    ProblemDetail reservationShape(ReservationShapeException exception) {
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "invalid-reservation-shape",
+                "Solicitud que no corresponde al recurso", exception.getMessage());
+        problem.setProperty("code", "SHAPE_DOES_NOT_MATCH_CATEGORY");
+        return problem;
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    ProblemDetail resourceNotFound(ResourceNotFoundException exception) {
+        ProblemDetail problem = problem(HttpStatus.NOT_FOUND, "resource-not-found", "Recurso no encontrado",
+                exception.getMessage());
+        problem.setProperty("resourceId", exception.resourceId());
+        return problem;
+    }
+
+    /** El contrato del Módulo 1 vino incompleto: no es culpa de la persona ni una regla de negocio. */
+    @ExceptionHandler(IncompleteResourceDetailsException.class)
+    ProblemDetail incompleteResourceDetails(IncompleteResourceDetailsException exception) {
+        ProblemDetail problem = problem(HttpStatus.SERVICE_UNAVAILABLE, "inventory-unavailable",
+                "Inventario no disponible",
+                "No se pudo consultar el recurso en este momento. Intenta de nuevo en unos minutos.");
+        problem.setProperty("code", "INCOMPLETE_RESOURCE_DETAILS");
+        problem.setProperty("module", "MODULO_1");
+        return problem;
+    }
+
+    @ExceptionHandler(NotAnAssetException.class)
+    ProblemDetail notAnAsset(NotAnAssetException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "not-an-asset", "El recurso no es un activo",
+                exception.getMessage());
+        problem.setProperty("code", "NOT_AN_ASSET");
+        problem.setProperty("resourceId", exception.resourceId());
         return problem;
     }
 
@@ -119,6 +187,21 @@ class GlobalErrorHandler extends ResponseEntityExceptionHandler {
                 ? mismatch.getName()
                 : exception.getPropertyName();
         return badRequest(invalidParameters(List.of(fieldError(field, "formato inválido"))));
+    }
+
+    /** Los instantes y las fechas viajan como los fija el contrato; lo demás, tal cual. */
+    private static Object formatted(Object value) {
+        if (value instanceof Instant instant) {
+            return IsoTimes.offset(instant);
+        }
+        if (value instanceof LocalDate date) {
+            return date.toString();
+        }
+        return value;
+    }
+
+    private static String formatHours(long minutes) {
+        return minutes % 60 == 0 ? (minutes / 60) + (minutes == 60 ? " hora" : " horas") : minutes + " minutos";
     }
 
     private static ResponseEntity<Object> badRequest(ProblemDetail problem) {

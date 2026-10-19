@@ -1,5 +1,6 @@
 package edu.unimagdalena.reservasunimag.domain.usecase.checksanctions;
 
+import edu.unimagdalena.reservasunimag.domain.model.compliance.Sanction;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.SanctionNotice;
 import edu.unimagdalena.reservasunimag.domain.model.error.ExternalServiceUnavailableException;
 import edu.unimagdalena.reservasunimag.domain.model.user.CurrentUser;
@@ -24,5 +25,10 @@ public class CheckSanctionsUseCase implements CheckSanctionsPort {
             // Sin sanciones sí hay qué mostrar: la comprobación que decide es la de Reservar recursos (UC6 FR-006).
             return Optional.of(SanctionNotice.notVerified());
         }
+    }
+
+    @Override
+    public Optional<Sanction> activeSanction(CurrentUser user) {
+        return compliance.report(user.code()).farthestSanction();
     }
 }

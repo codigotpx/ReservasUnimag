@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static edu.unimagdalena.reservasunimag.domain.model.resource.OperationalStatus.DISPONIBLE;
@@ -52,6 +53,11 @@ class InventoryFakeAdapter implements InventoryPort {
                 .filter(filter::acceptsCapacityOf)
                 .toList();
         return new Catalog(matching, false);
+    }
+
+    @Override
+    public Optional<Resource> details(String resourceId) {
+        return CATALOG.stream().filter(resource -> resource.id().equals(resourceId)).findFirst();
     }
 
     @Override

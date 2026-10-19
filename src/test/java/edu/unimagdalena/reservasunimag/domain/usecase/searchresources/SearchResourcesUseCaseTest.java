@@ -66,6 +66,11 @@ class SearchResourcesUseCaseTest {
         }
 
         @Override
+        public java.util.Optional<Resource> details(String resourceId) {
+            throw new UnsupportedOperationException("UC1 no la usa");
+        }
+
+        @Override
         public Map<String, OperationalStatus> operationalStatus(Collection<String> resourceIds) {
             throw new UnsupportedOperationException("UC1 no la usa");
         }

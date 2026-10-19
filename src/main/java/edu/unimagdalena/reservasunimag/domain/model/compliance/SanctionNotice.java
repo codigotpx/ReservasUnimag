@@ -15,8 +15,9 @@ public record SanctionNotice(Type type, String reason, LocalDate until, String m
     }
 
     public static SanctionNotice active(Sanction sanction) {
+        String until = sanction.end() == null ? "" : " hasta el " + sanction.end();
         return new SanctionNotice(Type.ACTIVE_SANCTION, sanction.reason(), sanction.end(),
-                "Tienes una sanción vigente hasta el " + sanction.end()
+                "Tienes una sanción vigente" + until
                         + ". Puedes consultar los recursos, pero no podrás confirmar una reserva.");
     }
 

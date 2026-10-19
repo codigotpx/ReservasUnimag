@@ -18,8 +18,9 @@ public record ComplianceReport(List<Sanction> activeSanctions, int absenceCount,
         return new ComplianceReport(List.of(), 0, 0, null);
     }
 
-    /** La sanción que termina más tarde, que es la que se avisa. */
+    /** La sanción que termina más tarde, que es la que se avisa; una sin fecha de fin no termina nunca. */
     public Optional<Sanction> farthestSanction() {
-        return activeSanctions.stream().max(Comparator.comparing(Sanction::end));
+        return activeSanctions.stream()
+                .max(Comparator.comparing(Sanction::end, Comparator.nullsLast(Comparator.naturalOrder())));
     }
 }

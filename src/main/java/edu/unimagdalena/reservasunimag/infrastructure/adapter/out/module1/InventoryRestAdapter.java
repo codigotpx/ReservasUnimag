@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
@@ -25,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Cliente del Módulo 1 según UC1 Contratos §2. Sin reintentos y sin autenticación. Cualquier falla —timeout,
@@ -94,6 +96,29 @@ class InventoryRestAdapter implements InventoryPort {
                 })
                 .retrieve()
                 .body(CatalogPageDto.class);
+    }
+
+    @Override
+    public Optional<Resource> details(String resourceId) {
+        long startedAt = System.nanoTime();
+        try {
+            ResourceDto body = client.get()
+                    .uri("/api/v1/resources/{id}", resourceId)
+                    .retrieve()
+                    .body(ResourceDto.class);
+            if (body == null) {
+                throw new ContractViolation("la ficha de " + resourceId + " llegó sin contenido");
+            }
+            log.info("Módulo 1: ficha de un recurso en {} ms", millisSince(startedAt));
+            return Optional.of(toDomain(body));
+        } catch (HttpClientErrorException.NotFound unknown) {
+            log.info("Módulo 1: el recurso no existe ({} ms)", millisSince(startedAt));
+            return Optional.empty();
+        } catch (RestClientException | ContractViolation failure) {
+            log.error("Módulo 1: ficha falló tras {} ms: {}", millisSince(startedAt), failure.getMessage());
+            throw new ExternalServiceUnavailableException(ExternalModule.MODULO_1,
+                    "No se pudo leer la ficha del recurso en el Módulo 1", failure);
+        }
     }
 
     @Override

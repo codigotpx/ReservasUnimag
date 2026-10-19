@@ -53,6 +53,7 @@ estudiantil.
 - Java 21
 - Spring Boot 4.1.1 (Web MVC, Data JPA, Security con JWT propio, Validation, RestClient)
 - PostgreSQL con Flyway para las migraciones
+- Apache Kafka para los eventos hacia el Módulo 3, detrás de una *outbox* en PostgreSQL
 - springdoc-openapi: la API se documenta en `/swagger-ui.html`
 - JUnit 5, Testcontainers, ArchUnit y WireMock para las pruebas
 - Gradle con Groovy DSL (con wrapper incluido)
@@ -90,6 +91,31 @@ con la contraseña `unimag2026`:
 La sesión se abre con `POST /api/auth/login` y queda en una cookie `httpOnly`. El JWT
 solo se usa entre el frontend y nuestra API: las llamadas a los Módulos 1 y 3 van sin
 autenticación.
+
+### Kafka y la outbox
+
+Al reservar, la ficha para el Módulo 3 se guarda en la tabla `outbox_message` dentro de la misma
+transacción que la reserva, y un publicador (`@Scheduled`, cada 5 s) la lleva al topic
+`module2.reservation.record.v1`. **Reservar funciona aunque Kafka esté caído**: los eventos quedan
+`PENDING` y salen cuando el broker vuelve, con espera creciente entre reintentos (5 s, 30 s, 2 min,
+10 min) hasta quedar `FAILED` tras `reservations.outbox.max-attempts`.
+
+Para tener un broker en desarrollo:
+
+```bash
+docker compose up -d kafka        # o `docker compose up -d` para PostgreSQL y Kafka
+```
+
+Para ver qué está esperando o falló:
+
+```sql
+SELECT type, status, attempts, next_attempt_at, last_error
+FROM outbox_message WHERE status <> 'SENT' ORDER BY created_at;
+```
+
+Si no quieres el publicador (por ejemplo, sin Docker para Kafka), arranca con
+`--reservations.outbox.enabled=false`. Las pruebas ya lo desactivan, salvo `OutboxPublisherIT`,
+que levanta su propio Kafka con Testcontainers.
 
 Ejecutar las pruebas:
 

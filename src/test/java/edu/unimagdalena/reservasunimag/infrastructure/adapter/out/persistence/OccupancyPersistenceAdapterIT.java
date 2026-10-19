@@ -35,9 +35,7 @@ class OccupancyPersistenceAdapterIT {
 
     @BeforeEach
     void clean() {
-        jdbc.sql("DELETE FROM academic_block").update();
-        jdbc.sql("DELETE FROM loan").update();
-        jdbc.sql("DELETE FROM reservation").update();
+        edu.unimagdalena.reservasunimag.support.Database.clean(jdbc);
     }
 
     private UUID reservation(String resourceId, String category, String origin, String status, String start,

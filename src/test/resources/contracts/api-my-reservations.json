@@ -1,0 +1,31 @@
+{
+  "reservations": [
+    {
+      "id": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+      "resourceId": "ESP-0107",
+      "name": "Sala de Estudio 3",
+      "category": "ESPACIO",
+      "status": "CONFIRMADA",
+      "start": "2026-09-01T10:00:00-05:00",
+      "end": "2026-09-01T12:00:00-05:00"
+    },
+    {
+      "id": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+      "resourceId": "ACT-004512",
+      "name": "Libro de Cálculo I",
+      "category": "ACTIVO",
+      "status": "CONFIRMADA",
+      "start": "2026-09-01T14:30:00-05:00",
+      "end": "2026-09-10T22:00:00-05:00",
+      "loan": {
+        "pickup": "2026-09-01T14:30:00-05:00",
+        "dueAt": "2026-09-10T22:00:00-05:00",
+        "termBusinessDays": 7,
+        "pickedUp": true,
+        "overdue": false
+      }
+    }
+  ],
+  "quota": { "used": 2, "max": 3 },
+  "catalogUnavailable": false
+}
