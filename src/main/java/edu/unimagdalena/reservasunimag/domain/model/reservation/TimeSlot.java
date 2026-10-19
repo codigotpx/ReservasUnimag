@@ -50,6 +50,11 @@ public record TimeSlot(LocalDate date, LocalTime start, LocalTime end) {
         return date.atTime(end).atZone(ZONE).toInstant();
     }
 
+    /** Si el instante cae dentro de {@code [inicio, fin)}. */
+    public boolean contains(Instant instant) {
+        return !instant.isBefore(startsAt()) && instant.isBefore(endsAt());
+    }
+
     /** Cruce de intervalos semiabiertos: 10:00–12:00 y 12:00–14:00 no se cruzan. */
     public boolean overlaps(Instant otherStart, Instant otherEnd) {
         return startsAt().isBefore(otherEnd) && otherStart.isBefore(endsAt());

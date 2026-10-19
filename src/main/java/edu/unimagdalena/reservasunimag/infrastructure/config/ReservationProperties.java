@@ -17,13 +17,18 @@ import java.util.List;
 @ConfigurationProperties("reservations")
 public record ReservationProperties(
         @Min(1) int pageSize,
+        @NotNull Duration nextSlotStep,
         @NotNull List<String> resourceTypes,
         @Valid @NotNull Module1 module1,
         @Valid @NotNull Module3 module3,
         @Valid @NotNull Jwt jwt) {
 
-    /** {@code maxPages} es el tope de páginas del catálogo que se recorren por consulta (UC8 FR-011). */
-    public record Module1(@NotNull URI baseUrl, @NotNull Duration timeout, @Min(1) int maxPages) {
+    /**
+     * {@code pageSize} es el tamaño de página que se le pide al Módulo 1 y {@code maxPages} el tope de páginas del
+     * catálogo que se recorren por consulta (UC8 FR-011).
+     */
+    public record Module1(@NotNull URI baseUrl, @NotNull Duration timeout, @Min(1) int pageSize,
+                          @Min(1) int maxPages) {
     }
 
     public record Module3(@NotNull URI baseUrl, @NotNull Duration timeout) {

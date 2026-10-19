@@ -2,6 +2,7 @@ package edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.error;
 
 import edu.unimagdalena.reservasunimag.domain.model.error.ExternalServiceUnavailableException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidCredentialsException;
+import edu.unimagdalena.reservasunimag.domain.model.error.InvalidFilterException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -46,6 +48,11 @@ class GlobalErrorHandler extends ResponseEntityExceptionHandler {
                 "start", exception.start().format(HOUR),
                 "end", exception.end().format(HOUR)));
         return problem;
+    }
+
+    @ExceptionHandler(InvalidFilterException.class)
+    ProblemDetail invalidFilter(InvalidFilterException exception) {
+        return invalidParameters(List.of(fieldError(exception.field(), exception.getMessage())));
     }
 
     @ExceptionHandler(ExternalServiceUnavailableException.class)
@@ -96,6 +103,13 @@ class GlobalErrorHandler extends ResponseEntityExceptionHandler {
                                         : result.getMethodParameter().getParameterName(),
                                 error.getDefaultMessage())))
                 .toList()));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestParameter(
+            MissingServletRequestParameterException exception, HttpHeaders headers, HttpStatusCode status,
+            WebRequest request) {
+        return badRequest(invalidParameters(List.of(fieldError(exception.getParameterName(), "es obligatorio"))));
     }
 
     @Override

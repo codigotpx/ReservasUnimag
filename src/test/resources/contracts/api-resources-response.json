@@ -1,0 +1,47 @@
+{
+  "timeSlot": { "date": "2026-09-01", "start": "10:00", "end": "12:00" },
+  "filters": { "category": null, "type": null, "minCapacity": null },
+  "pagination": { "page": 1, "pageSize": 20, "totalPages": 3, "total": 47 },
+  "anySelectable": true,
+  "catalogTruncated": false,
+  "queriedAt": "2026-09-01T09:14:22-05:00",
+  "resources": [
+    {
+      "id": "ESP-0412",
+      "name": "Laboratorio de Redes",
+      "category": "ESPACIO",
+      "type": "LABORATORIO",
+      "location": "Bloque 7, piso 2",
+      "faculty": "Ingeniería",
+      "maxCapacity": 30,
+      "equipment": ["PROYECTOR", "AIRE_ACONDICIONADO"],
+      "status": "BLOQUEO_ACADEMICO",
+      "selectable": false,
+      "reason": "El recurso está reservado para actividad docente en la franja consultada."
+    },
+    {
+      "id": "ACT-000912",
+      "name": "Microscopio M-014",
+      "category": "ACTIVO",
+      "type": "MICROSCOPIO",
+      "location": "Laboratorio de Biología",
+      "condition": "BUENO",
+      "loanTermBusinessDays": 3,
+      "status": "EN_MANTENIMIENTO",
+      "selectable": false,
+      "reason": "El recurso está en mantenimiento."
+    },
+    {
+      "id": "ESP-0107",
+      "name": "Sala de Estudio 3",
+      "category": "ESPACIO",
+      "type": "SALA_DE_ESTUDIO",
+      "location": "Biblioteca, piso 1",
+      "faculty": "Biblioteca Central",
+      "maxCapacity": 8,
+      "equipment": ["AIRE_ACONDICIONADO"],
+      "status": "DISPONIBLE",
+      "selectable": true
+    }
+  ]
+}

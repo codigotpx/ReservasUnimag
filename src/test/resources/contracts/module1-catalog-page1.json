@@ -1,0 +1,31 @@
+{
+  "content": [
+    {
+      "id": "ESP-0412",
+      "name": "Laboratorio de Redes",
+      "category": "ESPACIO",
+      "type": "LABORATORIO",
+      "operationalStatus": "DISPONIBLE",
+      "location": "Bloque 7, piso 2",
+      "faculty": "Ingeniería",
+      "maxCapacity": 30,
+      "equipment": ["PROYECTOR", "AIRE_ACONDICIONADO"]
+    },
+    {
+      "id": "ACT-000912",
+      "name": "Microscopio M-014",
+      "category": "ACTIVO",
+      "type": "MICROSCOPIO",
+      "operationalStatus": "EN_MANTENIMIENTO",
+      "statusReason": "Reparación de lente",
+      "location": "Laboratorio de Biología",
+      "assetTag": "ACT-000912",
+      "condition": "BUENO",
+      "loanTermBusinessDays": 3
+    }
+  ],
+  "page": 1,
+  "size": 2,
+  "totalPages": 3,
+  "total": 5
+}
