@@ -13,6 +13,8 @@ import edu.unimagdalena.reservasunimag.domain.model.error.ReservationDeniedExcep
 import edu.unimagdalena.reservasunimag.domain.model.error.ReservationShapeException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ResourceNotFoundException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ResourceTakenException;
+import edu.unimagdalena.reservasunimag.domain.model.reservation.Cancellation;
+import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReport;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Denial;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Loan;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.OccupancyType;
@@ -140,9 +142,44 @@ class ReserveResourcesUseCaseTest {
         public List<Reservation> findByHolder(UUID userId, boolean onlyActive, Instant now) {
             return stored;
         }
+
+        @Override
+        public Optional<Reservation> findById(UUID id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<Reservation> lockById(UUID id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<Cancellation> findCancellation(UUID id) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void markCancelled(UUID id, Cancellation cancellation) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<Reservation> findUpcomingByResource(String resourceId, Instant now) {
+            throw new UnsupportedOperationException();
+        }
     };
 
-    private final Module3NotifierPort notifier = reported::add;
+    private final Module3NotifierPort notifier = new Module3NotifierPort() {
+        @Override
+        public void reservationCreated(ReservationRecord record) {
+            reported.add(record);
+        }
+
+        @Override
+        public void reservationCancelled(CancellationReport report) {
+            throw new UnsupportedOperationException();
+        }
+    };
 
     private final ReserveResourcesUseCase useCase = new ReserveResourcesUseCase(
             inventory,

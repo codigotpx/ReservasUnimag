@@ -1,5 +1,6 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.error;
 
+import edu.unimagdalena.reservasunimag.domain.model.error.CancellationDeniedException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ExternalServiceUnavailableException;
 import edu.unimagdalena.reservasunimag.domain.model.error.DurationExceededException;
 import edu.unimagdalena.reservasunimag.domain.model.error.IncompleteResourceDetailsException;
@@ -7,7 +8,9 @@ import edu.unimagdalena.reservasunimag.domain.model.error.InvalidCredentialsExce
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidFilterException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException;
 import edu.unimagdalena.reservasunimag.domain.model.error.NotAnAssetException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ReservationAlreadyClosedException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ReservationDeniedException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ReservationNotFoundException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ReservationShapeException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ResourceNotFoundException;
 import edu.unimagdalena.reservasunimag.infrastructure.time.IsoTimes;
@@ -88,6 +91,29 @@ class GlobalErrorHandler extends ResponseEntityExceptionHandler {
         problem.setProperty("code", exception.code().code());
         exception.extensions().forEach((name, value) -> problem.setProperty(name, formatted(value)));
         return problem;
+    }
+
+    /** UC4: siempre {@code CAN-001}; el {@code reason} dice qué tiene que hacer la persona. */
+    @ExceptionHandler(CancellationDeniedException.class)
+    ProblemDetail cancellationDenied(CancellationDeniedException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "cancellation-denied", "La reserva ya no es cancelable",
+                exception.getMessage());
+        problem.setProperty("code", exception.code().code());
+        exception.extensions().forEach((name, value) -> problem.setProperty(name, formatted(value)));
+        return problem;
+    }
+
+    /** No existe o es de otra persona: el mismo cuerpo, sin nada que confirme que el identificador existe. */
+    @ExceptionHandler(ReservationNotFoundException.class)
+    ProblemDetail reservationNotFound() {
+        return problem(HttpStatus.NOT_FOUND, "reservation-not-found", "Reserva no encontrada",
+                "La reserva no existe.");
+    }
+
+    @ExceptionHandler(ReservationAlreadyClosedException.class)
+    ProblemDetail reservationAlreadyClosed() {
+        return problem(HttpStatus.CONFLICT, "reservation-closed", "La reserva ya está cerrada",
+                "Esta reserva ya se cerró por otra vía y no se puede cancelar.");
     }
 
     @ExceptionHandler(DurationExceededException.class)

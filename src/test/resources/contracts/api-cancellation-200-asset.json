@@ -1,0 +1,12 @@
+{
+  "reservationId": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+  "status": "CANCELADA",
+  "cancellationOrigin": "HOLDER",
+  "cancelledAt": "2026-09-02T18:05:00-05:00",
+  "noticeMinutes": 1225,
+  "releasedTime": {
+    "start": "2026-09-03T14:30:00-05:00",
+    "end": "2026-09-14T22:00:00-05:00"
+  },
+  "quota": { "used": 1, "max": 3 }
+}

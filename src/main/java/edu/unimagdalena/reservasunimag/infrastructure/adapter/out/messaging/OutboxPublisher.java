@@ -58,6 +58,7 @@ public class OutboxPublisher {
     public void publishPendingOnSchedule() {
         try {
             publishPending();
+            warnAboutStalePending();
         } catch (RuntimeException failure) {
             // Una caída de la base no debe matar el planificador: se vuelve a intentar en el siguiente turno.
             log.error("Outbox: no se pudo procesar el lote: {}", failure.getMessage());
@@ -107,15 +108,36 @@ public class OutboxPublisher {
                 .list();
     }
 
-    private String topicFor(String type) {
-        if (OutboxNotifierAdapter.RESERVATION_RECORD.equals(type)) {
-            return properties.kafka().topic().record();
+    /** Cuántos pendientes llevan más de {@code alert-after} sin salir; los advierte antes de incumplir UC11 SC-005. */
+    public long warnAboutStalePending() {
+        long stale = jdbc.sql("SELECT count(*) FROM outbox_message WHERE status = 'PENDING' AND created_at < :limit")
+                .param("limit", OffsetDateTime.now(ZoneOffset.UTC).minus(properties.outbox().alertAfter()))
+                .query(Long.class)
+                .single();
+        if (stale > 0) {
+            log.warn("Outbox: {} evento(s) llevan más de {} sin publicarse", stale, properties.outbox().alertAfter());
         }
-        throw new IllegalStateException("tipo de evento sin topic configurado: " + type);
+        return stale;
+    }
+
+    private String topicFor(String type) {
+        return switch (type) {
+            case OutboxNotifierAdapter.RESERVATION_RECORD -> properties.kafka().topic().record();
+            case OutboxNotifierAdapter.CANCELLATION -> properties.kafka().topic().cancellation();
+            default -> throw new IllegalStateException("tipo de evento sin topic configurado: " + type);
+        };
     }
 
     private void markSent(Pending message) {
         jdbc.sql("UPDATE outbox_message SET status = 'SENT', sent_at = now(), last_error = NULL WHERE id = :id")
+                .param("id", message.id())
+                .update();
+        // El historial de UC11 lleva su propia cuenta, que incluye el intento que salió bien (FR-010).
+        jdbc.sql("""
+                        UPDATE cancellation_report
+                        SET delivery_status = 'SENT', delivered_at = now(), attempts = attempts + 1,
+                            first_attempt_at = COALESCE(first_attempt_at, now()), last_error = NULL
+                        WHERE event_id = :id""")
                 .param("id", message.id())
                 .update();
         log.info("Outbox: evento {} publicado", message.id());
@@ -133,6 +155,16 @@ public class OutboxPublisher {
                 .param("attempts", attempts)
                 .param("status", exhausted ? "FAILED" : "PENDING")
                 .param("next", OffsetDateTime.now(ZoneOffset.UTC).plus(wait))
+                .param("error", error.length() > 500 ? error.substring(0, 500) : error)
+                .param("id", message.id())
+                .update();
+        jdbc.sql("""
+                        UPDATE cancellation_report
+                        SET delivery_status = :status, attempts = :attempts,
+                            first_attempt_at = COALESCE(first_attempt_at, now()), last_error = :error
+                        WHERE event_id = :id""")
+                .param("status", exhausted ? "FAILED" : "PENDING")
+                .param("attempts", attempts)
                 .param("error", error.length() > 500 ? error.substring(0, 500) : error)
                 .param("id", message.id())
                 .update();

@@ -12,6 +12,7 @@ public record MyReservations(List<Item> reservations, Quota quota, boolean catal
         reservations = List.copyOf(reservations);
     }
 
-    public record Item(Reservation reservation, String name, boolean overdue) {
+    /** {@code cancellable} es si el titular todavía puede cancelarla (UC4 FR-007, FR-008). */
+    public record Item(Reservation reservation, String name, boolean overdue, boolean cancellable) {
     }
 }

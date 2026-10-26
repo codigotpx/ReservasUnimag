@@ -66,12 +66,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "reservations.jwt.cookie-name=session",
         "reservations.max-quota=3",
         "reservations.max-space-duration=2h",
+        "reservations.min-cancellation-notice=10m",
         "reservations.holidays=",
         "reservations.kafka.topic.record=module2.reservation.record.v1",
+        "reservations.kafka.topic.cancellation=module2.reservation.cancellation.v1",
         "reservations.outbox.enabled=false",
         "reservations.outbox.interval=5s",
         "reservations.outbox.batch=50",
-        "reservations.outbox.max-attempts=10"})
+        "reservations.outbox.max-attempts=10",
+        "reservations.outbox.alert-after=25m"})
 class ResourceControllerTest {
 
     private static final String QUERY = "/api/resources?date=2026-09-01&start=10:00&end=12:00";

@@ -1,5 +1,6 @@
 package edu.unimagdalena.reservasunimag.domain.port.out;
 
+import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReport;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationRecord;
 
 /**
@@ -9,4 +10,7 @@ import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationRecor
 public interface Module3NotifierPort {
 
     void reservationCreated(ReservationRecord record);
+
+    /** El evento lleva {@code report.eventId()} como su {@code eventId}. */
+    void reservationCancelled(CancellationReport report);
 }

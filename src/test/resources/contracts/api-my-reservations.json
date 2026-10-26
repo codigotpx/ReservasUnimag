@@ -7,7 +7,8 @@
       "category": "ESPACIO",
       "status": "CONFIRMADA",
       "start": "2026-09-01T10:00:00-05:00",
-      "end": "2026-09-01T12:00:00-05:00"
+      "end": "2026-09-01T12:00:00-05:00",
+      "cancellable": true
     },
     {
       "id": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
@@ -23,7 +24,8 @@
         "termBusinessDays": 7,
         "pickedUp": true,
         "overdue": false
-      }
+      },
+      "cancellable": false
     }
   ],
   "quota": { "used": 2, "max": 3 },

@@ -2,7 +2,7 @@
 
 Lista de decisiones que faltan por definir. Cada entrada dice **qué hay que preguntar** y **exactamente dónde se aplica** una vez se tenga la respuesta, para no volver a rastrear los archivos.
 
-**Última revisión**: 2026-10-05
+**Última revisión**: 2026-10-26
 
 ---
 
@@ -271,7 +271,7 @@ Como `Importar horarios semestrales` incluye a `Reservar recursos`, cada clase i
 Con el nuevo reparto, el Módulo 1 es dueño de `DISPONIBLE`, `EN_USO` y `EN_MANTENIMIENTO`, y el Módulo 2 de `RESERVADO`, `BLOQUEO_ACADEMICO` y los estados de la reserva. Eso cambia varias cosas que habíamos acordado con el Módulo 1:
 
 1. **¿El Módulo 2 le sigue avisando algo al Módulo 1?** *Resuelto: sí, un solo aviso.* El inicio de uso es un hecho de la reserva y es nuestro, así que el Módulo 2 le comunica el paso a `EN_USO` (UC7 FR-004), tanto el de una reserva con titular como el de una clase cuando llega su hora. El aviso lleva el tramo de uso, con el que el Módulo 1 libera un espacio por sí solo (UC7 FR-004a); la devolución de un activo y la entrada a `EN_MANTENIMIENTO` las constata el Módulo 3 y se las reporta directamente, igual que los daños (UC7 FR-012). La flecha `Actualizar estado de los recursos` → Módulo 1 del diagrama se queda, con ese único contenido. Lo que falta es acordar con su equipo el medio y los datos del aviso; el registro de la llegada de una persona sigue en P-02.
-2. **Que el Módulo 1 nos avise cuando un recurso deja de estar disponible.** Si un recurso entra a `EN_MANTENIMIENTO` —porque volvió dañado, porque un salón tiene una gotera o porque hay mantenimiento programado—, las reservas que ya estaban confirmadas sobre él tienen que cancelarse (UC4 FR-010). Como el daño va del Módulo 3 al Módulo 1, nadie nos lo dice. Al consultar sí lo vemos; el hueco son las reservas hechas antes. Como alternativa de respaldo, el check-out del Módulo 3 podría traer solo una marca de "volvió con daño", pero no cubriría los espacios ni el mantenimiento programado.
+2. **Que el Módulo 1 nos avise cuando un recurso deja de estar disponible.** Si un recurso entra a `EN_MANTENIMIENTO` —porque volvió dañado, porque un salón tiene una gotera o porque hay mantenimiento programado—, las reservas que ya estaban confirmadas sobre él tienen que cancelarse (UC4 FR-010). Como el daño va del Módulo 3 al Módulo 1, nadie nos lo dice. Al consultar sí lo vemos; el hueco son las reservas hechas antes. Como alternativa de respaldo, el check-out del Módulo 3 podría traer solo una marca de "volvió con daño", pero no cubriría los espacios ni el mantenimiento programado. *Mientras tanto (2026-10-26):* la cancelación ya está implementada detrás de `CancelForMaintenancePort`, y Dirección de Programa la dispara a mano con `POST /api/resources/{resourceId}/cancel-reservations` (plan de UC4, Contratos §2). Cuando llegue el aviso, quien lo reciba llamará al mismo puerto.
 3. **¿`EN_MANTENIMIENTO` trae fechas?** Su estado es el de ahora, pero nosotros preguntamos por franjas futuras. Si un salón entra hoy a mantenimiento, ¿sigue bloqueado para la reserva del martes?
 4. **Quitar `RESERVADO` y `BLOQUEO_ACADEMICO` de su spec**, donde todavía aparecen como estados suyos.
 5. **Quién le avisa al estudiante desplazado por una clase.** UC3 decía que el Módulo 1 recibía las cancelaciones "para informar a los estudiantes afectados"; con el reparto ya no se le envían.
@@ -287,6 +287,25 @@ Con el nuevo reparto, el Módulo 1 es dueño de `DISPONIBLE`, `EN_USO` y `EN_MAN
 | `spec-modulo2-uc1-consultar-recursos.md` | Edge case **Mantenimiento que empieza dentro de la franja** | Ajustar según la respuesta 3. |
 | `spec-modulo2-uc8-consultar-disponibilidad-recursos.md` | **FR-002** | Igual. |
 | `spec-modulo2-uc3-importar-horarios-semestrales.md` | Escenario 3 y **FR-005** | Decir quién avisa al estudiante, según la respuesta 5. |
+
+---
+
+## P-21 — `CAN-001` y `CAN-002` dicen cosas distintas en el consolidado y en UC4
+
+**Estado**: abierto. Detectado al implementar UC4 (2026-10-26).
+
+El diccionario de errores de `spec-modulo2.md` asigna `CAN-001` a "no es el titular" y `CAN-002` a "ya no es cancelable". El spec de UC4, en cambio, usa `CAN-001` para la reserva fuera de plazo (tabla de errores, escenario 3 y FR-003), y el escenario 5 de UC11 dice lo mismo. Los dos no pueden tener razón a la vez.
+
+La implementación sigue a UC4 y UC11, que son tres lugares contra uno: `CAN-001` sale cuando la reserva ya no es cancelable, por plazo o porque el activo ya se entregó, y lleva un `reason` que distingue los dos casos. Cancelar la reserva de otra persona responde `404` sin código, porque un `403` confirmaría que el identificador existe (plan de UC4, Decisiones de diseño). `CAN-002` queda declarado en el código pero no se emite.
+
+**Qué decidir**: si el consolidado se corrige para que coincida con UC4, o si se quiere un código propio para "no es el titular" aunque nunca llegue al cliente.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2.md` | Diccionario de errores | `CAN-001` = la reserva ya no es cancelable (plazo o activo entregado). Quitar `CAN-002`, o reasignarlo según la decisión. |
+| `spec-modulo2-uc4-cancelar-reserva.md` | Tabla de errores | Mencionar que "no es el titular" se responde como reserva inexistente. |
 
 ---
 

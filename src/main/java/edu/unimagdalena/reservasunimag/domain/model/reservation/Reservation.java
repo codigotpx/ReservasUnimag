@@ -49,6 +49,23 @@ public record Reservation(
                 ReservationStatus.CONFIRMADA, startsAt, endsAt, createdAt, loan);
     }
 
+    /**
+     * La misma reserva deshecha con el estado que deja {@code origin}. Solo se cancela una reserva confirmada: las
+     * demás ya están en un estado final.
+     */
+    public Reservation cancel(CancellationOrigin origin) {
+        if (status != ReservationStatus.CONFIRMADA) {
+            throw new IllegalStateException("la reserva " + id + " ya está " + status);
+        }
+        return new Reservation(id, userId, resourceId, category, this.origin, origin.status(), startsAt, endsAt,
+                createdAt, loan);
+    }
+
+    /** Activo que ya está en manos de alguien: no se cancela, se devuelve (UC4 FR-008). */
+    public boolean inHands() {
+        return loan != null && loan.pickedUp() && !loan.returned();
+    }
+
     /** Préstamo que ya pasó su vencimiento sin que se registrara la devolución (UC2 FR-015). */
     public boolean overdue(Instant now) {
         return loan != null && !loan.returned() && now.isAfter(endsAt);

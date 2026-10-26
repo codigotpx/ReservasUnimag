@@ -12,6 +12,8 @@ public final class Database {
 
     /** Borra todo lo que escriben las reservas; deja los usuarios sembrados del perfil local. */
     public static void clean(JdbcClient jdbc) {
+        jdbc.sql("DELETE FROM cancellation_report").update();
+        jdbc.sql("DELETE FROM reservation_closure").update();
         jdbc.sql("DELETE FROM outbox_message").update();
         jdbc.sql("DELETE FROM denial").update();
         jdbc.sql("DELETE FROM academic_block").update();

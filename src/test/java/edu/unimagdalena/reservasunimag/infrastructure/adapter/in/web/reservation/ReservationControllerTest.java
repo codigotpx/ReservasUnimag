@@ -23,6 +23,7 @@ import edu.unimagdalena.reservasunimag.domain.model.resource.Resource;
 import edu.unimagdalena.reservasunimag.domain.model.resource.ResourceCategory;
 import edu.unimagdalena.reservasunimag.domain.model.user.CurrentUser;
 import edu.unimagdalena.reservasunimag.domain.model.user.Role;
+import edu.unimagdalena.reservasunimag.domain.port.in.CancelReservationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ListMyReservationsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReserveResourcesPort;
 import org.junit.jupiter.api.Test;
@@ -74,6 +75,8 @@ class ReservationControllerTest {
     private ReserveResourcesPort reserveResources;
     @MockitoBean
     private ListMyReservationsPort listMyReservations;
+    @MockitoBean
+    private CancelReservationPort cancelReservation;
 
     private static Instant at(int year, int month, int day, int hour, int minute, int second) {
         return ZonedDateTime.of(year, month, day, hour, minute, second, 0, TimeSlot.ZONE).toInstant();
@@ -325,8 +328,8 @@ class ReservationControllerTest {
     void myReservationsMatchTheContractIncludingTheLoanState() throws Exception {
         var pickedUp = new Loan(7, at(2026, 9, 1, 14, 35, 0), null);
         when(listMyReservations.list(any(), org.mockito.ArgumentMatchers.eq(true))).thenReturn(new MyReservations(
-                List.of(new MyReservations.Item(spaceReservation(), "Sala de Estudio 3", false),
-                        new MyReservations.Item(loanReservation(pickedUp), "Libro de Cálculo I", false)),
+                List.of(new MyReservations.Item(spaceReservation(), "Sala de Estudio 3", false, true),
+                        new MyReservations.Item(loanReservation(pickedUp), "Libro de Cálculo I", false, false)),
                 new Quota(2, 3), false));
 
         mockMvc.perform(get("/api/reservations/mine").with(session(Role.ESTUDIANTE)))
@@ -338,7 +341,7 @@ class ReservationControllerTest {
     @Test
     void myReservationsOmitTheNamesWhenInventoryIsDown() throws Exception {
         when(listMyReservations.list(any(), org.mockito.ArgumentMatchers.eq(false))).thenReturn(new MyReservations(
-                List.of(new MyReservations.Item(spaceReservation(), null, false)), new Quota(1, 3), true));
+                List.of(new MyReservations.Item(spaceReservation(), null, false, true)), new Quota(1, 3), true));
 
         mockMvc.perform(get("/api/reservations/mine?vigentes=false").with(session(Role.ESTUDIANTE)))
                 .andExpect(status().isOk())

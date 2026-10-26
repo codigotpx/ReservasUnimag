@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -21,6 +22,7 @@ public record ReservationProperties(
         @NotNull Duration nextSlotStep,
         @Min(1) int maxQuota,
         @NotNull Duration maxSpaceDuration,
+        @NotNull @DurationMin(minutes = 1) Duration minCancellationNotice,
         @NotNull List<LocalDate> holidays,
         @NotNull List<String> resourceTypes,
         @Valid @NotNull Module1 module1,
@@ -51,11 +53,15 @@ public record ReservationProperties(
     public record Kafka(@Valid @NotNull Topic topic) {
 
         /** Nombres de los topics que publicamos; el prefijo es el módulo dueño del evento. */
-        public record Topic(@NotBlank String record) {
+        public record Topic(@NotBlank String record, @NotBlank String cancellation) {
         }
     }
 
-    /** El publicador que lleva {@code outbox_message} a Kafka (plan general, Mensajería). */
-    public record Outbox(boolean enabled, @NotNull Duration interval, @Min(1) int batch, @Min(1) int maxAttempts) {
+    /**
+     * El publicador que lleva {@code outbox_message} a Kafka (plan general, Mensajería). {@code alertAfter} es cuánto
+     * puede esperar un evento pendiente antes de advertirlo en el log, por debajo de los 30 minutos de UC11 SC-005.
+     */
+    public record Outbox(boolean enabled, @NotNull Duration interval, @Min(1) int batch, @Min(1) int maxAttempts,
+                         @NotNull Duration alertAfter) {
     }
 }

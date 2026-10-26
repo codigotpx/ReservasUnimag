@@ -46,9 +46,9 @@ class OutboxPublisherRetryIT {
         when(broken.send(anyString(), anyString(), anyString()))
                 .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("broker caído")));
         var props = new ReservationProperties(properties.pageSize(), properties.nextSlotStep(), properties.maxQuota(),
-                properties.maxSpaceDuration(), properties.holidays(), properties.resourceTypes(),
+                properties.maxSpaceDuration(), properties.minCancellationNotice(), properties.holidays(), properties.resourceTypes(),
                 properties.module1(), properties.module3(), properties.jwt(), properties.kafka(),
-                new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, maxAttempts));
+                new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, maxAttempts, Duration.ofMinutes(25)));
         return new OutboxPublisher(jdbc, broken, transactionManager, props);
     }
 

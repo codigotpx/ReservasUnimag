@@ -1,6 +1,7 @@
 package edu.unimagdalena.reservasunimag.domain.usecase.listreservations;
 
 import edu.unimagdalena.reservasunimag.domain.model.error.ExternalServiceUnavailableException;
+import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationPolicy;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.MyReservations;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Quota;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Reservation;
@@ -25,13 +26,15 @@ public class ListMyReservationsUseCase implements ListMyReservationsPort {
 
     private final ReservationRepositoryPort reservations;
     private final InventoryPort inventory;
+    private final CancellationPolicy cancellationPolicy;
     private final Clock clock;
     private final int maxQuota;
 
-    public ListMyReservationsUseCase(ReservationRepositoryPort reservations, InventoryPort inventory, Clock clock,
-                                     int maxQuota) {
+    public ListMyReservationsUseCase(ReservationRepositoryPort reservations, InventoryPort inventory,
+                                     CancellationPolicy cancellationPolicy, Clock clock, int maxQuota) {
         this.reservations = reservations;
         this.inventory = inventory;
+        this.cancellationPolicy = cancellationPolicy;
         this.clock = clock;
         this.maxQuota = maxQuota;
     }
@@ -56,7 +59,7 @@ public class ListMyReservationsUseCase implements ListMyReservationsPort {
 
         List<MyReservations.Item> items = mine.stream()
                 .map(reservation -> new MyReservations.Item(reservation, names.get(reservation.resourceId()),
-                        reservation.overdue(now)))
+                        reservation.overdue(now), cancellationPolicy.cancellableByHolder(reservation, now)))
                 .toList();
         return new MyReservations(items, new Quota(reservations.quotaOf(user.id(), now).used(), maxQuota),
                 catalogUnavailable);

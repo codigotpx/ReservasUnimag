@@ -1,7 +1,12 @@
 package edu.unimagdalena.reservasunimag.infrastructure.config;
 
+import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationPolicy;
+import edu.unimagdalena.reservasunimag.domain.port.in.CancelForMaintenancePort;
+import edu.unimagdalena.reservasunimag.domain.port.in.CancelReservationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CheckAvailabilityPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ListMyReservationsPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.QueryCancellationReportsPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.ReportCancellationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReportReservationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReserveResourcesPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CheckSanctionsPort;
@@ -10,6 +15,7 @@ import edu.unimagdalena.reservasunimag.domain.port.in.SearchResourcesPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.SignInPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.Clock;
 import edu.unimagdalena.reservasunimag.domain.port.out.BusinessCalendar;
+import edu.unimagdalena.reservasunimag.domain.port.out.CancellationReportRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.CompliancePort;
 import edu.unimagdalena.reservasunimag.domain.port.out.DenialRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.Module3NotifierPort;
@@ -21,9 +27,14 @@ import edu.unimagdalena.reservasunimag.domain.port.out.PasswordHasherPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.UserRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.usecase.auth.GetProfileUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.auth.SignInUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.cancelreservation.CancelForMaintenanceUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.cancelreservation.CancelReservationUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.cancelreservation.ReservationCanceller;
 import edu.unimagdalena.reservasunimag.domain.usecase.checkavailability.CheckAvailabilityUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.checksanctions.CheckSanctionsUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.listreservations.ListMyReservationsUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.reportcancellation.QueryCancellationReportsUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.reportcancellation.ReportCancellationUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reportreservation.ReportReservationUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reserveresources.DueDateCalculator;
 import edu.unimagdalena.reservasunimag.domain.usecase.reserveresources.ReserveResourcesUseCase;
@@ -92,8 +103,50 @@ class UseCasesConfig {
     }
 
     @Bean
+    CancellationPolicy cancellationPolicy(ReservationProperties properties) {
+        return new CancellationPolicy(properties.minCancellationNotice());
+    }
+
+    @Bean
     ListMyReservationsPort listMyReservationsPort(ReservationRepositoryPort reservations, InventoryPort inventory,
-                                                  Clock clock, ReservationProperties properties) {
-        return new ListMyReservationsUseCase(reservations, inventory, clock, properties.maxQuota());
+                                                  CancellationPolicy cancellationPolicy, Clock clock,
+                                                  ReservationProperties properties) {
+        return new ListMyReservationsUseCase(reservations, inventory, cancellationPolicy, clock,
+                properties.maxQuota());
+    }
+
+    @Bean
+    ReportCancellationPort reportCancellationPort(CancellationReportRepositoryPort reports,
+                                                  Module3NotifierPort notifier) {
+        return new ReportCancellationUseCase(reports, notifier);
+    }
+
+    @Bean
+    QueryCancellationReportsPort queryCancellationReportsPort(CancellationReportRepositoryPort reports,
+                                                              InventoryPort inventory) {
+        return new QueryCancellationReportsUseCase(reports, inventory);
+    }
+
+    @Bean
+    ReservationCanceller reservationCanceller(ReservationRepositoryPort reservations, UserRepositoryPort users,
+                                              InventoryPort inventory, ReportCancellationPort reportCancellation) {
+        return new ReservationCanceller(reservations, users, inventory, reportCancellation);
+    }
+
+    @Bean
+    CancelReservationPort cancelReservationPort(ReservationRepositoryPort reservations,
+                                                ReservationCanceller canceller, CancellationPolicy policy,
+                                                TransactionPort transactions, Clock clock,
+                                                ReservationProperties properties) {
+        return new CancelReservationUseCase(reservations, canceller, policy, transactions, clock,
+                properties.maxQuota());
+    }
+
+    @Bean
+    CancelForMaintenancePort cancelForMaintenancePort(ReservationRepositoryPort reservations,
+                                                      UserRepositoryPort users, InventoryPort inventory,
+                                                      ReservationCanceller canceller, TransactionPort transactions,
+                                                      Clock clock) {
+        return new CancelForMaintenanceUseCase(reservations, users, inventory, canceller, transactions, clock);
     }
 }

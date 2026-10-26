@@ -1,6 +1,8 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence;
 
 import edu.unimagdalena.reservasunimag.domain.model.error.ResourceTakenException;
+import edu.unimagdalena.reservasunimag.domain.model.reservation.Cancellation;
+import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationOrigin;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Loan;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.QuotaUsage;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Reservation;
@@ -18,6 +20,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -45,6 +48,14 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
               AND r.status = 'CONFIRMADA'
               AND ( (r.resource_category = 'ESPACIO' AND r.ends_at > :now)
                  OR (r.resource_category = 'ACTIVO' AND p.returned_at IS NULL) )
+            """;
+
+    private static final String SELECT = """
+            SELECT r.id, r.user_id, r.resource_id, r.resource_category, r.origin, r.status,
+                   r.starts_at, r.ends_at, r.created_at,
+                   p.term_business_days, p.picked_up_at, p.returned_at
+            FROM reservation r
+            LEFT JOIN loan p ON p.reservation_id = r.id
             """;
 
     private final JdbcClient jdbc;
@@ -114,18 +125,75 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
     @Override
     public List<Reservation> findByHolder(UUID userId, boolean onlyActive, Instant now) {
         String where = onlyActive ? ACTIVE : "r.user_id = :userId";
-        var statement = jdbc.sql("""
-                        SELECT r.id, r.user_id, r.resource_id, r.resource_category, r.origin, r.status,
-                               r.starts_at, r.ends_at, r.created_at,
-                               p.term_business_days, p.picked_up_at, p.returned_at
-                        FROM reservation r
-                        LEFT JOIN loan p ON p.reservation_id = r.id
-                        WHERE\s""" + where + " ORDER BY r.starts_at, r.id")
+        var statement = jdbc.sql(SELECT + "WHERE " + where + " ORDER BY r.starts_at, r.id")
                 .param("userId", userId);
         if (onlyActive) {
             statement = statement.param("now", utc(now));
         }
         return statement.query(ReservationPersistenceAdapter::toReservation).list();
+    }
+
+    @Override
+    public Optional<Reservation> findById(UUID id) {
+        return jdbc.sql(SELECT + "WHERE r.id = :id").param("id", id)
+                .query(ReservationPersistenceAdapter::toReservation).optional();
+    }
+
+    @Override
+    public Optional<Reservation> lockById(UUID id) {
+        // FOR UPDATE OF r: el préstamo viene por LEFT JOIN, y PostgreSQL no bloquea el lado que puede ser nulo.
+        return jdbc.sql(SELECT + "WHERE r.id = :id FOR UPDATE OF r").param("id", id)
+                .query(ReservationPersistenceAdapter::toReservation).optional();
+    }
+
+    @Override
+    public Optional<Cancellation> findCancellation(UUID id) {
+        return jdbc.sql("SELECT status, cancellation_reason, cancelled_at FROM reservation WHERE id = :id")
+                .param("id", id)
+                .query((row, n) -> {
+                    ReservationStatus status = ReservationStatus.valueOf(row.getString("status"));
+                    Instant cancelledAt = instant(row, "cancelled_at");
+                    if (!status.isCancellation() || cancelledAt == null) {
+                        return Optional.<Cancellation>empty();
+                    }
+                    // cancellation_reason guarda el origen; una fila antigua sin él se deduce del estado.
+                    String origin = row.getString("cancellation_reason");
+                    return Optional.of(new Cancellation(origin == null ? CancellationOrigin.of(status)
+                            : CancellationOrigin.valueOf(origin), null, null, cancelledAt));
+                })
+                .optional()
+                .flatMap(cancellation -> cancellation);
+    }
+
+    @Override
+    public void markCancelled(UUID id, Cancellation cancellation) {
+        int updated = jdbc.sql("""
+                        UPDATE reservation
+                        SET status = :status, cancellation_reason = :origin, cancelled_at = :at, version = version + 1
+                        WHERE id = :id AND status = 'CONFIRMADA'""")
+                .param("status", cancellation.status().name())
+                .param("origin", cancellation.origin().name())
+                .param("at", utc(cancellation.cancelledAt()))
+                .param("id", id)
+                .update();
+        if (updated != 1) {
+            throw new IllegalStateException("la reserva " + id + " no estaba confirmada al cancelarla");
+        }
+    }
+
+    @Override
+    public List<Reservation> findUpcomingByResource(String resourceId, Instant now) {
+        return jdbc.sql(SELECT + """
+                        WHERE r.resource_id = :resourceId
+                          AND r.origin = 'ESTUDIANTIL'
+                          AND r.status = 'CONFIRMADA'
+                          AND ( r.starts_at > :now
+                             OR (p.picked_up_at IS NOT NULL AND p.returned_at IS NULL) )
+                        ORDER BY r.starts_at, r.id""")
+                .param("resourceId", resourceId)
+                .param("now", utc(now))
+                .query(ReservationPersistenceAdapter::toReservation)
+                .list();
     }
 
     private static Reservation toReservation(ResultSet row, int rowNumber) throws SQLException {
