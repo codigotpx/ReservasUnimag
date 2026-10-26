@@ -11,6 +11,8 @@ public enum NoShowRejection {
     RESERVATION_CANCELLED,
     /** El activo ya se recogió: la persona sí se presentó. */
     ALREADY_PICKED_UP,
+    /** Se registró la llegada al espacio: la persona sí se presentó (UC7). */
+    USE_ALREADY_STARTED,
     /** El activo ya se devolvió: no se puede estar ausente de algo que se usó. */
     ALREADY_RETURNED,
     /** La reserva ya está cerrada por otra vía, por ejemplo una ausencia que luego se anuló. */

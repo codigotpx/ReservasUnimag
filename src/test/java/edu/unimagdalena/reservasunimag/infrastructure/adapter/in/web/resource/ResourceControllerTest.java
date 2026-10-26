@@ -76,6 +76,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "reservations.kafka.topic.no-show-ack=module2.reservation.no-show-ack.v1",
         "reservations.kafka.topic.check-out=module3.reservation.check-out.v1",
         "reservations.kafka.topic.check-out-ack=module2.reservation.check-out-ack.v1",
+        "reservations.kafka.topic.resource-status=module2.resource.status.v1",
         "reservations.outbox.enabled=false",
         "reservations.outbox.interval=5s",
         "reservations.outbox.batch=50",

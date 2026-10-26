@@ -43,7 +43,7 @@ class CheckOutPersistenceAdapter implements CheckOutRepositoryPort {
 
     private static final String PENDING_SELECT = """
             SELECT r.id, r.user_id, r.resource_id, r.resource_category, r.origin, r.status,
-                   r.starts_at, r.ends_at, r.created_at,
+                   r.starts_at, r.ends_at, r.created_at, r.use_started_at,
                    p.term_business_days, p.picked_up_at, p.returned_at,
                    u.code AS holder_code, u.name AS holder_name, u.role AS holder_role
             FROM reservation r
@@ -123,7 +123,8 @@ class CheckOutPersistenceAdapter implements CheckOutRepositoryPort {
                 .param("offset", page.offset())
                 .query(CheckOutPersistenceAdapter::toPending)
                 .list();
-        return new PendingReturns(new Page<>(items, page.page(), page.size(), ((Number) counts.get("total")).longValue()),
+        long total = ((Number) counts.get("total")).longValue();
+        return new PendingReturns(new Page<>(items, page.page(), page.size(), total),
                 ((Number) counts.get("near")).longValue(), lossThreshold, now);
     }
 
@@ -179,7 +180,8 @@ class CheckOutPersistenceAdapter implements CheckOutRepositoryPort {
         Reservation reservation = new Reservation(
                 row.getObject("id", UUID.class), userId, row.getString("resource_id"), category,
                 ReservationOrigin.valueOf(row.getString("origin")), ReservationStatus.valueOf(row.getString("status")),
-                instant(row, "starts_at"), instant(row, "ends_at"), instant(row, "created_at"), loan);
+                instant(row, "starts_at"), instant(row, "ends_at"), instant(row, "created_at"), loan,
+                instant(row, "use_started_at"));
         ReservationHolder holder = userId == null ? null : new ReservationHolder(userId, row.getString("holder_code"),
                 row.getString("holder_name"), Role.valueOf(row.getString("holder_role")));
         return new PendingCheckOut(reservation, holder, null);

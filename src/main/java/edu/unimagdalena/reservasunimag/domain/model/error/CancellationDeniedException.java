@@ -18,7 +18,9 @@ public class CancellationDeniedException extends RuntimeException {
         /** El activo ya se recogió: se devuelve, no se cancela (UC4 FR-008). */
         ASSET_ALREADY_PICKED_UP,
         /** La reserva ya terminó. */
-        RESERVATION_FINISHED
+        RESERVATION_FINISHED,
+        /** Ya se registró la llegada: la reserva está en uso (UC7). */
+        USE_STARTED
     }
 
     private final Reason reason;
@@ -61,6 +63,12 @@ public class CancellationDeniedException extends RuntimeException {
                 "Ya tienes este activo en tu poder, así que no se cancela: hay que devolverlo. El préstamo se cierra "
                         + "cuando se registre la devolución.",
                 Map.of("reason", Reason.ASSET_ALREADY_PICKED_UP.name(), "pickedUpAt", pickedUpAt));
+    }
+
+    public static CancellationDeniedException useStarted(java.time.Instant useStartedAt) {
+        return new CancellationDeniedException(Reason.USE_STARTED,
+                "Ya registraste tu llegada y la reserva está en uso, así que no se cancela.",
+                Map.of("reason", Reason.USE_STARTED.name(), "useStartedAt", useStartedAt));
     }
 
     public static CancellationDeniedException finished() {

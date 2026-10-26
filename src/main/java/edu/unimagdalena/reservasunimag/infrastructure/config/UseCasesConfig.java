@@ -8,6 +8,9 @@ import edu.unimagdalena.reservasunimag.domain.port.in.CheckAvailabilityPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ListMyReservationsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryCancellationReportsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryPendingCheckOutsPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.QueryStatusChangesPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.RegisterUseStartedPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.UpdateResourceStatusPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReceiveCheckOutPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReceiveNoShowPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReportCancellationPort;
@@ -29,6 +32,8 @@ import edu.unimagdalena.reservasunimag.domain.port.out.Module3NotifierPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.ReservationRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.TransactionPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.InventoryPort;
+import edu.unimagdalena.reservasunimag.domain.port.out.InventoryStatusNotifierPort;
+import edu.unimagdalena.reservasunimag.domain.port.out.StatusChangeRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.OccupancyRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.PasswordHasherPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.UserRepositoryPort;
@@ -52,6 +57,9 @@ import edu.unimagdalena.reservasunimag.domain.usecase.reserveresources.DueDateCa
 import edu.unimagdalena.reservasunimag.domain.usecase.reserveresources.ReserveResourcesUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.searchresources.NextFreeSlotFinder;
 import edu.unimagdalena.reservasunimag.domain.usecase.searchresources.SearchResourcesUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.updatestatus.QueryStatusChangesUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.updatestatus.RegisterUseStartedUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.updatestatus.UpdateResourceStatusUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -98,6 +106,29 @@ class UseCasesConfig {
     }
 
     @Bean
+    UpdateResourceStatusPort updateResourceStatusPort(StatusChangeRepositoryPort statusChanges,
+                                                      InventoryStatusNotifierPort inventoryNotifier, Clock clock,
+                                                      ReservationProperties properties) {
+        return new UpdateResourceStatusUseCase(statusChanges, inventoryNotifier, clock,
+                properties.module1().notifyUseStarted());
+    }
+
+    @Bean
+    RegisterUseStartedPort registerUseStartedPort(ReservationRepositoryPort reservations,
+                                                  StatusChangeRepositoryPort statusChanges,
+                                                  UpdateResourceStatusPort updateStatus, InventoryPort inventory,
+                                                  TransactionPort transactions, Clock clock,
+                                                  ReservationProperties properties) {
+        return new RegisterUseStartedUseCase(reservations, statusChanges, updateStatus, inventory, transactions, clock,
+                properties.minCancellationNotice());
+    }
+
+    @Bean
+    QueryStatusChangesPort queryStatusChangesPort(StatusChangeRepositoryPort statusChanges, InventoryPort inventory) {
+        return new QueryStatusChangesUseCase(statusChanges, inventory);
+    }
+
+    @Bean
     DueDateCalculator dueDateCalculator(BusinessCalendar calendar) {
         return new DueDateCalculator(calendar);
     }
@@ -107,10 +138,11 @@ class UseCasesConfig {
                                               CheckAvailabilityPort availability,
                                               ReservationRepositoryPort reservations, DenialRepositoryPort denials,
                                               UserRepositoryPort users, ReportReservationPort reportReservation,
-                                              DueDateCalculator dueDates, TransactionPort transactions, Clock clock,
+                                              UpdateResourceStatusPort updateStatus, DueDateCalculator dueDates,
+                                              TransactionPort transactions, Clock clock,
                                               ReservationProperties properties) {
         return new ReserveResourcesUseCase(inventory, sanctions, availability, reservations, denials, users,
-                reportReservation, dueDates, transactions, clock, properties.maxQuota(),
+                reportReservation, updateStatus, dueDates, transactions, clock, properties.maxQuota(),
                 properties.maxSpaceDuration());
     }
 
@@ -131,9 +163,9 @@ class UseCasesConfig {
     @Bean
     ReceiveNoShowPort receiveNoShowPort(ReservationRepositoryPort reservations, AbsenceRepositoryPort absences,
                                         UserRepositoryPort users, Module3NotifierPort notifier,
-                                        TransactionPort transactions, Clock clock,
-                                        ReservationProperties properties) {
-        return new ReceiveNoShowUseCase(reservations, absences, users, notifier,
+                                        UpdateResourceStatusPort updateStatus, TransactionPort transactions,
+                                        Clock clock, ReservationProperties properties) {
+        return new ReceiveNoShowUseCase(reservations, absences, users, notifier, updateStatus,
                 new NoShowPolicy(properties.noShowGrace()), transactions, clock);
     }
 
@@ -141,9 +173,10 @@ class UseCasesConfig {
     ReceiveCheckOutPort receiveCheckOutPort(ReservationRepositoryPort reservations, CheckOutRepositoryPort checkOuts,
                                             AbsenceRepositoryPort absences,
                                             CancelForMaintenancePort cancelForMaintenance,
-                                            Module3NotifierPort notifier, TransactionPort transactions, Clock clock) {
+                                            Module3NotifierPort notifier, UpdateResourceStatusPort updateStatus,
+                                            TransactionPort transactions, Clock clock) {
         return new ReceiveCheckOutUseCase(reservations, checkOuts, new CheckOutValidator(absences),
-                cancelForMaintenance, notifier, transactions, clock);
+                cancelForMaintenance, notifier, updateStatus, transactions, clock);
     }
 
     @Bean
@@ -171,8 +204,9 @@ class UseCasesConfig {
 
     @Bean
     ReservationCanceller reservationCanceller(ReservationRepositoryPort reservations, UserRepositoryPort users,
-                                              InventoryPort inventory, ReportCancellationPort reportCancellation) {
-        return new ReservationCanceller(reservations, users, inventory, reportCancellation);
+                                              InventoryPort inventory, ReportCancellationPort reportCancellation,
+                                              UpdateResourceStatusPort updateStatus) {
+        return new ReservationCanceller(reservations, users, inventory, reportCancellation, updateStatus);
     }
 
     @Bean

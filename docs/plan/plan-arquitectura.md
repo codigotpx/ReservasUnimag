@@ -433,7 +433,7 @@ El bloqueo académico es una reserva con `origin = 'ACADEMICO'`, porque cada cla
 | reason | varchar | `RESERVATION_CONFIRMED`, `ACADEMIC_BLOCK_CREATED`, `USE_STARTED`, `RESERVATION_CANCELLED`, `NO_SHOW_REGISTERED`, `CHECK_OUT_RECEIVED`, `LOAN_DECLARED_LOST` |
 | changed_at | timestamptz | |
 | notified_status | varchar | `NOT_SENT`, `PENDING`, `SENT`, `FAILED`; solo `USE_STARTED` nace `PENDING` |
-| outbox_message_id | uuid FK, nulo | el aviso al Módulo 1, si lo hubo |
+| outbox_message_id | uuid, nulo | el aviso al Módulo 1, si lo hubo; sin FK, porque la *outbox* se purga y el historial se queda |
 
 **`denial`** (UC2)
 | Columna | Tipo | Nota |

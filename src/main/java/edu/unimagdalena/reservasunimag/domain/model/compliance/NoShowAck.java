@@ -74,9 +74,11 @@ public record NoShowAck(
                 default -> "La reserva la canceló su titular a tiempo, así que no corresponde ninguna ausencia.";
             };
             case ALREADY_PICKED_UP -> "El activo ya se recogió: la persona sí se presentó.";
+            case USE_ALREADY_STARTED -> "Se registró la llegada de la persona: la reserva está en uso.";
             case ALREADY_RETURNED -> "El activo ya se devolvió: la persona sí lo usó.";
             case RESERVATION_FINISHED -> "La reserva ya está cerrada, así que no corresponde registrar una ausencia.";
-            case ACADEMIC_BLOCK -> "La reserva es un bloqueo académico y no tiene titular al que anotarle una ausencia.";
+            case ACADEMIC_BLOCK ->
+                    "La reserva es un bloqueo académico y no tiene titular al que anotarle una ausencia.";
             case TOO_EARLY -> throw new IllegalStateException();
         };
     }

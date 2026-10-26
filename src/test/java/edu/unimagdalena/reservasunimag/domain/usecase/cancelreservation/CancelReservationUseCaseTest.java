@@ -28,6 +28,7 @@ import edu.unimagdalena.reservasunimag.support.CancellationFakes.InMemoryCancell
 import edu.unimagdalena.reservasunimag.support.CancellationFakes.InMemoryReservations;
 import edu.unimagdalena.reservasunimag.support.CancellationFakes.RecordingNotifier;
 import edu.unimagdalena.reservasunimag.support.CancellationFakes.RollbackTransactions;
+import edu.unimagdalena.reservasunimag.support.RecordingStatusUpdates;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -93,8 +94,9 @@ class CancelReservationUseCaseTest {
     private final InMemoryCancellationReports reports = new InMemoryCancellationReports();
     private final RecordingNotifier notifier = new RecordingNotifier();
     private final RollbackTransactions transactions = new RollbackTransactions(reservations, reports, notifier);
+    private final RecordingStatusUpdates statusUpdates = new RecordingStatusUpdates();
     private final ReservationCanceller canceller = new ReservationCanceller(reservations, users, inventory,
-            new ReportCancellationUseCase(reports, notifier));
+            new ReportCancellationUseCase(reports, notifier), statusUpdates);
     private final CancelReservationUseCase useCase = new CancelReservationUseCase(reservations, canceller,
             new CancellationPolicy(Duration.ofMinutes(10)), transactions, CLOCK, 3);
 
@@ -326,5 +328,20 @@ class CancelReservationUseCaseTest {
         assertThat(again.alreadyCancelled()).isTrue();
         assertThat(again.reservation().status()).isEqualTo(ReservationStatus.CANCELADA);
         assertThat(notifier.cancelled).hasSize(1);
+    }
+
+    @Test
+    void everyCancellationGoesThroughUc7AndRejectedOnesDoNot() {
+        Reservation reservation = storeSpace(STUDENT.id(), 10, 12);
+        Reservation late = storeSpace(STUDENT.id(), 9, 10);
+
+        useCase.cancelByHolder(STUDENT, reservation.id());
+        useCase.cancelByHolder(STUDENT, reservation.id());
+        assertThatThrownBy(() -> useCase.cancelByHolder(STUDENT, late.id()))
+                .isInstanceOf(CancellationDeniedException.class);
+
+        assertThat(statusUpdates.reasons()).containsExactly(
+                edu.unimagdalena.reservasunimag.domain.model.resource.StatusChangeReason.RESERVATION_CANCELLED);
+        assertThat(statusUpdates.calls.get(0).reservation().status()).isEqualTo(ReservationStatus.CANCELADA);
     }
 }

@@ -1,0 +1,29 @@
+{
+  "resourceId": "ESP-0107",
+  "resourceName": "Sala de Estudio 3",
+  "changes": [
+    {
+      "id": "b8f3c107-4d92-4a56-9e01-2c7d8b5f3a64",
+      "reservationId": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+      "occupancy": { "start": "2026-09-01T10:00:00-05:00", "end": "2026-09-01T12:00:00-05:00" },
+      "previousStatusModule2": "DISPONIBLE",
+      "newStatus": "RESERVADO",
+      "reason": "RESERVATION_CONFIRMED",
+      "changedAt": "2026-08-30T09:14:22-05:00",
+      "notifiedStatus": "NOT_SENT"
+    },
+    {
+      "id": "e4c7b019-2f68-4a35-91db-7a0e5c3f2b91",
+      "reservationId": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+      "occupancy": { "start": "2026-09-01T10:00:00-05:00", "end": "2026-09-01T12:00:00-05:00" },
+      "previousStatusModule2": "RESERVADO",
+      "newStatus": "EN_USO",
+      "reason": "USE_STARTED",
+      "changedAt": "2026-09-01T10:03:51-05:00",
+      "notifiedStatus": "SENT",
+      "outboxMessageId": "c9b2f536-8a41-4d07-95ec-3f1a0d7b2e58"
+    }
+  ],
+  "pagination": { "page": 1, "pageSize": 20, "totalPages": 1, "total": 2 },
+  "note": "El estado operativo del recurso lo lleva el Módulo 1. De los tres que son suyos, el único que sale de este historial es EN_USO; el regreso a DISPONIBLE y el mantenimiento se los reporta el Módulo 3."
+}

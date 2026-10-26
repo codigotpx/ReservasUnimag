@@ -9,8 +9,10 @@ import edu.unimagdalena.reservasunimag.domain.model.error.ReservationNotFoundExc
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Reservation;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationOrigin;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationStatus;
+import edu.unimagdalena.reservasunimag.domain.model.resource.StatusChangeReason;
 import edu.unimagdalena.reservasunimag.domain.model.user.User;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReceiveNoShowPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.UpdateResourceStatusPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.AbsenceRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.Clock;
 import edu.unimagdalena.reservasunimag.domain.port.out.Module3NotifierPort;
@@ -33,17 +35,20 @@ public class ReceiveNoShowUseCase implements ReceiveNoShowPort {
     private final AbsenceRepositoryPort absences;
     private final UserRepositoryPort users;
     private final Module3NotifierPort notifier;
+    private final UpdateResourceStatusPort updateStatus;
     private final NoShowPolicy policy;
     private final TransactionPort transactions;
     private final Clock clock;
 
     public ReceiveNoShowUseCase(ReservationRepositoryPort reservations, AbsenceRepositoryPort absences,
-                                UserRepositoryPort users, Module3NotifierPort notifier, NoShowPolicy policy,
+                                UserRepositoryPort users, Module3NotifierPort notifier,
+                                UpdateResourceStatusPort updateStatus, NoShowPolicy policy,
                                 TransactionPort transactions, Clock clock) {
         this.reservations = reservations;
         this.absences = absences;
         this.users = users;
         this.notifier = notifier;
+        this.updateStatus = updateStatus;
         this.policy = policy;
         this.transactions = transactions;
         this.clock = clock;
@@ -80,6 +85,7 @@ public class ReceiveNoShowUseCase implements ReceiveNoShowPort {
                 now.isBefore(reservation.endsAt()));
         absences.insert(absence);
         reservations.markFinished(reservation.id());
+        updateStatus.record(reservation, StatusChangeReason.NO_SHOW_REGISTERED);
         return NoShowAck.accepted(reservation, report.sourceEventId(), absence, holderCode(reservation), false, now);
     }
 
@@ -98,6 +104,9 @@ public class ReceiveNoShowUseCase implements ReceiveNoShowPort {
         }
         if (reservation.inHands()) {
             return Optional.of(NoShowRejection.ALREADY_PICKED_UP);
+        }
+        if (reservation.useStarted()) {
+            return Optional.of(NoShowRejection.USE_ALREADY_STARTED);
         }
         return Optional.empty();
     }

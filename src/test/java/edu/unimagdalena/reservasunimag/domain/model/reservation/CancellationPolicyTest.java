@@ -128,4 +128,14 @@ class CancellationPolicyTest {
         assertThat(cancelled.endsAt()).isEqualTo(confirmed.endsAt());
         assertThatThrownBy(() -> cancelled.cancel(CancellationOrigin.HOLDER)).isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    void oncePersonRegisteredTheArrivalTheReservationIsNotCancellable() {
+        Reservation started = space().startUse(at(9, 50));
+
+        assertThat(policy.cancellableByHolder(started, at(9, 50))).isFalse();
+        assertThatThrownBy(() -> policy.requireOpen(started))
+                .isInstanceOfSatisfying(CancellationDeniedException.class,
+                        denied -> assertThat(denied.reason()).isEqualTo(Reason.USE_STARTED));
+    }
 }

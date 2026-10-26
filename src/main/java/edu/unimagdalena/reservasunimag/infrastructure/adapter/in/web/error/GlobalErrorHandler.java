@@ -13,6 +13,7 @@ import edu.unimagdalena.reservasunimag.domain.model.error.ReservationDeniedExcep
 import edu.unimagdalena.reservasunimag.domain.model.error.ReservationNotFoundException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ReservationShapeException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ResourceNotFoundException;
+import edu.unimagdalena.reservasunimag.domain.model.error.UseStartRejectedException;
 import edu.unimagdalena.reservasunimag.infrastructure.time.IsoTimes;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
@@ -108,6 +109,16 @@ class GlobalErrorHandler extends ResponseEntityExceptionHandler {
     ProblemDetail reservationNotFound() {
         return problem(HttpStatus.NOT_FOUND, "reservation-not-found", "Reserva no encontrada",
                 "La reserva no existe.");
+    }
+
+    /** UC7: USO-001 o USO-002, con lo que la persona necesita para entender por qué. */
+    @ExceptionHandler(UseStartRejectedException.class)
+    ProblemDetail useStartRejected(UseStartRejectedException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "use-start-rejected",
+                "No se pudo registrar el inicio de uso", exception.getMessage());
+        problem.setProperty("code", exception.code().code());
+        exception.extensions().forEach((name, value) -> problem.setProperty(name, formatted(value)));
+        return problem;
     }
 
     @ExceptionHandler(ReservationAlreadyClosedException.class)

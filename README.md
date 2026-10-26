@@ -94,11 +94,16 @@ autenticación.
 
 ### Kafka y la outbox
 
-Al reservar, la ficha para el Módulo 3 se guarda en la tabla `outbox_message` dentro de la misma
-transacción que la reserva, y un publicador (`@Scheduled`, cada 5 s) la lleva al topic
-`module2.reservation.record.v1`. **Reservar funciona aunque Kafka esté caído**: los eventos quedan
-`PENDING` y salen cuando el broker vuelve, con espera creciente entre reintentos (5 s, 30 s, 2 min,
-10 min) hasta quedar `FAILED` tras `reservations.outbox.max-attempts`.
+Todo lo que sale del módulo —la ficha de la reserva, la cancelación, los acuses al Módulo 3 y el
+inicio de uso al Módulo 1— se guarda en la tabla `outbox_message` dentro de la misma transacción que
+la operación, y un publicador (`@Scheduled`, cada 5 s) lo lleva a su topic. **Reservar, cancelar y
+registrar una llegada funcionan aunque Kafka esté caído**: los eventos quedan `PENDING` y salen
+cuando el broker vuelve, con espera creciente entre reintentos (5 s, 30 s, 2 min, 10 min) hasta
+quedar `FAILED` tras `reservations.outbox.max-attempts`.
+
+Lo que llega del Módulo 3 (la no asistencia y el check-out) se consume con una *inbox*
+(`inbox_message`) que descarta los eventos repetidos. Un evento ilegible, o que apunta a una reserva
+que no existe, va a `module2.dlt.<topic de origen>` con la causa en las cabeceras.
 
 Para tener un broker en desarrollo:
 
@@ -130,6 +135,20 @@ Compilar el empaquetado:
 ```
 
 En Windows, usar `gradlew.bat` en lugar de `./gradlew`.
+
+### El estado de un recurso no es una columna
+
+El Módulo 2 no guarda en qué estado está un recurso: lo deduce de las ocupaciones que tiene
+escritas. Una reserva `CONFIRMADA` que cruza la franja es `RESERVADO` (o `BLOQUEO_ACADEMICO` si es
+una clase), y cuando la franja termina el recurso vuelve a estar libre sin que corra ninguna tarea.
+Un préstamo entregado sigue ocupando hasta su check-out, aunque esté vencido. `EN_MANTENIMIENTO` lo
+dice el Módulo 1.
+
+Cada cambio de ocupación deja una fila en `status_change`, que se consulta con
+`GET /api/resources/{resourceId}/status-changes`. Lo único que le avisamos al Módulo 1 es el **inicio
+de uso** (`module2.resource.status.v1`): cuando la persona registra su llegada o cuando una clase
+llega a su hora. Las dos válvulas para apagarlo son `reservations.module1.notify-use-started` y
+`reservations.academic.use-start-enabled`.
 
 ## Estructura del repositorio
 

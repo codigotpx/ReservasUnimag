@@ -19,7 +19,11 @@ public enum DenialCode {
      * Declarado pero sin emitir. El consolidado lo asigna a "no es el titular", y ese caso se responde 404 para no
      * confirmar que la reserva existe (plan de UC4, Decisiones de diseño).
      */
-    CAN_002("CAN-002");
+    CAN_002("CAN-002"),
+    /** La reserva no admite inicio de uso: no está confirmada o no tiene titular (propuesta del plan de UC7). */
+    USO_001("USO-001"),
+    /** El inicio de uso llega fuera de su ventana (propuesta del plan de UC7). */
+    USO_002("USO-002");
 
     private final String code;
 

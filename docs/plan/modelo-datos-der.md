@@ -98,7 +98,7 @@ erDiagram
         varchar     reason                      "RESERVATION_CONFIRMED | ACADEMIC_BLOCK_CREATED | USE_STARTED | RESERVATION_CANCELLED | NO_SHOW_REGISTERED | CHECK_OUT_RECEIVED | LOAN_DECLARED_LOST"
         timestamptz changed_at
         varchar     notified_status             "NOT_SENT | PENDING | SENT | FAILED"
-        uuid        outbox_message_id       FK  "nulo; el aviso al Modulo 1, si lo hubo"
+        uuid        outbox_message_id           "nulo; el aviso al Modulo 1, si lo hubo; sin FK"
     }
 
     denial {

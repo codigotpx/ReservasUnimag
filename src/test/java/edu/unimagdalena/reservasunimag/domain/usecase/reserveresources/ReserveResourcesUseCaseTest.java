@@ -177,7 +177,20 @@ class ReserveResourcesUseCaseTest {
         public void markReturned(UUID id, Instant returnedAt) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public boolean markUseStarted(UUID id, Instant at) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<Reservation> findAcademicBlocksToStart(Instant now) {
+            throw new UnsupportedOperationException();
+        }
     };
+
+    private final edu.unimagdalena.reservasunimag.support.RecordingStatusUpdates statusUpdates =
+            new edu.unimagdalena.reservasunimag.support.RecordingStatusUpdates();
 
     private final Module3NotifierPort notifier = new Module3NotifierPort() {
         @Override
@@ -209,6 +222,7 @@ class ReserveResourcesUseCaseTest {
             denials::add,
             new FixedUsers(),
             new ReportReservationUseCase(notifier, CLOCK),
+            statusUpdates,
             new DueDateCalculator(date -> date.getDayOfWeek() != DayOfWeek.SATURDAY
                     && date.getDayOfWeek() != DayOfWeek.SUNDAY),
             new CountingTransactions(),
@@ -273,6 +287,8 @@ class ReserveResourcesUseCaseTest {
         assertThat(reservation.userId()).isEqualTo(STUDENT.id());
         assertThat(reservation.startsAt()).isEqualTo(at(10, 0));
         assertThat(reservation.endsAt()).isEqualTo(at(12, 0));
+        assertThat(statusUpdates.reasons()).containsExactly(
+                edu.unimagdalena.reservasunimag.domain.model.resource.StatusChangeReason.RESERVATION_CONFIRMED);
         assertThat(reservation.loan()).isNull();
         assertThat(result.resource().name()).isEqualTo("Sala de Estudio 3");
         assertThat(result.quota().used()).isEqualTo(3);
@@ -444,6 +460,7 @@ class ReserveResourcesUseCaseTest {
         assertThat(denial.extensions()).containsOnlyKeys("resourceId");
         assertThat(reported).isEmpty();
         assertThat(stored).isEmpty();
+        assertThat(statusUpdates.calls).isEmpty();
     }
 
     @Test

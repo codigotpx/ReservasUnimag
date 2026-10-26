@@ -367,6 +367,37 @@ Decisiones tomadas al implementar que el plan no tenía:
 
 ---
 
+## P-24 — El inicio de uso: lo que hay que acordar y lo que se decidió al implementar UC7
+
+**Estado**: abierto. Detectado al implementar UC7 (2026-10-26).
+
+UC7 publica `ResourceUseStarted` en `module2.resource.status.v1` (plan de UC7, Contratos §4). Es lo único que le mandamos al Módulo 1. Hay que acordar con su equipo:
+
+- **El topic y el JSON**, y que **deduplique por `eventId`**: la entrega es *at-least-once*.
+- **Que cierre el uso por su cuenta con `useEndsAt`** en los espacios. En un activo no viaja, porque su uso termina con la devolución que le reporta el Módulo 3.
+
+Sigue abierto **P-02**: por dónde entra el registro de que una persona llegó. Mientras tanto, el titular lo registra desde la app con `POST /api/reservations/{reservationId}/start-use`. Las clases no lo necesitan: empiezan solas a su hora, con una tarea que corre cada minuto.
+
+Decisiones tomadas al implementar que el plan no fijaba o que cambian lo que decía:
+
+- **`USO-001` y `USO-002`** son códigos nuevos, propuestos por el plan. Hay que añadirlos al diccionario consolidado de `spec-modulo2.md`.
+- **Quien no es titular recibe `404`, no `403`**, como al cancelar (UC4): un `403` confirmaría que la reserva existe.
+- **La ventana para registrar la llegada es el mismo plazo de cancelación** (`reservations.min-cancellation-notice`, 10 minutos): no hay un tercer umbral que mantener.
+- **Una reserva con la llegada registrada ya no admite ausencia** (nuevo rechazo `USE_ALREADY_STARTED` en el acuse de UC9) **ni cancelación** (`CAN-001` con `reason: USE_STARTED`). La cancelación por mantenimiento se la salta, igual que a un activo en manos de alguien.
+- **SC-005 se cumple por la *outbox***: el aviso es una fila más en la misma transacción, así que una caída del Módulo 1 o de Kafka no afecta a la operación. No hay prueba con el adaptador lanzando a propósito, porque un fallo al escribir en la base deshace la transacción entera, que es lo correcto.
+
+**Qué preguntar**: al Módulo 1, el contrato del topic; al equipo, P-02 y los dos códigos nuevos.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2.md` | Diccionario de errores | Añadir `USO-001` y `USO-002`. |
+| `docs/plan/contratos-integracion.md` | Lo que publicamos | El estado de `module2.resource.status.v1` cuando responda el Módulo 1. |
+| `docs/plan/plan-uc7-actualizar-estado-recursos.md` | Contratos §3 | El `404` en lugar del `403`. |
+
+---
+
 ## Resueltos
 
 - **El Módulo 2 le sigue comunicando el `EN_USO` al Módulo 1** — se cierra el primer punto de **P-20** y con él la marca de clarificación de UC7. El Módulo 3 le reporta directamente al Módulo 1 los cambios físicos que constata en el sitio, pero el inicio de uso es un hecho de la reserva y es nuestro: cuando la persona llega y empieza a usar lo que apartó, el Módulo 2 se lo comunica al Módulo 1 para que pase el recurso a `EN_USO`. El regreso a `DISPONIBLE` y la entrada a `EN_MANTENIMIENTO` no salen de aquí. La flecha `Actualizar estado de los recursos` → Módulo 1 del diagrama se queda, con ese único contenido. Se reescribió UC7 entero: contexto, actores, tabla de estados con su dueño, user story, los seis escenarios, los edge cases, FR-001 a FR-005 y FR-007 a FR-011, el nuevo FR-012 que prohíbe enviarle cualquier otro estado, las entidades y SC-001, SC-003 y SC-004. Lo que falta ahora es solo acordar el medio y los datos del aviso con el equipo del Módulo 1. *(2026-10-05)*

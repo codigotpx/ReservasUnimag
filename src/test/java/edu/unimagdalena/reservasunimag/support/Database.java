@@ -12,6 +12,7 @@ public final class Database {
 
     /** Borra todo lo que escriben las reservas; deja los usuarios sembrados del perfil local. */
     public static void clean(JdbcClient jdbc) {
+        jdbc.sql("DELETE FROM status_change").update();
         jdbc.sql("DELETE FROM check_out").update();
         jdbc.sql("DELETE FROM absence").update();
         jdbc.sql("DELETE FROM inbox_message").update();
@@ -102,6 +103,20 @@ public final class Database {
                 .param("id", id)
                 .param("pickedUp", pickedUp)
                 .param("ago", startedDaysAgo)
+                .update();
+        return id;
+    }
+
+    /** Un bloqueo académico confirmado que empezó hace {@code minutesAgo} minutos y dura dos horas; devuelve su id. */
+    public static UUID academicBlock(JdbcClient jdbc, String resourceId, int minutesAgo) {
+        UUID id = UUID.randomUUID();
+        jdbc.sql("""
+                        INSERT INTO reservation (id, resource_id, resource_category, origin, status, starts_at, ends_at)
+                        VALUES (:id, :resource, 'ESPACIO', 'ACADEMICO', 'CONFIRMADA',
+                                now() - make_interval(mins => :ago), now() - make_interval(mins => :ago) + interval '2 hours')""")
+                .param("id", id)
+                .param("resource", resourceId)
+                .param("ago", minutesAgo)
                 .update();
         return id;
     }

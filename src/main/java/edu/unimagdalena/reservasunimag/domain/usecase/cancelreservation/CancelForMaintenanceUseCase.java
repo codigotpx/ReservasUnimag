@@ -31,6 +31,7 @@ import java.util.Optional;
 public class CancelForMaintenanceUseCase implements CancelForMaintenancePort {
 
     static final String ASSET_ALREADY_PICKED_UP = "ASSET_ALREADY_PICKED_UP";
+    static final String USE_STARTED = "USE_STARTED";
 
     private final ReservationRepositoryPort reservations;
     private final UserRepositoryPort users;
@@ -58,8 +59,9 @@ public class CancelForMaintenanceUseCase implements CancelForMaintenancePort {
         List<Affected> affected = new ArrayList<>();
         List<Skipped> skipped = new ArrayList<>();
         for (Reservation reservation : upcoming) {
-            if (reservation.inHands()) {
-                skipped.add(new Skipped(reservation, ASSET_ALREADY_PICKED_UP));
+            String skip = skipReason(reservation);
+            if (skip != null) {
+                skipped.add(new Skipped(reservation, skip));
             } else {
                 affected.add(new Affected(reservation, holderOf(reservation)));
             }
@@ -86,8 +88,9 @@ public class CancelForMaintenanceUseCase implements CancelForMaintenancePort {
                     continue;
                 }
                 Reservation reservation = locked.get();
-                if (reservation.inHands()) {
-                    skipped.add(new Skipped(reservation, ASSET_ALREADY_PICKED_UP));
+                String skip = skipReason(reservation);
+                if (skip != null) {
+                    skipped.add(new Skipped(reservation, skip));
                     continue;
                 }
                 Cancellation cancellation = new Cancellation(CancellationOrigin.RESOURCE_UNAVAILABLE, reason.strip(),
@@ -98,7 +101,9 @@ public class CancelForMaintenanceUseCase implements CancelForMaintenancePort {
         });
     }
 
-    /** Sin reservas por delante y sin ficha en el Módulo 1, el recurso no existe; con reservas, el nombre es un extra. */
+    /**
+     * Sin reservas por delante y sin ficha en el Módulo 1, el recurso no existe; con reservas, el nombre es un extra.
+     */
     private String resourceNameOrNotFound(String resourceId, boolean noReservations) {
         Optional<Resource> resource;
         try {
@@ -110,6 +115,14 @@ public class CancelForMaintenanceUseCase implements CancelForMaintenancePort {
             throw new ResourceNotFoundException(resourceId);
         }
         return resource.map(Resource::name).orElse(null);
+    }
+
+    /** Lo que no se le quita a nadie: un activo en sus manos o un espacio en el que ya registró su llegada. */
+    private static String skipReason(Reservation reservation) {
+        if (reservation.inHands()) {
+            return ASSET_ALREADY_PICKED_UP;
+        }
+        return reservation.useStarted() ? USE_STARTED : null;
     }
 
     private ReservationHolder holderOf(Reservation reservation) {

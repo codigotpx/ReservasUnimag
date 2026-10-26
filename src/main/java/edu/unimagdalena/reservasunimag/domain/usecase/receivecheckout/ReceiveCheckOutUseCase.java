@@ -9,8 +9,10 @@ import edu.unimagdalena.reservasunimag.domain.model.compliance.Verdict;
 import edu.unimagdalena.reservasunimag.domain.model.error.ReservationNotFoundException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ResourceNotFoundException;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Reservation;
+import edu.unimagdalena.reservasunimag.domain.model.resource.StatusChangeReason;
 import edu.unimagdalena.reservasunimag.domain.port.in.CancelForMaintenancePort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReceiveCheckOutPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.UpdateResourceStatusPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.CheckOutRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.Clock;
 import edu.unimagdalena.reservasunimag.domain.port.out.Module3NotifierPort;
@@ -40,17 +42,20 @@ public class ReceiveCheckOutUseCase implements ReceiveCheckOutPort {
     private final CheckOutValidator validator;
     private final CancelForMaintenancePort cancelForMaintenance;
     private final Module3NotifierPort notifier;
+    private final UpdateResourceStatusPort updateStatus;
     private final TransactionPort transactions;
     private final Clock clock;
 
     public ReceiveCheckOutUseCase(ReservationRepositoryPort reservations, CheckOutRepositoryPort checkOuts,
                                   CheckOutValidator validator, CancelForMaintenancePort cancelForMaintenance,
-                                  Module3NotifierPort notifier, TransactionPort transactions, Clock clock) {
+                                  Module3NotifierPort notifier, UpdateResourceStatusPort updateStatus,
+                                  TransactionPort transactions, Clock clock) {
         this.reservations = reservations;
         this.checkOuts = checkOuts;
         this.validator = validator;
         this.cancelForMaintenance = cancelForMaintenance;
         this.notifier = notifier;
+        this.updateStatus = updateStatus;
         this.transactions = transactions;
         this.clock = clock;
     }
@@ -86,6 +91,7 @@ public class ReceiveCheckOutUseCase implements ReceiveCheckOutPort {
                     reservation.endsAt());
             checkOuts.insert(checkOut);
             reservations.markReturned(reservation.id(), report.occurredAt());
+            updateStatus.record(reservation, StatusChangeReason.CHECK_OUT_RECEIVED);
         } else {
             checkOut = new CheckOut(reservation.id(), kind, report.sourceEventId(), report.occurredAt(), now,
                     report.verdict(), null);

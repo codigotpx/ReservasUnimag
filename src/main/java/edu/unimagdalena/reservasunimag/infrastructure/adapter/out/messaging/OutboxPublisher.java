@@ -126,12 +126,17 @@ public class OutboxPublisher {
             case OutboxNotifierAdapter.CANCELLATION -> properties.kafka().topic().cancellation();
             case OutboxNotifierAdapter.NO_SHOW_ACK -> properties.kafka().topic().noShowAck();
             case OutboxNotifierAdapter.CHECK_OUT_ACK -> properties.kafka().topic().checkOutAck();
+            case ResourceStatusOutboxAdapter.RESOURCE_USE_STARTED -> properties.kafka().topic().resourceStatus();
             default -> throw new IllegalStateException("tipo de evento sin topic configurado: " + type);
         };
     }
 
     private void markSent(Pending message) {
         jdbc.sql("UPDATE outbox_message SET status = 'SENT', sent_at = now(), last_error = NULL WHERE id = :id")
+                .param("id", message.id())
+                .update();
+        // El historial de UC7 dice si el aviso al Módulo 1 llegó (FR-009).
+        jdbc.sql("UPDATE status_change SET notified_status = 'SENT' WHERE outbox_message_id = :id")
                 .param("id", message.id())
                 .update();
         // El historial de UC11 lleva su propia cuenta, que incluye el intento que salió bien (FR-010).
@@ -170,6 +175,11 @@ public class OutboxPublisher {
                 .param("error", error.length() > 500 ? error.substring(0, 500) : error)
                 .param("id", message.id())
                 .update();
+        if (exhausted) {
+            jdbc.sql("UPDATE status_change SET notified_status = 'FAILED' WHERE outbox_message_id = :id")
+                    .param("id", message.id())
+                    .update();
+        }
         log.warn("Outbox: evento {} falló (intento {}){}: {}", message.id(), attempts,
                 exhausted ? ", queda FAILED" : "", failure.getMessage());
     }

@@ -106,7 +106,27 @@ public final class CancellationFakes {
                 throw new IllegalStateException("la reserva " + id + " no estaba confirmada");
             }
             stored.put(id, new Reservation(r.id(), r.userId(), r.resourceId(), r.category(), r.origin(),
-                    ReservationStatus.FINALIZADA, r.startsAt(), r.endsAt(), r.createdAt(), r.loan()));
+                    ReservationStatus.FINALIZADA, r.startsAt(), r.endsAt(), r.createdAt(), r.loan(), r.useStartedAt()));
+        }
+
+        @Override
+        public boolean markUseStarted(UUID id, Instant at) {
+            Reservation r = stored.get(id);
+            if (r.useStarted()) {
+                return false;
+            }
+            stored.put(id, r.startUse(at));
+            return true;
+        }
+
+        @Override
+        public List<Reservation> findAcademicBlocksToStart(Instant now) {
+            return stored.values().stream()
+                    .filter(r -> r.origin() == ReservationOrigin.ACADEMICO)
+                    .filter(r -> r.status() == ReservationStatus.CONFIRMADA && !r.useStarted())
+                    .filter(r -> !r.startsAt().isAfter(now) && r.endsAt().isAfter(now))
+                    .sorted(Comparator.comparing(Reservation::startsAt))
+                    .toList();
         }
 
         @Override

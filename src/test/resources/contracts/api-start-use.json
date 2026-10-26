@@ -1,0 +1,7 @@
+{
+  "reservationId": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+  "resourceId": "ESP-0107",
+  "useStartedAt": "2026-09-01T10:03:51-05:00",
+  "newStatus": "EN_USO",
+  "inventoryNotice": { "status": "PENDING", "eventId": "c9b2f536-8a41-4d07-95ec-3f1a0d7b2e58" }
+}

@@ -31,7 +31,9 @@ public interface ReservationRepositoryPort {
 
     Optional<Reservation> findById(UUID id);
 
-    /** Lee la reserva bloqueando su fila: dos cancelaciones simultáneas se ponen en fila y la segunda la ve cancelada. */
+    /**
+     * Lee la reserva bloqueando su fila: dos cancelaciones simultáneas se ponen en fila y la segunda la ve cancelada.
+     */
     Optional<Reservation> lockById(UUID id);
 
     /**
@@ -63,4 +65,13 @@ public interface ReservationRepositoryPort {
      * periodo y el cupo quedan libres (UC12 FR-002, FR-003).
      */
     void markReturned(UUID id, Instant returnedAt);
+
+    /**
+     * Marca el inicio de uso, y en un activo también la recogida, solo si no estaba marcado. Devuelve si esta llamada
+     * fue la que lo marcó: de eso sale que dos peticiones a la vez no produzcan dos avisos (UC7 FR-008).
+     */
+    boolean markUseStarted(UUID id, Instant at);
+
+    /** Los bloqueos académicos confirmados que ya empezaron, no han terminado y no tienen el uso marcado. */
+    List<Reservation> findAcademicBlocksToStart(Instant now);
 }

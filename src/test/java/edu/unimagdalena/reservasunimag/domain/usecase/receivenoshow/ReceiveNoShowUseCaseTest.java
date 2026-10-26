@@ -21,6 +21,7 @@ import edu.unimagdalena.reservasunimag.domain.port.out.UserRepositoryPort;
 import edu.unimagdalena.reservasunimag.support.CancellationFakes.InMemoryReservations;
 import edu.unimagdalena.reservasunimag.support.CancellationFakes.RecordingNotifier;
 import edu.unimagdalena.reservasunimag.support.InMemoryAbsences;
+import edu.unimagdalena.reservasunimag.support.RecordingStatusUpdates;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -64,8 +65,9 @@ class ReceiveNoShowUseCaseTest {
             return work.get();
         }
     };
+    private final RecordingStatusUpdates statusUpdates = new RecordingStatusUpdates();
     private final ReceiveNoShowUseCase useCase = new ReceiveNoShowUseCase(reservations, absences, users, notifier,
-            new NoShowPolicy(Duration.ofMinutes(10)), transactionPort, clock);
+            statusUpdates, new NoShowPolicy(Duration.ofMinutes(10)), transactionPort, clock);
 
     private Reservation space(int startHour, int endHour) {
         return reservations.add(Reservation.confirmed(UUID.randomUUID(), STUDENT.id(), "ESP-0107",
@@ -250,5 +252,25 @@ class ReceiveNoShowUseCaseTest {
         assertThat(reservations.stored.get(reservation.id()).status()).isEqualTo(ReservationStatus.CONFIRMADA);
         assertThat(absences.stored).isEmpty();
         assertThat(absences.findActiveByReservations(java.util.List.of(reservation.id()))).isEmpty();
+    }
+
+    @Test
+    void aReservationWhoseArrivalWasRegisteredHasNoAbsence() {
+        Reservation reservation = space(10, 12);
+        reservations.markUseStarted(reservation.id(), at(10, 2));
+
+        assertThat(useCase.receive(report(reservation, at(10, 11))).rejection())
+                .isEqualTo(NoShowRejection.USE_ALREADY_STARTED);
+        assertThat(absences.stored).isEmpty();
+    }
+
+    @Test
+    void theAbsenceGoesThroughUc7WithItsReason() {
+        Reservation reservation = space(10, 12);
+
+        useCase.receive(report(reservation, at(10, 10)));
+
+        assertThat(statusUpdates.reasons()).containsExactly(
+                edu.unimagdalena.reservasunimag.domain.model.resource.StatusChangeReason.NO_SHOW_REGISTERED);
     }
 }

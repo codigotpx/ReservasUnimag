@@ -22,12 +22,14 @@ import edu.unimagdalena.reservasunimag.domain.model.resource.Availability;
 import edu.unimagdalena.reservasunimag.domain.model.resource.DisplayedStatus;
 import edu.unimagdalena.reservasunimag.domain.model.resource.Resource;
 import edu.unimagdalena.reservasunimag.domain.model.resource.ResourceCategory;
+import edu.unimagdalena.reservasunimag.domain.model.resource.StatusChangeReason;
 import edu.unimagdalena.reservasunimag.domain.model.user.CurrentUser;
 import edu.unimagdalena.reservasunimag.domain.model.user.User;
 import edu.unimagdalena.reservasunimag.domain.port.in.CheckAvailabilityPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CheckSanctionsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReportReservationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReserveResourcesPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.UpdateResourceStatusPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.Clock;
 import edu.unimagdalena.reservasunimag.domain.port.out.DenialRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.InventoryPort;
@@ -57,6 +59,7 @@ public class ReserveResourcesUseCase implements ReserveResourcesPort {
     private final DenialRepositoryPort denials;
     private final UserRepositoryPort users;
     private final ReportReservationPort reportReservation;
+    private final UpdateResourceStatusPort updateStatus;
     private final DueDateCalculator dueDates;
     private final TransactionPort transactions;
     private final Clock clock;
@@ -66,9 +69,9 @@ public class ReserveResourcesUseCase implements ReserveResourcesPort {
     public ReserveResourcesUseCase(InventoryPort inventory, CheckSanctionsPort sanctions,
                                    CheckAvailabilityPort availability, ReservationRepositoryPort reservations,
                                    DenialRepositoryPort denials, UserRepositoryPort users,
-                                   ReportReservationPort reportReservation, DueDateCalculator dueDates,
-                                   TransactionPort transactions, Clock clock, int maxQuota,
-                                   Duration maxSpaceDuration) {
+                                   ReportReservationPort reportReservation, UpdateResourceStatusPort updateStatus,
+                                   DueDateCalculator dueDates, TransactionPort transactions, Clock clock,
+                                   int maxQuota, Duration maxSpaceDuration) {
         this.inventory = inventory;
         this.sanctions = sanctions;
         this.availability = availability;
@@ -76,6 +79,7 @@ public class ReserveResourcesUseCase implements ReserveResourcesPort {
         this.denials = denials;
         this.users = users;
         this.reportReservation = reportReservation;
+        this.updateStatus = updateStatus;
         this.dueDates = dueDates;
         this.transactions = transactions;
         this.clock = clock;
@@ -127,6 +131,7 @@ public class ReserveResourcesUseCase implements ReserveResourcesPort {
                     resource.category(), booking.startsAt(), booking.endsAt(), now,
                     booking.termBusinessDays() == null ? null : Loan.reserved(booking.termBusinessDays()));
             reservations.insert(created);
+            updateStatus.record(created, StatusChangeReason.RESERVATION_CONFIRMED);
             reportReservation.reportCreated(created, resource, user);
             return created;
         });

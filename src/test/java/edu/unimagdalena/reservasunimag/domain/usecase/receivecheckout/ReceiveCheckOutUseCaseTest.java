@@ -18,6 +18,7 @@ import edu.unimagdalena.reservasunimag.support.CancellationFakes.InMemoryReserva
 import edu.unimagdalena.reservasunimag.support.CancellationFakes.RecordingNotifier;
 import edu.unimagdalena.reservasunimag.support.InMemoryAbsences;
 import edu.unimagdalena.reservasunimag.support.InMemoryCheckOuts;
+import edu.unimagdalena.reservasunimag.support.RecordingStatusUpdates;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -65,8 +66,10 @@ class ReceiveCheckOutUseCaseTest {
         }
     };
 
+    private final RecordingStatusUpdates statusUpdates = new RecordingStatusUpdates();
     private final ReceiveCheckOutUseCase useCase = new ReceiveCheckOutUseCase(reservations, checkOuts,
-            new CheckOutValidator(new InMemoryAbsences()), cancelForMaintenance, notifier, transactions, () -> now);
+            new CheckOutValidator(new InMemoryAbsences()), cancelForMaintenance, notifier, statusUpdates,
+            transactions, () -> now);
 
     private Reservation loanInHands() {
         return reservations.add(Reservation.confirmed(UUID.randomUUID(), STUDENT.id(), "ACT-000913",
@@ -198,5 +201,14 @@ class ReceiveCheckOutUseCaseTest {
         assertThatThrownBy(() -> useCase.receive(new CheckOutReport(UUID.randomUUID(), UUID.randomUUID(), now, null,
                 false))).isInstanceOf(ReservationNotFoundException.class);
         assertThat(notifier.checkOutAcks).isEmpty();
+    }
+
+    @Test
+    void closingALoanGoesThroughUc7AndASpaceReviewDoesNot() {
+        useCase.receive(report(loanInHands(), at(16, 40), null));
+        useCase.receive(report(space(), at(12, 10), Verdict.SIN_NOVEDAD));
+
+        assertThat(statusUpdates.reasons()).containsExactly(
+                edu.unimagdalena.reservasunimag.domain.model.resource.StatusChangeReason.CHECK_OUT_RECEIVED);
     }
 }

@@ -24,6 +24,7 @@ import edu.unimagdalena.reservasunimag.support.CancellationFakes.InMemoryCancell
 import edu.unimagdalena.reservasunimag.support.CancellationFakes.InMemoryReservations;
 import edu.unimagdalena.reservasunimag.support.CancellationFakes.RecordingNotifier;
 import edu.unimagdalena.reservasunimag.support.CancellationFakes.RollbackTransactions;
+import edu.unimagdalena.reservasunimag.support.RecordingStatusUpdates;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -91,7 +92,7 @@ class CancelForMaintenanceUseCaseTest {
     private final RollbackTransactions transactions = new RollbackTransactions(reservations, reports, notifier);
     private final CancelForMaintenanceUseCase useCase = new CancelForMaintenanceUseCase(reservations, users,
             inventory, new ReservationCanceller(reservations, users, inventory,
-            new ReportCancellationUseCase(reports, notifier)), transactions, CLOCK);
+            new ReportCancellationUseCase(reports, notifier), new RecordingStatusUpdates()), transactions, CLOCK);
 
     private Reservation store(UUID holder, String resourceId, Instant start, Instant end, Loan loan) {
         return reservations.add(Reservation.confirmed(UUID.randomUUID(), holder, resourceId,
@@ -218,5 +219,17 @@ class CancelForMaintenanceUseCaseTest {
         assertThat(notifier.cancelled).extracting(report -> report.holder().userId()).doesNotHaveDuplicates();
         assertThat(notifier.cancelled).extracting(CancellationReport::eventId).doesNotHaveDuplicates();
         assertThat(notifier.cancelled).extracting(CancellationReport::releasedStart).isSorted();
+    }
+
+    @Test
+    void aSpaceWhereSomeoneAlreadyArrivedIsSkipped() {
+        Reservation arrived = future(10);
+        reservations.markUseStarted(arrived.id(), NOW);
+
+        MaintenanceCancellation applied = useCase.apply(LAB, REASON);
+
+        assertThat(applied.skipped()).singleElement()
+                .satisfies(skipped -> assertThat(skipped.reason()).isEqualTo("USE_STARTED"));
+        assertThat(reservations.stored.get(arrived.id()).status()).isEqualTo(ReservationStatus.CONFIRMADA);
     }
 }

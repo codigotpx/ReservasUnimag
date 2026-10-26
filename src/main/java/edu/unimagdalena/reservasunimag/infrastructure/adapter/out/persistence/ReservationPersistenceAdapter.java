@@ -52,7 +52,7 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
 
     private static final String SELECT = """
             SELECT r.id, r.user_id, r.resource_id, r.resource_category, r.origin, r.status,
-                   r.starts_at, r.ends_at, r.created_at,
+                   r.starts_at, r.ends_at, r.created_at, r.use_started_at,
                    p.term_business_days, p.picked_up_at, p.returned_at
             FROM reservation r
             LEFT JOIN loan p ON p.reservation_id = r.id
@@ -206,6 +206,35 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
     }
 
     @Override
+    public boolean markUseStarted(UUID id, Instant at) {
+        int marked = jdbc.sql("""
+                        UPDATE reservation SET use_started_at = :at, version = version + 1
+                        WHERE id = :id AND use_started_at IS NULL""")
+                .param("at", utc(at))
+                .param("id", id)
+                .update();
+        if (marked == 1) {
+            // En un activo, recoger es empezar a usar: la recogida se marca con el mismo instante si faltaba.
+            jdbc.sql("UPDATE loan SET picked_up_at = :at WHERE reservation_id = :id AND picked_up_at IS NULL")
+                    .param("at", utc(at))
+                    .param("id", id)
+                    .update();
+        }
+        return marked == 1;
+    }
+
+    @Override
+    public List<Reservation> findAcademicBlocksToStart(Instant now) {
+        return jdbc.sql(SELECT + """
+                        WHERE r.origin = 'ACADEMICO' AND r.status = 'CONFIRMADA' AND r.use_started_at IS NULL
+                          AND r.starts_at <= :now AND r.ends_at > :now
+                        ORDER BY r.starts_at, r.id""")
+                .param("now", utc(now))
+                .query(ReservationPersistenceAdapter::toReservation)
+                .list();
+    }
+
+    @Override
     public List<Reservation> findUpcomingByResource(String resourceId, Instant now) {
         return jdbc.sql(SELECT + """
                         WHERE r.resource_id = :resourceId
@@ -235,7 +264,8 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
                 instant(row, "starts_at"),
                 instant(row, "ends_at"),
                 instant(row, "created_at"),
-                loan);
+                loan,
+                instant(row, "use_started_at"));
     }
 
     private static boolean hasSqlState(Throwable failure, String sqlState) {

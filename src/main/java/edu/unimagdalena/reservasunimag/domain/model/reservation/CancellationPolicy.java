@@ -23,7 +23,8 @@ public record CancellationPolicy(Duration minNotice) {
 
     /**
      * Lo que impide cancelar en cualquier rama, la pida quien la pida: una reserva que ya terminó, o un activo que
-     * ya está en manos de alguien (UC4 FR-008). Se llama solo sobre una reserva que no esté ya cancelada.
+     * ya está en manos de alguien (UC4 FR-008), o una cuyo uso ya empezó (UC7). Se llama solo sobre una reserva que
+     * no esté ya cancelada.
      */
     public void requireOpen(Reservation reservation) {
         if (reservation.status() == ReservationStatus.FINALIZADA) {
@@ -31,6 +32,9 @@ public record CancellationPolicy(Duration minNotice) {
         }
         if (reservation.inHands()) {
             throw CancellationDeniedException.assetAlreadyPickedUp(reservation.loan().pickedUpAt());
+        }
+        if (reservation.useStarted()) {
+            throw CancellationDeniedException.useStarted(reservation.useStartedAt());
         }
     }
 
@@ -47,6 +51,7 @@ public record CancellationPolicy(Duration minNotice) {
     public boolean cancellableByHolder(Reservation reservation, Instant now) {
         return reservation.status() == ReservationStatus.CONFIRMADA
                 && !reservation.inHands()
+                && !reservation.useStarted()
                 && !now.isAfter(deadline(reservation));
     }
 

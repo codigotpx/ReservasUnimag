@@ -35,10 +35,11 @@ public record ReservationProperties(
 
     /**
      * {@code pageSize} es el tamaño de página que se le pide al Módulo 1 y {@code maxPages} el tope de páginas del
-     * catálogo que se recorren por consulta (UC8 FR-011).
+     * catálogo que se recorren por consulta (UC8 FR-011). {@code notifyUseStarted} es la válvula del aviso de inicio
+     * de uso (UC7 FR-004): apagada, el inicio se registra sin avisar.
      */
     public record Module1(@NotNull URI baseUrl, @NotNull Duration timeout, @Min(1) int pageSize,
-                          @Min(1) int maxPages) {
+                          @Min(1) int maxPages, boolean notifyUseStarted) {
     }
 
     public record Module3(@NotNull URI baseUrl, @NotNull Duration timeout) {
@@ -56,7 +57,8 @@ public record ReservationProperties(
 
         /** Nombres de los topics que publicamos; el prefijo es el módulo dueño del evento. */
         public record Topic(@NotBlank String record, @NotBlank String cancellation, @NotBlank String noShow,
-                            @NotBlank String noShowAck, @NotBlank String checkOut, @NotBlank String checkOutAck) {
+                            @NotBlank String noShowAck, @NotBlank String checkOut, @NotBlank String checkOutAck,
+                            @NotBlank String resourceStatus) {
         }
     }
 
