@@ -51,4 +51,10 @@ public interface ReservationRepositoryPort {
      * y los préstamos en manos de alguien, ordenadas por inicio (UC4 FR-010).
      */
     List<Reservation> findUpcomingByResource(String resourceId, Instant now);
+
+    /**
+     * Deja la reserva {@code FINALIZADA}. Con eso deja de ocupar el recurso y el cupo, igual que una cancelada, sin
+     * decir que se canceló (plan de UC9, Decisiones de diseño).
+     */
+    void markFinished(UUID id);
 }

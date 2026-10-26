@@ -328,8 +328,8 @@ class ReservationControllerTest {
     void myReservationsMatchTheContractIncludingTheLoanState() throws Exception {
         var pickedUp = new Loan(7, at(2026, 9, 1, 14, 35, 0), null);
         when(listMyReservations.list(any(), org.mockito.ArgumentMatchers.eq(true))).thenReturn(new MyReservations(
-                List.of(new MyReservations.Item(spaceReservation(), "Sala de Estudio 3", false, true),
-                        new MyReservations.Item(loanReservation(pickedUp), "Libro de Cálculo I", false, false)),
+                List.of(new MyReservations.Item(spaceReservation(), "Sala de Estudio 3", false, true, null),
+                        new MyReservations.Item(loanReservation(pickedUp), "Libro de Cálculo I", false, false, null)),
                 new Quota(2, 3), false));
 
         mockMvc.perform(get("/api/reservations/mine").with(session(Role.ESTUDIANTE)))
@@ -339,9 +339,26 @@ class ReservationControllerTest {
     }
 
     @Test
+    void aReservationWithAnAbsenceShowsTheMarkWithoutPromisingASanction() throws Exception {
+        var finished = new Reservation(SPACE_ID, HOLDER, "ESP-0107", ResourceCategory.ESPACIO,
+                edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationOrigin.ESTUDIANTIL,
+                edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationStatus.FINALIZADA,
+                at(2026, 9, 1, 10, 0, 0), at(2026, 9, 1, 12, 0, 0), CREATED, null);
+        var absence = edu.unimagdalena.reservasunimag.domain.model.compliance.Absence.registered(SPACE_ID,
+                UUID.randomUUID(), at(2026, 9, 1, 10, 10, 30), at(2026, 9, 1, 10, 11, 5), true);
+        when(listMyReservations.list(any(), org.mockito.ArgumentMatchers.eq(false))).thenReturn(new MyReservations(
+                List.of(new MyReservations.Item(finished, "Sala de Estudio 3", false, false, absence)),
+                new Quota(0, 3), false));
+
+        mockMvc.perform(get("/api/reservations/mine?vigentes=false").with(session(Role.ESTUDIANTE)))
+                .andExpect(status().isOk())
+                .andExpect(content().json(read("api-my-reservations-absence.json"), JsonCompareMode.STRICT));
+    }
+
+    @Test
     void myReservationsOmitTheNamesWhenInventoryIsDown() throws Exception {
         when(listMyReservations.list(any(), org.mockito.ArgumentMatchers.eq(false))).thenReturn(new MyReservations(
-                List.of(new MyReservations.Item(spaceReservation(), null, false, true)), new Quota(1, 3), true));
+                List.of(new MyReservations.Item(spaceReservation(), null, false, true, null)), new Quota(1, 3), true));
 
         mockMvc.perform(get("/api/reservations/mine?vigentes=false").with(session(Role.ESTUDIANTE)))
                 .andExpect(status().isOk())

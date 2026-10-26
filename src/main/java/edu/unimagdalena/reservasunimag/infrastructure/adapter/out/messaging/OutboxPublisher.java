@@ -124,6 +124,7 @@ public class OutboxPublisher {
         return switch (type) {
             case OutboxNotifierAdapter.RESERVATION_RECORD -> properties.kafka().topic().record();
             case OutboxNotifierAdapter.CANCELLATION -> properties.kafka().topic().cancellation();
+            case OutboxNotifierAdapter.NO_SHOW_ACK -> properties.kafka().topic().noShowAck();
             default -> throw new IllegalStateException("tipo de evento sin topic configurado: " + type);
         };
     }

@@ -309,6 +309,35 @@ La implementación sigue a UC4 y UC11, que son tres lugares contra uno: `CAN-001
 
 ---
 
+## P-22 — El acuse de no asistencia: lo que hay que acordar con el Módulo 3
+
+**Estado**: abierto. Detectado al implementar UC9 (2026-10-26).
+
+UC9 consume `module3.reservation.no-show.v1` y responde por un topic nuevo, `module2.reservation.no-show-ack.v1` (plan de UC9, Contratos §1 y §2). El Módulo 3 todavía no los ha visto. Además, al implementar aparecieron tres motivos de rechazo que el plan no listaba:
+
+| `rejection` | Cuándo |
+|---|---|
+| `ALREADY_PICKED_UP` | El activo ya se recogió: la persona sí se presentó. |
+| `RESERVATION_FINISHED` | La reserva ya estaba cerrada, por ejemplo por una ausencia que luego se anuló. |
+| `ACADEMIC_BLOCK` | La reserva es una clase, sin titular al que anotarle la ausencia. |
+
+Otras decisiones que el Módulo 3 debe conocer:
+
+- La **anulación** (`NoShowReportVoided`) no tiene acuse: el plan no lo pedía. Si la anulan dos veces, la segunda no hace nada.
+- Un evento que no se puede leer, o que apunta a una reserva que no existe, va a `module2.dlt.module3.reservation.no-show.v1` con la causa en las cabeceras. Nadie consume ese topic todavía.
+- Si nuestra base está caída, el consumidor reintenta sin tope y se queda en ese evento, como dice el plan general. El plan de UC9 proponía 5 reintentos y luego el DLT, pero eso mandaría al DLT reportes válidos.
+
+**Qué preguntar**: si el Módulo 3 acepta los dos topics y el JSON tal cual, si los tres rechazos nuevos les sirven, y si quieren acuse también para la anulación.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `docs/plan/plan-uc9-recibir-reporte-no-asistencia.md` | Contratos §2 | Sumar los tres rechazos nuevos a la tabla de `rejection`. |
+| `docs/plan/contratos-integracion.md` | Lo que publicamos | Cambiar el estado del acuse de "por acordar" a "acordado" cuando respondan. |
+
+---
+
 ## Resueltos
 
 - **El Módulo 2 le sigue comunicando el `EN_USO` al Módulo 1** — se cierra el primer punto de **P-20** y con él la marca de clarificación de UC7. El Módulo 3 le reporta directamente al Módulo 1 los cambios físicos que constata en el sitio, pero el inicio de uso es un hecho de la reserva y es nuestro: cuando la persona llega y empieza a usar lo que apartó, el Módulo 2 se lo comunica al Módulo 1 para que pase el recurso a `EN_USO`. El regreso a `DISPONIBLE` y la entrada a `EN_MANTENIMIENTO` no salen de aquí. La flecha `Actualizar estado de los recursos` → Módulo 1 del diagrama se queda, con ese único contenido. Se reescribió UC7 entero: contexto, actores, tabla de estados con su dueño, user story, los seis escenarios, los edge cases, FR-001 a FR-005 y FR-007 a FR-011, el nuevo FR-012 que prohíbe enviarle cualquier otro estado, las entidades y SC-001, SC-003 y SC-004. Lo que falta ahora es solo acordar el medio y los datos del aviso con el equipo del Módulo 1. *(2026-10-05)*

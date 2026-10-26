@@ -6,6 +6,7 @@ import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /** La regla que no se rompe: {@code domain} no conoce a {@code infrastructure} ni a ningún framework. */
@@ -31,6 +32,16 @@ class ArchitectureTest {
                     "com.fasterxml..",
                     "tools.jackson..",
                     "lombok..");
+
+    /**
+     * UC9 FR-001: el Módulo 2 nunca declara una ausencia por su cuenta. Lo único programado es el publicador de la
+     * outbox; ninguna tarea revisa reservas pasadas.
+     */
+    @ArchTest
+    static final ArchRule onlyTheOutboxRunsOnASchedule = methods()
+            .that().areAnnotatedWith("org.springframework.scheduling.annotation.Scheduled")
+            .should().beDeclaredIn(
+                    "edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.OutboxPublisher");
 
     @ArchTest
     static final ArchRule portsAreInterfaces = classes()

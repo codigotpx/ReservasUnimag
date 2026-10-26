@@ -167,6 +167,11 @@ class ReserveResourcesUseCaseTest {
         public List<Reservation> findUpcomingByResource(String resourceId, Instant now) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public void markFinished(UUID id) {
+            throw new UnsupportedOperationException();
+        }
     };
 
     private final Module3NotifierPort notifier = new Module3NotifierPort() {
@@ -177,6 +182,11 @@ class ReserveResourcesUseCaseTest {
 
         @Override
         public void reservationCancelled(CancellationReport report) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void noShowAcknowledged(edu.unimagdalena.reservasunimag.domain.model.compliance.NoShowAck ack) {
             throw new UnsupportedOperationException();
         }
     };

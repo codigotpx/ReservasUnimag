@@ -66,10 +66,14 @@ erDiagram
     }
 
     absence {
-        uuid        id                      PK
-        uuid        reservation_id          FK  "unico"
+        uuid        reservation_id          PK  "FK; una ausencia por reserva"
+        uuid        source_event_id             "unico; el eventId del Modulo 3"
+        timestamptz verified_at                 "comprobacion en sitio; la que mide el plazo"
         timestamptz reported_at                 "cuando llego el aviso del Modulo 3"
+        boolean     resource_released           "false si la franja ya habia terminado"
         boolean     voided                      "anulacion de un reporte enviado por error"
+        timestamptz voided_at
+        varchar     voided_reason
     }
 
     check_out {
@@ -159,7 +163,7 @@ erDiagram
 | `reservation` → `loan` | 1 a 0..1 | Solo las reservas de activos tienen préstamo. La PK de `loan` es la propia `reservation_id`, así que no puede haber dos. |
 | `reservation` → `academic_block` | 1 a 0..1 | Solo las de origen `ACADEMICO`. Mismo patrón: PK compartida con `reservation`. |
 | `semester_schedule` → `academic_block` | 1 a 0..* | Una carga semestral genera muchos bloqueos; un bloqueo extraordinario no viene de ninguna carga, de ahí que `semester_schedule_id` admita nulo. |
-| `reservation` → `absence` / `check_out` | 1 a 0..1 | El `reservation_id` es único en las dos tablas: un solo reporte por reserva. |
+| `reservation` → `absence` / `check_out` | 1 a 0..1 | Un solo reporte por reserva. En `absence` el `reservation_id` es la clave primaria (plan de UC9, Contratos §3); en `check_out`, un único. |
 | `reservation` → `status_change` | 1 a 0..* | Cada cambio de ocupación deja una fila: confirmación, inicio de uso, cancelación, ausencia y check-out (UC7 FR-009). |
 | `reservation` → `outbox_message` | 1 a 0..* | Una reserva produce la ficha (UC10) y, si se cancela, el reporte de cancelación (UC11); el inicio de uso añade el aviso al Módulo 1 (UC7). |
 | `status_change` → `outbox_message` | 0..1 a 0..1 | Solo el cambio con motivo `USE_STARTED` tiene aviso, y `outbox_message_id` permite ir del historial a la entrega y al revés. |

@@ -1,8 +1,10 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging;
 
+import edu.unimagdalena.reservasunimag.domain.model.compliance.NoShowAck;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReport;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationRecord;
 import edu.unimagdalena.reservasunimag.domain.port.out.Module3NotifierPort;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.NoShowAckEvent;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.ReservationCancelledEvent;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.ReservationRecordEvent;
 import org.slf4j.Logger;
@@ -26,6 +28,7 @@ class OutboxNotifierAdapter implements Module3NotifierPort {
 
     static final String RESERVATION_RECORD = "RESERVATION_RECORD";
     static final String CANCELLATION = "CANCELLATION";
+    static final String NO_SHOW_ACK = "NO_SHOW_ACK";
 
     private final JdbcClient jdbc;
     private final ObjectMapper objectMapper;
@@ -51,6 +54,16 @@ class OutboxNotifierAdapter implements Module3NotifierPort {
         log.info("Cancelación de la reserva {} encolada: origen {}, antelación {} min, evento {}",
                 report.reservationId(), report.origin(),
                 report.noticeMinutes() == null ? "-" : report.noticeMinutes(), report.eventId());
+    }
+
+    @Override
+    public void noShowAcknowledged(NoShowAck ack) {
+        UUID eventId = UUID.randomUUID();
+        insert(eventId, NO_SHOW_ACK, ack.reservation().id(),
+                objectMapper.writeValueAsString(NoShowAckEvent.from(eventId, ack)), ack.occurredAt());
+        // Sin el note ni el verifiedBy del Módulo 3 (plan de UC9, T023).
+        log.info("No asistencia de la reserva {} (reporte {}): {}", ack.reservation().id(), ack.sourceEventId(),
+                ack.accepted() ? (ack.duplicate() ? "repetida" : "registrada") : "rechazada, " + ack.rejection());
     }
 
     private void insert(UUID eventId, String type, UUID reservationId, String payload, Instant now) {

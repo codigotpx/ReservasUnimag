@@ -23,6 +23,7 @@ public record ReservationProperties(
         @Min(1) int maxQuota,
         @NotNull Duration maxSpaceDuration,
         @NotNull @DurationMin(minutes = 1) Duration minCancellationNotice,
+        @NotNull @DurationMin(minutes = 1) Duration noShowGrace,
         @NotNull List<LocalDate> holidays,
         @NotNull List<String> resourceTypes,
         @Valid @NotNull Module1 module1,
@@ -53,7 +54,8 @@ public record ReservationProperties(
     public record Kafka(@Valid @NotNull Topic topic) {
 
         /** Nombres de los topics que publicamos; el prefijo es el módulo dueño del evento. */
-        public record Topic(@NotBlank String record, @NotBlank String cancellation) {
+        public record Topic(@NotBlank String record, @NotBlank String cancellation, @NotBlank String noShow,
+                            @NotBlank String noShowAck) {
         }
     }
 

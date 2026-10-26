@@ -12,6 +12,8 @@ public final class Database {
 
     /** Borra todo lo que escriben las reservas; deja los usuarios sembrados del perfil local. */
     public static void clean(JdbcClient jdbc) {
+        jdbc.sql("DELETE FROM absence").update();
+        jdbc.sql("DELETE FROM inbox_message").update();
         jdbc.sql("DELETE FROM cancellation_report").update();
         jdbc.sql("DELETE FROM reservation_closure").update();
         jdbc.sql("DELETE FROM outbox_message").update();
@@ -56,5 +58,23 @@ public final class Database {
                 .param("payload", "{\"eventId\": \"" + eventId + "\", \"type\": \"ReservationRecordCreated\", \"version\": 1}")
                 .update();
         return reservationId;
+    }
+
+    /**
+     * Una reserva de espacio confirmada que empezó hace {@code minutesAgo} minutos y dura una hora, como la que el
+     * Módulo 3 reportaría por no asistencia; devuelve su id.
+     */
+    public static UUID startedReservation(JdbcClient jdbc, UUID userId, String resourceId, int minutesAgo) {
+        UUID id = UUID.randomUUID();
+        jdbc.sql("""
+                        INSERT INTO reservation (id, user_id, resource_id, resource_category, origin, status, starts_at, ends_at)
+                        VALUES (:id, :user, :resource, 'ESPACIO', 'ESTUDIANTIL', 'CONFIRMADA',
+                                now() - make_interval(mins => :ago), now() - make_interval(mins => :ago) + interval '1 hour')""")
+                .param("id", id)
+                .param("user", userId)
+                .param("resource", resourceId)
+                .param("ago", minutesAgo)
+                .update();
+        return id;
     }
 }

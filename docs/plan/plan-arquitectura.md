@@ -402,10 +402,12 @@ El bloqueo académico es una reserva con `origin = 'ACADEMICO'`, porque cada cla
 **`absence`** (UC9)
 | Columna | Tipo | Nota |
 |---|---|---|
-| id | uuid PK | |
-| reservation_id | uuid FK, único | |
+| reservation_id | uuid PK, FK | una ausencia por reserva; ver [UC9 § Contratos §3](./plan-uc9-recibir-reporte-no-asistencia.md#3-la-tabla-absence) |
+| source_event_id | uuid, único | el `eventId` del Módulo 3 |
+| verified_at | timestamptz | la comprobación en sitio, que es la que mide el plazo |
 | reported_at | timestamptz | cuándo llegó el aviso del Módulo 3 |
-| voided | boolean | anulación de un reporte enviado por error |
+| resource_released | boolean | `false` si la franja ya había terminado |
+| voided, voided_at, voided_reason | | anulación de un reporte enviado por error |
 
 **`check_out`** (UC12)
 | Columna | Tipo | Nota |

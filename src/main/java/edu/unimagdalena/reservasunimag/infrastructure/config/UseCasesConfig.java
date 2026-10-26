@@ -1,11 +1,13 @@
 package edu.unimagdalena.reservasunimag.infrastructure.config;
 
+import edu.unimagdalena.reservasunimag.domain.model.compliance.NoShowPolicy;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationPolicy;
 import edu.unimagdalena.reservasunimag.domain.port.in.CancelForMaintenancePort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CancelReservationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CheckAvailabilityPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ListMyReservationsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryCancellationReportsPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.ReceiveNoShowPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReportCancellationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReportReservationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReserveResourcesPort;
@@ -13,6 +15,8 @@ import edu.unimagdalena.reservasunimag.domain.port.in.CheckSanctionsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.GetProfilePort;
 import edu.unimagdalena.reservasunimag.domain.port.in.SearchResourcesPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.SignInPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.VoidNoShowPort;
+import edu.unimagdalena.reservasunimag.domain.port.out.AbsenceRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.Clock;
 import edu.unimagdalena.reservasunimag.domain.port.out.BusinessCalendar;
 import edu.unimagdalena.reservasunimag.domain.port.out.CancellationReportRepositoryPort;
@@ -33,6 +37,8 @@ import edu.unimagdalena.reservasunimag.domain.usecase.cancelreservation.Reservat
 import edu.unimagdalena.reservasunimag.domain.usecase.checkavailability.CheckAvailabilityUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.checksanctions.CheckSanctionsUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.listreservations.ListMyReservationsUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.receivenoshow.ReceiveNoShowUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.receivenoshow.VoidNoShowUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reportcancellation.QueryCancellationReportsUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reportcancellation.ReportCancellationUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reportreservation.ReportReservationUseCase;
@@ -109,10 +115,25 @@ class UseCasesConfig {
 
     @Bean
     ListMyReservationsPort listMyReservationsPort(ReservationRepositoryPort reservations, InventoryPort inventory,
+                                                  AbsenceRepositoryPort absences,
                                                   CancellationPolicy cancellationPolicy, Clock clock,
                                                   ReservationProperties properties) {
-        return new ListMyReservationsUseCase(reservations, inventory, cancellationPolicy, clock,
+        return new ListMyReservationsUseCase(reservations, inventory, absences, cancellationPolicy, clock,
                 properties.maxQuota());
+    }
+
+    @Bean
+    ReceiveNoShowPort receiveNoShowPort(ReservationRepositoryPort reservations, AbsenceRepositoryPort absences,
+                                        UserRepositoryPort users, Module3NotifierPort notifier,
+                                        TransactionPort transactions, Clock clock,
+                                        ReservationProperties properties) {
+        return new ReceiveNoShowUseCase(reservations, absences, users, notifier,
+                new NoShowPolicy(properties.noShowGrace()), transactions, clock);
+    }
+
+    @Bean
+    VoidNoShowPort voidNoShowPort(AbsenceRepositoryPort absences, TransactionPort transactions, Clock clock) {
+        return new VoidNoShowUseCase(absences, transactions, clock);
     }
 
     @Bean

@@ -182,6 +182,18 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
     }
 
     @Override
+    public void markFinished(UUID id) {
+        int updated = jdbc.sql("""
+                        UPDATE reservation SET status = 'FINALIZADA', version = version + 1
+                        WHERE id = :id AND status = 'CONFIRMADA'""")
+                .param("id", id)
+                .update();
+        if (updated != 1) {
+            throw new IllegalStateException("la reserva " + id + " no estaba confirmada al finalizarla");
+        }
+    }
+
+    @Override
     public List<Reservation> findUpcomingByResource(String resourceId, Instant now) {
         return jdbc.sql(SELECT + """
                         WHERE r.resource_id = :resourceId
