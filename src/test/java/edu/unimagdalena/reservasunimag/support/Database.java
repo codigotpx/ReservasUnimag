@@ -12,6 +12,7 @@ public final class Database {
 
     /** Borra todo lo que escriben las reservas; deja los usuarios sembrados del perfil local. */
     public static void clean(JdbcClient jdbc) {
+        jdbc.sql("DELETE FROM check_out").update();
         jdbc.sql("DELETE FROM absence").update();
         jdbc.sql("DELETE FROM inbox_message").update();
         jdbc.sql("DELETE FROM cancellation_report").update();
@@ -74,6 +75,33 @@ public final class Database {
                 .param("user", userId)
                 .param("resource", resourceId)
                 .param("ago", minutesAgo)
+                .update();
+        return id;
+    }
+
+    /**
+     * Un préstamo de activo que empezó hace {@code startedDaysAgo} días y vence {@code dueInHours} horas después de
+     * ahora (negativo si ya venció), con el activo recogido o no; devuelve el id de la reserva.
+     */
+    public static UUID loan(JdbcClient jdbc, UUID userId, String resourceId, int startedDaysAgo, int dueInHours,
+                            boolean pickedUp) {
+        UUID id = UUID.randomUUID();
+        jdbc.sql("""
+                        INSERT INTO reservation (id, user_id, resource_id, resource_category, origin, status, starts_at, ends_at)
+                        VALUES (:id, :user, :resource, 'ACTIVO', 'ESTUDIANTIL', 'CONFIRMADA',
+                                now() - make_interval(days => :ago), now() + make_interval(hours => :due))""")
+                .param("id", id)
+                .param("user", userId)
+                .param("resource", resourceId)
+                .param("ago", startedDaysAgo)
+                .param("due", dueInHours)
+                .update();
+        jdbc.sql("""
+                        INSERT INTO loan (reservation_id, term_business_days, picked_up_at)
+                        VALUES (:id, 3, CASE WHEN :pickedUp THEN now() - make_interval(days => :ago) END)""")
+                .param("id", id)
+                .param("pickedUp", pickedUp)
+                .param("ago", startedDaysAgo)
                 .update();
         return id;
     }

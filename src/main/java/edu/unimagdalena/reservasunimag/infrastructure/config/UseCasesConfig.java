@@ -7,6 +7,8 @@ import edu.unimagdalena.reservasunimag.domain.port.in.CancelReservationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CheckAvailabilityPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ListMyReservationsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryCancellationReportsPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.QueryPendingCheckOutsPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.ReceiveCheckOutPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReceiveNoShowPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReportCancellationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReportReservationPort;
@@ -20,6 +22,7 @@ import edu.unimagdalena.reservasunimag.domain.port.out.AbsenceRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.Clock;
 import edu.unimagdalena.reservasunimag.domain.port.out.BusinessCalendar;
 import edu.unimagdalena.reservasunimag.domain.port.out.CancellationReportRepositoryPort;
+import edu.unimagdalena.reservasunimag.domain.port.out.CheckOutRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.CompliancePort;
 import edu.unimagdalena.reservasunimag.domain.port.out.DenialRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.Module3NotifierPort;
@@ -37,6 +40,9 @@ import edu.unimagdalena.reservasunimag.domain.usecase.cancelreservation.Reservat
 import edu.unimagdalena.reservasunimag.domain.usecase.checkavailability.CheckAvailabilityUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.checksanctions.CheckSanctionsUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.listreservations.ListMyReservationsUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.receivecheckout.CheckOutValidator;
+import edu.unimagdalena.reservasunimag.domain.usecase.receivecheckout.QueryPendingCheckOutsUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.receivecheckout.ReceiveCheckOutUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.receivenoshow.ReceiveNoShowUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.receivenoshow.VoidNoShowUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reportcancellation.QueryCancellationReportsUseCase;
@@ -129,6 +135,21 @@ class UseCasesConfig {
                                         ReservationProperties properties) {
         return new ReceiveNoShowUseCase(reservations, absences, users, notifier,
                 new NoShowPolicy(properties.noShowGrace()), transactions, clock);
+    }
+
+    @Bean
+    ReceiveCheckOutPort receiveCheckOutPort(ReservationRepositoryPort reservations, CheckOutRepositoryPort checkOuts,
+                                            AbsenceRepositoryPort absences,
+                                            CancelForMaintenancePort cancelForMaintenance,
+                                            Module3NotifierPort notifier, TransactionPort transactions, Clock clock) {
+        return new ReceiveCheckOutUseCase(reservations, checkOuts, new CheckOutValidator(absences),
+                cancelForMaintenance, notifier, transactions, clock);
+    }
+
+    @Bean
+    QueryPendingCheckOutsPort queryPendingCheckOutsPort(CheckOutRepositoryPort checkOuts, InventoryPort inventory,
+                                                        Clock clock, ReservationProperties properties) {
+        return new QueryPendingCheckOutsUseCase(checkOuts, inventory, clock, properties.loanLossThreshold());
     }
 
     @Bean

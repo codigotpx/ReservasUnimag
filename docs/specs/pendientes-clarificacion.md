@@ -338,6 +338,35 @@ Otras decisiones que el Módulo 3 debe conocer:
 
 ---
 
+## P-23 — El check-out: lo que hay que acordar con el Módulo 3 y lo que quedó sin hacer
+
+**Estado**: abierto. Detectado al implementar UC12 (2026-10-26).
+
+UC12 consume `module3.reservation.check-out.v1` y responde por `module2.reservation.check-out-ack.v1` (plan de UC12, Contratos §1 y §2). Hay que acordar con el Módulo 3:
+
+- **Los dos topics y su JSON**, sobre todo que el instante de negocio es `data.occurredAt` y no el del envoltorio.
+- **Cómo nos mandan daños, si lo hacen por error.** Rechazamos con `VERDICT_REQUIRED` un activo con dictamen o con alguno de los campos `damage`, `damages` o `damageDescription`. Si usan otro nombre, no lo detectamos; igual no se guarda, porque solo leemos los campos del contrato.
+- **Un check-out repetido** se acepta con `duplicate: true` y los datos del primero, y lleva `loanClosed: false` y `quotaReleased: false` porque esa copia no cerró ni liberó nada.
+
+Decisiones tomadas al implementar que el plan no tenía:
+
+- **Cinco rechazos en vez de ocho.** `ALREADY_REVIEWED` y `LOAN_NOT_OPEN` se resuelven como duplicados: un préstamo solo se cierra con un check-out, así que "ya cerrado" es siempre "ya hay check-out". `LOAN_DECLARED_LOST` no existe mientras no exista el umbral de pérdida.
+- **"Pendiente de revisión"** es un espacio cuya franja terminó, sin check-out y sin ausencia vigente. El plan decía "una reserva `FINALIZADA`", pero un espacio sigue `CONFIRMADA` al terminar su franja: con esa definición la lista habría salido vacía.
+- **El dictamen `REQUIERE_MANTENIMIENTO` cancela las reservas estudiantiles que el espacio tenía por delante** (spec 13), en la misma transacción que el check-out.
+
+**Lo que quedó sin hacer — el umbral de pérdida de 7 días** (fase 4 del plan, edge case *Devolución que nunca llega*). Pide un estado nuevo (`NO_DEVUELTO_PERDIDO`), una tarea diaria que cierre préstamos por su cuenta, dar de baja el recurso para que UC1 deje de ofrecerlo y un evento `LoanDeclaredLost` hacia el Módulo 3. Depende de **P-08**, que no está ratificado. Mientras tanto, la lista de préstamos pendientes ya muestra `lossThresholdAt` y cuenta los que están a menos de 48 horas, y `reservations.loan-loss-threshold` fija el plazo.
+
+**Qué preguntar**: al Módulo 3, los dos topics y si les sirve el acuse tal cual; al equipo, si se implementa ya el umbral de pérdida o se espera a P-08.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `docs/plan/plan-uc12-recibir-check-out.md` | Decisiones de diseño | La tabla de rechazos (cinco) y la definición de pendiente de revisión. |
+| `docs/plan/contratos-integracion.md` | Lo que publicamos | El estado del acuse de check-out cuando respondan. |
+
+---
+
 ## Resueltos
 
 - **El Módulo 2 le sigue comunicando el `EN_USO` al Módulo 1** — se cierra el primer punto de **P-20** y con él la marca de clarificación de UC7. El Módulo 3 le reporta directamente al Módulo 1 los cambios físicos que constata en el sitio, pero el inicio de uso es un hecho de la reserva y es nuestro: cuando la persona llega y empieza a usar lo que apartó, el Módulo 2 se lo comunica al Módulo 1 para que pase el recurso a `EN_USO`. El regreso a `DISPONIBLE` y la entrada a `EN_MANTENIMIENTO` no salen de aquí. La flecha `Actualizar estado de los recursos` → Módulo 1 del diagrama se queda, con ese único contenido. Se reescribió UC7 entero: contexto, actores, tabla de estados con su dueño, user story, los seis escenarios, los edge cases, FR-001 a FR-005 y FR-007 a FR-011, el nuevo FR-012 que prohíbe enviarle cualquier otro estado, las entidades y SC-001, SC-003 y SC-004. Lo que falta ahora es solo acordar el medio y los datos del aviso con el equipo del Módulo 1. *(2026-10-05)*

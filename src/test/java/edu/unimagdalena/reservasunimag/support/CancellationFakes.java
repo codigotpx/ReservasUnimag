@@ -1,7 +1,9 @@
 package edu.unimagdalena.reservasunimag.support;
 
 import edu.unimagdalena.reservasunimag.domain.model.common.Page;
+import edu.unimagdalena.reservasunimag.domain.model.compliance.CheckOutAck;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.NoShowAck;
+import edu.unimagdalena.reservasunimag.domain.model.reservation.Loan;
 import edu.unimagdalena.reservasunimag.domain.model.common.PageRequest;
 import edu.unimagdalena.reservasunimag.domain.model.error.ReservationAlreadyClosedException;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Cancellation;
@@ -108,6 +110,15 @@ public final class CancellationFakes {
         }
 
         @Override
+        public void markReturned(UUID id, Instant returnedAt) {
+            Reservation r = stored.get(id);
+            stored.put(id, new Reservation(r.id(), r.userId(), r.resourceId(), r.category(), r.origin(), r.status(),
+                    r.startsAt(), r.endsAt(), r.createdAt(),
+                    new Loan(r.loan().termBusinessDays(), r.loan().pickedUpAt(), returnedAt)));
+            markFinished(id);
+        }
+
+        @Override
         public List<Reservation> findUpcomingByResource(String resourceId, Instant now) {
             return stored.values().stream()
                     .filter(r -> r.resourceId().equals(resourceId))
@@ -160,6 +171,7 @@ public final class CancellationFakes {
         public final List<ReservationRecord> created = new ArrayList<>();
         public final List<CancellationReport> cancelled = new ArrayList<>();
         public final List<NoShowAck> noShowAcks = new ArrayList<>();
+        public final List<CheckOutAck> checkOutAcks = new ArrayList<>();
 
         @Override
         public void reservationCreated(ReservationRecord record) {
@@ -174,6 +186,11 @@ public final class CancellationFakes {
         @Override
         public void noShowAcknowledged(NoShowAck ack) {
             noShowAcks.add(ack);
+        }
+
+        @Override
+        public void checkOutAcknowledged(CheckOutAck ack) {
+            checkOutAcks.add(ack);
         }
     }
 

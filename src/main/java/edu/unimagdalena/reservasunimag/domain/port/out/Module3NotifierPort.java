@@ -1,5 +1,6 @@
 package edu.unimagdalena.reservasunimag.domain.port.out;
 
+import edu.unimagdalena.reservasunimag.domain.model.compliance.CheckOutAck;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.NoShowAck;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReport;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationRecord;
@@ -17,4 +18,7 @@ public interface Module3NotifierPort {
 
     /** El acuse de un reporte de no asistencia, aceptado o no (UC9 FR-002, FR-011). */
     void noShowAcknowledged(NoShowAck ack);
+
+    /** El acuse de un check-out, aplicado o no (UC12 FR-008). */
+    void checkOutAcknowledged(CheckOutAck ack);
 }

@@ -194,6 +194,18 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
     }
 
     @Override
+    public void markReturned(UUID id, Instant returnedAt) {
+        int loans = jdbc.sql("UPDATE loan SET returned_at = :at WHERE reservation_id = :id AND returned_at IS NULL")
+                .param("at", utc(returnedAt))
+                .param("id", id)
+                .update();
+        if (loans != 1) {
+            throw new IllegalStateException("la reserva " + id + " no tiene un préstamo abierto");
+        }
+        markFinished(id);
+    }
+
+    @Override
     public List<Reservation> findUpcomingByResource(String resourceId, Instant now) {
         return jdbc.sql(SELECT + """
                         WHERE r.resource_id = :resourceId

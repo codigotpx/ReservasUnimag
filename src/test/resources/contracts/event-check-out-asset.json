@@ -1,0 +1,10 @@
+{
+  "eventId": "7b3e9c41-5a28-4f60-93d7-1e8a0c2f5b64",
+  "type": "CheckOutRegistered",
+  "version": 1,
+  "occurredAt": "2026-09-09T16:42:11-05:00",
+  "data": {
+    "reservationId": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+    "occurredAt": "2026-09-09T16:40:00-05:00"
+  }
+}

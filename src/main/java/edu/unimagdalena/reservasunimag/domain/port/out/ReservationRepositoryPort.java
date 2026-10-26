@@ -57,4 +57,10 @@ public interface ReservationRepositoryPort {
      * decir que se canceló (plan de UC9, Decisiones de diseño).
      */
     void markFinished(UUID id);
+
+    /**
+     * Cierra el préstamo de un activo: guarda la devolución real y deja la reserva {@code FINALIZADA}, con lo que el
+     * periodo y el cupo quedan libres (UC12 FR-002, FR-003).
+     */
+    void markReturned(UUID id, Instant returnedAt);
 }

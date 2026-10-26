@@ -24,6 +24,7 @@ public record ReservationProperties(
         @NotNull Duration maxSpaceDuration,
         @NotNull @DurationMin(minutes = 1) Duration minCancellationNotice,
         @NotNull @DurationMin(minutes = 1) Duration noShowGrace,
+        @NotNull @DurationMin(hours = 1) Duration loanLossThreshold,
         @NotNull List<LocalDate> holidays,
         @NotNull List<String> resourceTypes,
         @Valid @NotNull Module1 module1,
@@ -55,7 +56,7 @@ public record ReservationProperties(
 
         /** Nombres de los topics que publicamos; el prefijo es el módulo dueño del evento. */
         public record Topic(@NotBlank String record, @NotBlank String cancellation, @NotBlank String noShow,
-                            @NotBlank String noShowAck) {
+                            @NotBlank String noShowAck, @NotBlank String checkOut, @NotBlank String checkOutAck) {
         }
     }
 

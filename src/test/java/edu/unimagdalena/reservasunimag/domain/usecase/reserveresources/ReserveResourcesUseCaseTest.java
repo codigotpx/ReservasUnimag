@@ -172,6 +172,11 @@ class ReserveResourcesUseCaseTest {
         public void markFinished(UUID id) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public void markReturned(UUID id, Instant returnedAt) {
+            throw new UnsupportedOperationException();
+        }
     };
 
     private final Module3NotifierPort notifier = new Module3NotifierPort() {
@@ -187,6 +192,11 @@ class ReserveResourcesUseCaseTest {
 
         @Override
         public void noShowAcknowledged(edu.unimagdalena.reservasunimag.domain.model.compliance.NoShowAck ack) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void checkOutAcknowledged(edu.unimagdalena.reservasunimag.domain.model.compliance.CheckOutAck ack) {
             throw new UnsupportedOperationException();
         }
     };

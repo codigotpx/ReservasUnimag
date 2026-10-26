@@ -1,9 +1,11 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging;
 
+import edu.unimagdalena.reservasunimag.domain.model.compliance.CheckOutAck;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.NoShowAck;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReport;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationRecord;
 import edu.unimagdalena.reservasunimag.domain.port.out.Module3NotifierPort;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.CheckOutAckEvent;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.NoShowAckEvent;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.ReservationCancelledEvent;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.ReservationRecordEvent;
@@ -29,6 +31,7 @@ class OutboxNotifierAdapter implements Module3NotifierPort {
     static final String RESERVATION_RECORD = "RESERVATION_RECORD";
     static final String CANCELLATION = "CANCELLATION";
     static final String NO_SHOW_ACK = "NO_SHOW_ACK";
+    static final String CHECK_OUT_ACK = "CHECK_OUT_ACK";
 
     private final JdbcClient jdbc;
     private final ObjectMapper objectMapper;
@@ -64,6 +67,20 @@ class OutboxNotifierAdapter implements Module3NotifierPort {
         // Sin el note ni el verifiedBy del Módulo 3 (plan de UC9, T023).
         log.info("No asistencia de la reserva {} (reporte {}): {}", ack.reservation().id(), ack.sourceEventId(),
                 ack.accepted() ? (ack.duplicate() ? "repetida" : "registrada") : "rechazada, " + ack.rejection());
+    }
+
+    @Override
+    public void checkOutAcknowledged(CheckOutAck ack) {
+        UUID eventId = UUID.randomUUID();
+        insert(eventId, CHECK_OUT_ACK, ack.reservation().id(),
+                objectMapper.writeValueAsString(CheckOutAckEvent.from(eventId, ack)), ack.occurredAt());
+        // El dictamen no va en claro al log (plan de UC12, T028); sí el desfase entre lo que pasó y cuándo llegó.
+        log.info("Check-out de la reserva {} (evento {}): {}", ack.reservation().id(), ack.sourceEventId(),
+                ack.accepted()
+                        ? (ack.duplicate() ? "repetido" : ack.checkOut().kind() + " aplicado, llegó "
+                        + java.time.Duration.between(ack.checkOut().occurredAt(), ack.checkOut().receivedAt())
+                        .toSeconds() + " s después")
+                        : "rechazado, " + ack.rejection());
     }
 
     private void insert(UUID eventId, String type, UUID reservationId, String payload, Instant now) {

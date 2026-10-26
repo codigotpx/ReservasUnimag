@@ -412,11 +412,13 @@ El bloqueo académico es una reserva con `origin = 'ACADEMICO'`, porque cada cla
 **`check_out`** (UC12)
 | Columna | Tipo | Nota |
 |---|---|---|
-| id | uuid PK | |
-| reservation_id | uuid FK, único | |
-| occurred_at | timestamptz | devolución o revisión real |
-| verdict | varchar, nulo | solo espacios: `NO_ISSUES`, `NEEDS_MAINTENANCE` |
-| received_at | timestamptz | |
+| reservation_id | uuid PK, FK | un check-out por reserva; ver [UC12 § Contratos §5](./plan-uc12-recibir-check-out.md#5-la-tabla-check_out) |
+| kind | varchar | `ASSET_RETURN`, `SPACE_REVIEW` |
+| source_event_id | uuid, único | el `eventId` del Módulo 3 |
+| occurred_at | timestamptz | devolución o revisión real, sin redondear |
+| received_at | timestamptz | cuándo llegó el aviso |
+| verdict | varchar, nulo | solo espacios: `SIN_NOVEDAD`, `REQUIERE_MANTENIMIENTO` |
+| due_at_snapshot | timestamptz, nulo | solo activos: el vencimiento contra el que se cerró |
 
 **`status_change`** (UC7): el historial de FR-009. Una fila por cambio de ocupación, con el motivo y, solo en el inicio de uso, el aviso que salió.
 | Columna | Tipo | Nota |
