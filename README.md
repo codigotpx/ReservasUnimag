@@ -37,6 +37,8 @@ estudiantil.
 | UC10 | Reportar información de la reserva `<<include>>` | P3 | [spec-modulo2-uc10-reportar-informacion-reserva.md](docs/specs/spec-modulo2-uc10-reportar-informacion-reserva.md) |
 | UC11 | Reportar cancelación de reserva `<<include>>` | P2 | [spec-modulo2-uc11-reportar-cancelacion-reserva.md](docs/specs/spec-modulo2-uc11-reportar-cancelacion-reserva.md) |
 | UC12 | Recibir check-out | P3 | [spec-modulo2-uc12-recibir-check-out.md](docs/specs/spec-modulo2-uc12-recibir-check-out.md) |
+| UC13 | Registrarse | P1 | [spec-modulo2-uc13-registrarse.md](docs/specs/spec-modulo2-uc13-registrarse.md) |
+| UC14 | Iniciar sesión | P1 | [spec-modulo2-uc14-iniciar-sesion.md](docs/specs/spec-modulo2-uc14-iniciar-sesion.md) |
 
 ## Actores
 

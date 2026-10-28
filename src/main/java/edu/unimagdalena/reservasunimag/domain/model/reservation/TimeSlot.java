@@ -1,8 +1,10 @@
 package edu.unimagdalena.reservasunimag.domain.model.reservation;
 
+import edu.unimagdalena.reservasunimag.domain.model.error.DurationExceededException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException.Reason;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -18,6 +20,8 @@ public record TimeSlot(LocalDate date, LocalTime start, LocalTime end) {
     public static final ZoneId ZONE = ZoneId.of("America/Bogota");
     public static final LocalTime OPENING = LocalTime.of(6, 0);
     public static final LocalTime CLOSING = LocalTime.of(22, 0);
+    /** Tope de duración de una reserva sobre un espacio: FR-009. */
+    public static final Duration MAXIMUM_DURATION = Duration.ofHours(2);
 
     public TimeSlot {
         Objects.requireNonNull(date, "date");
@@ -26,6 +30,11 @@ public record TimeSlot(LocalDate date, LocalTime start, LocalTime end) {
         Reason rejection = rejectionFor(start, end);
         if (rejection != null) {
             throw new InvalidTimeSlotException(rejection, date, start, end);
+        }
+        Instant startsAt = date.atTime(start).atZone(ZONE).toInstant();
+        Instant endsAt = date.atTime(end).atZone(ZONE).toInstant();
+        if (Duration.between(startsAt, endsAt).toMinutes() > MAXIMUM_DURATION.toMinutes()) {
+            throw new DurationExceededException(MAXIMUM_DURATION.toMinutes(), Duration.between(startsAt, endsAt).toMinutes());
         }
     }
 

@@ -1,8 +1,11 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.error;
 
+import edu.unimagdalena.reservasunimag.domain.model.error.DurationExceededException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ExternalServiceUnavailableException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidCredentialsException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ReservationDeniedException;
+import edu.unimagdalena.reservasunimag.domain.model.error.UserAlreadyRegisteredException;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -45,6 +48,24 @@ class GlobalErrorHandler extends ResponseEntityExceptionHandler {
                 "date", exception.date().toString(),
                 "start", exception.start().format(HOUR),
                 "end", exception.end().format(HOUR)));
+        return problem;
+    }
+
+    @ExceptionHandler(DurationExceededException.class)
+    ProblemDetail durationExceeded(DurationExceededException exception) {
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "invalid-time-slot", "Franja horaria inválida",
+                "Una reserva de espacio puede durar como máximo 2 horas. Ajusta la franja.");
+        problem.setProperty("code", "DURATION_EXCEEDED");
+        problem.setProperty("limitMinutes", exception.limitMinutes());
+        problem.setProperty("requestedMinutes", exception.requestedMinutes());
+        return problem;
+    }
+
+    @ExceptionHandler(ReservationDeniedException.class)
+    ProblemDetail reservationDenied(ReservationDeniedException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "reservation-denied", "Reservation denegada",
+                exception.detail());
+        problem.setProperty("code", exception.denialCode().code());
         return problem;
     }
 

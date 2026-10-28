@@ -27,4 +27,9 @@ class UserPersistenceAdapter implements UserRepositoryPort {
     public Optional<User> findById(UUID id) {
         return repository.findById(id).map(UserMapper::toDomain);
     }
+
+    @Override
+    public User save(User user) {
+        return UserMapper.toDomain(repository.save(UserMapper.toEntity(user)));
+    }
 }

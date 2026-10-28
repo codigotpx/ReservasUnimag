@@ -1,5 +1,6 @@
 package edu.unimagdalena.reservasunimag.domain.model.reservation;
 
+import edu.unimagdalena.reservasunimag.domain.model.error.DurationExceededException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException.Reason;
 import org.junit.jupiter.api.Test;
@@ -26,7 +27,7 @@ class TimeSlotTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"06:00,08:00", "20:00,22:00", "06:00,22:00", "10:00,10:01"})
+    @CsvSource({"06:00,08:00", "20:00,22:00", "10:00,10:01"})
     void acceptsSlotsInsideTheOperatingWindow(String start, String end) {
         assertThat(slot(start, end).start()).isEqualTo(LocalTime.parse(start));
     }
@@ -47,6 +48,20 @@ class TimeSlotTest {
                     assertThat(exception.reason()).isEqualTo(reason);
                     assertThat(exception.date()).isEqualTo(DAY);
                 });
+    }
+
+    @Test
+    void aSlotLongerThanTheMaximumDurationIsRejectedWithDurationExceeded() {
+        assertThatThrownBy(() -> slot("09:00", "12:00"))
+                .isInstanceOfSatisfying(DurationExceededException.class, exception -> {
+                    assertThat(exception.limitMinutes()).isEqualTo(120);
+                    assertThat(exception.requestedMinutes()).isEqualTo(180);
+                });
+    }
+
+    @Test
+    void aSlotExactlyAtTheMaximumDurationIsAccepted() {
+        assertThat(slot("09:00", "11:00").start()).isEqualTo(LocalTime.of(9, 0));
     }
 
     @Test

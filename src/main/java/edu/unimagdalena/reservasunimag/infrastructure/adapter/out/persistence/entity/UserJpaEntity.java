@@ -46,4 +46,14 @@ public class UserJpaEntity {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    public UserJpaEntity(String code, String name, String email, String passwordHash, Role role, boolean active, Instant createdAt) {
+        this.code = code;
+        this.name = name;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.role = role;
+        this.active = active;
+        this.createdAt = createdAt;
+    }
 }

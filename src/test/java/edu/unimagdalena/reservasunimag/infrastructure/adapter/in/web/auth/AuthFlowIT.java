@@ -120,4 +120,43 @@ class AuthFlowIT {
         assertThat(response.getCookie("session")).isNotNull();
         assertThat(response.getCookie("session").getMaxAge()).isZero();
     }
+
+    @Test
+    void registerWithValidDataCreatesTheUserAndTheLoginStartsTheSession() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"code": "2022114003", "name": "Estudiante Nuevo", "email": "nuevo@unimagdalena.edu.co", "password": "unimag2026"}"""))
+                .andExpect(status().isCreated());
+
+        Cookie session = login("nuevo@unimagdalena.edu.co", "unimag2026");
+
+        mockMvc.perform(get("/api/auth/me").cookie(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("2022114003"))
+                .andExpect(jsonPath("$.name").value("Estudiante Nuevo"))
+                .andExpect(jsonPath("$.role").value("ESTUDIANTE"));
+    }
+
+    @Test
+    void registerWithAnEmailThatAlreadyExistsAnswersConflict() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"code": "2022999999", "name": "Otra Persona", "email": "estudiante@unimagdalena.edu.co", "password": "unimag2026"}"""))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value(ERRORS + "user-already-registered"));
+    }
+
+    @Test
+    void registerWithAnInvalidCodeAnswersBadRequest() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"code": "12345", "name": "Persona Invalida", "email": "invalido@unimagdalena.edu.co", "password": "unimag2026"}"""))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").value(ERRORS + "invalid-parameters"));
+    }
 }

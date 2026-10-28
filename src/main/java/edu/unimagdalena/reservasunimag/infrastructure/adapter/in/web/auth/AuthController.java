@@ -3,11 +3,13 @@ package edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.auth;
 import edu.unimagdalena.reservasunimag.domain.model.user.CurrentUser;
 import edu.unimagdalena.reservasunimag.domain.model.user.User;
 import edu.unimagdalena.reservasunimag.domain.port.in.GetProfilePort;
+import edu.unimagdalena.reservasunimag.domain.port.in.RegisterUserPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.SignInPort;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.security.JwtTokenIssuer;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.security.SessionCookieFactory;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.CredentialsExpiredException;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,13 +27,15 @@ class AuthController {
     private final GetProfilePort getProfile;
     private final JwtTokenIssuer tokenIssuer;
     private final SessionCookieFactory cookies;
+    private final RegisterUserPort registerUser;
 
     AuthController(SignInPort signIn, GetProfilePort getProfile, JwtTokenIssuer tokenIssuer,
-                   SessionCookieFactory cookies) {
+                   SessionCookieFactory cookies, RegisterUserPort registerUser) {
         this.signIn = signIn;
         this.getProfile = getProfile;
         this.tokenIssuer = tokenIssuer;
         this.cookies = cookies;
+        this.registerUser = registerUser;
     }
 
     /** {@code 204} sin cuerpo, para que el JWT no quede al alcance de JavaScript. */
@@ -41,6 +45,12 @@ class AuthController {
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, cookies.session(tokenIssuer.issue(user)).toString())
                 .build();
+    }
+
+    @PostMapping("/register")
+    ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
+        registerUser.register(request.code(), request.name(), request.email(), request.password());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @GetMapping("/me")

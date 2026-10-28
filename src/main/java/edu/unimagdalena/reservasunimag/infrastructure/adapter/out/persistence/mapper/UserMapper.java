@@ -8,6 +8,17 @@ public final class UserMapper {
     private UserMapper() {
     }
 
+    public static UserJpaEntity toEntity(User user) {
+        return new UserJpaEntity(
+                user.code(),
+                user.name(),
+                user.email(),
+                user.passwordHash(),
+                user.role(),
+                user.active(),
+                user.createdAt());
+    }
+
     public static User toDomain(UserJpaEntity entity) {
         return new User(
                 entity.getId(),

@@ -59,6 +59,12 @@ class SignInUseCaseTest {
         public Optional<User> findById(UUID id) {
             return users.stream().filter(user -> user.id().equals(id)).findFirst();
         }
+
+        @Override
+        public User save(User user) {
+            users.add(user);
+            return user;
+        }
     }
 
     private static final class PlainHasher implements PasswordHasherPort {
