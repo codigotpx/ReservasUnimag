@@ -14,30 +14,29 @@ Este documento llega hasta la organización de carpetas y el modelo de datos. La
 
 ## Contexto técnico
 
-| | |
-|---|---|
-| **Lenguaje backend** | Java 21 |
-| **Framework backend** | Spring Boot 4.1.1: Web MVC, Data JPA, Security, Validation, RestClient |
-| **Frontend** | Next.js (App Router) con React y TypeScript |
-| **Base de datos** | PostgreSQL, con la extensión `btree_gist` |
-| **Migraciones** | Flyway, con SQL versionado |
-| **Mensajería** | Apache Kafka, con Spring for Apache Kafka (`spring-kafka`). Eventos en JSON, con la clave de partición por reserva |
-| **Autenticación** | Login propio: usuarios en nuestra base, contraseñas con BCrypt y sesión por JWT |
-| **Documentación de la API** | OpenAPI (springdoc) |
+| |                                                                                                                       |
+|---|-----------------------------------------------------------------------------------------------------------------------|
+| **Lenguaje backend** | Java 21                                                                                                               |
+| **Framework backend** | Spring Boot 4.1.1: Web MVC, Data JPA, Security, Validation, RestClient                                                |
+| **Frontend** | Next.js (App Router) con React y TypeScript                                                                           |
+| **Base de datos** | PostgreSQL, con la extensión `btree_gist`                                                                             |
+| **Migraciones** | Flyway, con SQL versionado                                                                                            |
+| **Mensajería** | Apache Kafka, con Spring for Apache Kafka (`spring-kafka`). Eventos en JSON, con la clave de partición por reserva    |
+| **Autenticación** | Login propio: usuarios en nuestra base, contraseñas con BCrypt y sesión por JWT                                       |
+| **Documentación de la API** | OpenAPI (springdoc)                                                                                                   |
 | **Pruebas** | JUnit 5, Testcontainers (PostgreSQL y Kafka), WireMock para los Módulos 1 y 3, ArchUnit para la regla de dependencias |
-| **Build** | Gradle con Groovy DSL (backend) y npm (frontend) |
-| **Zona horaria** | `America/Bogota`. Todas las fechas se guardan como `timestamptz`. |
-| **Ventana de operación** | 06:00 a 22:00, sin franjas que crucen la medianoche |
-| **Metas de rendimiento** | NEEDS CLARIFICATION: depende de P-17 (los tiempos de respuesta entre módulos no cuadran). |
-| **Escala** | NEEDS CLARIFICATION: cuántos usuarios concurrentes y cuántos recursos. |
+| **Build** | Gradle con Groovy DSL (backend) y npm (frontend)                                                                      |
+| **Zona horaria** | `America/Bogota`. Todas las fechas se guardan como `timestamptz`.                                                     |
+| **Ventana de operación** | 06:00 a 22:00, sin franjas que crucen la medianoche                                                                   |
+| **Escala** | Hasta 500 usuarios concurrentes y 20 recursos por página.                                                             |
 
 ## Arquitectura
 
 ### Por qué hexagonal
 
-El profesor trabaja con arquitectura hexagonal, y además encaja con cómo está hecho el Módulo 2:
+Nos parece la arquitectura más completa teniendo en cuenta que debemos desarrollar un producto que se conecte con otros adicionales para que pueda funcionar correctamente:
 
-- **Dependemos de dos sistemas que no controlamos.** El Módulo 1 (inventario) y el Módulo 3 (cumplimiento y sanciones) todavía tienen el contrato abierto (P-16, P-20). Con un puerto en `domain`, los casos de uso se programan y se prueban con un adaptador falso, y cuando el otro módulo entregue su API solo se escribe el adaptador real.
+- **Dependemos de dos sistemas que no controlamos.** El Módulo 1 (inventario) y el Módulo 3 (cumplimiento y sanciones). Con un puerto en `domain`, los casos de uso se programan y se prueban con un adaptador falso, y cuando el otro módulo entregue su API solo se escribe el adaptador real.
 - **El Módulo 3 está en los dos lados del hexágono.** Nos avisa (no asistencia en UC9, check-out en UC12) y lo consultamos o le avisamos (sanciones en UC6, ficha en UC10, cancelación en UC11). En hexagonal son adaptadores distintos sobre el mismo dominio, y el que sean eventos de Kafka o llamadas REST no cambia el caso de uso.
 - **Las caídas de otros módulos (P-10, P-14) se resuelven en el adaptador**, con timeouts, reintentos y respuestas por defecto, sin tocar el caso de uso.
 - **Las reglas de negocio cambian mientras se cierran los pendientes**, y al vivir en Java puro se prueban en milisegundos, sin levantar Spring ni la base de datos.
@@ -69,7 +68,7 @@ Decisiones que se derivan de la regla:
 - **El dominio es puro.** Las entidades de `domain.model` no llevan `@Entity`. Las entidades JPA viven en `infrastructure.adapter.out.persistence`, y un mapper traduce entre las dos.
 - **Los casos de uso no llevan `@Service`.** Se registran como beans en `infrastructure.config`, y las transacciones (`@Transactional`) se abren en esa misma capa, envolviendo el caso de uso.
 - **La hora se inyecta con un puerto `Reloj`.** Casi todas las reglas dependen de "ahora" (10 minutos de no-show, vencimiento a las 22:00, antelación de cancelación), y las pruebas necesitan controlarlo.
-- **Los `<<include>>` del diagrama son llamadas entre casos de uso.** Por ejemplo, `ReservarRecursosUseCase` usa `ConsultarDisponibilidad`, `ConsultarSanciones`, `ActualizarEstadoRecursos` y `ReportarInformacionReserva` a través de sus puertos de entrada.
+- **Los `<<include>>` del diagrama son llamadas entre casos de uso.** Por ejemplo, `ReservarRecursosUseCase` usa `ConsultarDisponibilidad`, `ConsultarSanciones`, `ActualizarEstadoRecursos` y `ReportarInformacionReserva` a través de sus puertos.
 - **El diccionario de errores es parte del dominio** (`CodigoDenegacion`). El adaptador web lo traduce a respuestas `ProblemDetail` (RFC 9457).
 
 ### Casos de uso y dónde viven
