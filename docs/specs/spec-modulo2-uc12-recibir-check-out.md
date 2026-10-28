@@ -13,16 +13,16 @@ Ese acto no es nuestro. Según [gestionunimag.md](../gestionunimag.md), la *"Ges
 
 Tampoco es nuestro el estado físico en que queda el recurso. `DISPONIBLE` y `EN_MANTENIMIENTO` son estados del Módulo 1 (ver el reparto de estados en [spec-modulo2.md](./spec-modulo2.md)), y el Módulo 3 le reporta los daños directamente a él. A nosotros el check-out de un activo solo nos trae lo que toca a la reserva: qué préstamo se cierra y cuándo volvió el recurso de verdad. El de un espacio nos trae qué reserva se revisó, cuándo y el dictamen: sin novedad o requiere mantenimiento.
 
-Lo que sí es nuestro es la consecuencia sobre la reserva. Mientras el Módulo 3 no nos avise, el préstamo sigue abierto y nadie más puede pedir ese activo: `Actualizar estado de los recursos` FR-011 dice que un préstamo no se libera por el paso del tiempo, ni siquiera vencido. Este caso de uso es el que recibe ese aviso y cierra el préstamo: libera el cupo de la persona y desocupa el periodo en el calendario del Módulo 2, para que el activo se pueda volver a reservar. Si además quedó dañado, eso no llega por aquí: se ve al consultar la disponibilidad, que le pregunta al Módulo 1 su estado. Con los espacios es distinto: el dictamen de la revisión sí nos llega, y el sistema lo registra sobre la reserva revisada, para que quede constancia de en qué uso se detectó que el espacio necesitaba mantenimiento.
+Lo que sí es nuestro es la consecuencia sobre la reserva. Mientras el Módulo 3 no nos avise, el préstamo sigue abierto y nadie más puede pedir ese activo: `Actualizar estado de los recursos` FR-011 dice que un préstamo no se libera por el paso del tiempo, ni siquiera vencido. Este caso de uso es el que recibe ese aviso y cierra el préstamo: libera el cupo de la persona y desocupa el periodo en el calendario del Módulo 2, para que el activo se pueda volver a reservar. Con los espacios es igual: el dictamen de la revisión nos llega, y el sistema lo registra sobre la reserva revisada, para que quede constancia de en qué uso se detectó que el espacio necesitaba mantenimiento.
 
 La división de trabajo queda como en `Recibir reporte de no asistencia`: el Módulo 3 constata el hecho en el sitio y nos lo reporta; el Módulo 2 cierra el préstamo y deja la constancia. La mora la calcula él, con la hora pactada que nosotros le dimos al reservar en `Reportar información de la reserva` y la hora real que él mismo observa.
 
 **Actores**
 
-| Actor | Tipo | Participación |
-|---|---|---|
-| Módulo 3 | Secundario | Recibe físicamente el activo, hace el check-out y nos reporta qué préstamo se cierra, con la fecha y la hora reales. Sin ese reporte no hay devolución. Los daños de los activos se los reporta directamente al Módulo 1. Después calcula la mora y aplica la sanción. En los espacios, revisa cada uno después de su uso y nos reporta qué reserva revisó, cuándo y si el espacio necesita mantenimiento. |
-| Estudiante / Monitor | Indirectos | Son quienes devuelven el activo o usan el espacio que después se revisa; no ejecutan este caso de uso. |
+| Actor                | Tipo       | Participación                                                                                                                                                                                                                                           |
+|----------------------|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Módulo 3             | Secundario | Recibe físicamente el activo, hace el check-out y nos reporta qué préstamo se cierra, con la fecha y la hora reales. Sin ese reporte no hay devolución. Los daños se los reporta directamente al Módulo 1. Después calcula la mora y aplica la sanción. |
+| Estudiante / Monitor | Indirectos | Son quienes devuelven el activo o usan el espacio que después se revisa; no ejecutan este caso de uso.                                                                                                                                                  |
 
 **Casos de uso relacionados**
 
@@ -94,9 +94,7 @@ Como sistema, quiero recibir del Módulo 3 el check-out de cada espacio después
 
 ### Edge Cases
 
-- **Check-out exactamente en la hora pactada**: devolver a las 22:00 en punto —la hora de vencimiento que fija `Reservar recursos` FR-013— tiene que contarse siempre igual. El criterio lo aplica el Módulo 3, pero el dato que registramos debe permitir distinguirlo sin ambigüedad.
 - **Check-out repetido sobre el mismo préstamo**: recibirlo dos veces no puede cerrar dos veces el préstamo ni liberar dos veces el cupo.
-- **Check-out sobre un préstamo que ya no está abierto**: si la reserva fue cancelada antes de la entrega, o si el reporte llega sobre un préstamo ya cerrado, el sistema DEBE rechazarlo explicando por qué en vez de crear un cierre nuevo.
 - **El Módulo 3 no responde o el aviso se pierde**: no hay nada que reintentar de nuestro lado, porque el mensaje entra, no sale. La consecuencia es que el préstamo sigue abierto y aparece en la lista de pendientes de devolución hasta que el check-out llegue. El sistema no lo cierra por su cuenta.
 - **Devolución que nunca llega (umbral de pérdida de 7 días)**: Si transcurren 7 días calendario desde la fecha y hora pactadas sin que llegue ningún check-out:
   1. El préstamo se da por vencido de forma definitiva y se cierra con el estado `NO_DEVUELTO_PERDIDO`.
@@ -104,10 +102,8 @@ Como sistema, quiero recibir del Módulo 3 el check-out de cada espacio después
   3. Se escala el caso al Módulo 3 con el expediente completo (persona, recurso, placa de inventario y días de mora) para que aplique la sanción disciplinaria correspondiente e inicie el proceso administrativo de cobro por reposición.
 - **Check-out el mismo día de la entrega**: si alguien recoge un activo y lo devuelve sin haberlo llegado a usar, el check-out se procesa igual y no cuenta como retraso; el préstamo se cierra ahí y el cupo se libera.
 - **Espacios físicos (salones, auditorios, salas de estudio)**: su check-out no libera nada, porque no hay nada que devolver. Su liberación ocurre sola al cumplirse la hora de fin de la franja, a través de `Actualizar estado de los recursos`, llegue o no la revisión. Tampoco les aplica el umbral de pérdida de 7 días.
-- **Check-out de un espacio sobre una reserva que no se usó**: si la reserva fue cancelada o marcada como no asistencia, no hubo uso que revisar; el sistema DEBE rechazar el check-out explicando el motivo.
 - **Check-out de un espacio antes de que termine su franja**: la revisión es posterior al uso. Si llega antes de la hora de fin, el sistema DEBE rechazarlo, porque el espacio todavía está en uso.
-- **Espacio que requiere mantenimiento con reservas ya confirmadas**: el dictamen queda registrado, pero qué pasa con las reservas siguientes sobre ese espacio y con la etiqueta que se muestra depende de quién fija `EN_MANTENIMIENTO`.
-  > [NEEDS CLARIFICATION: `EN_MANTENIMIENTO` es un estado del Módulo 1. Falta acordar si el Módulo 3 también le reporta el dictamen al Módulo 1, o si el Módulo 2 debe avisarle o actuar él mismo sobre las reservas confirmadas del espacio (ver P-20, punto 2, en [pendientes-clarificacion.md](./pendientes-clarificacion.md)).]
+- **Espacio que requiere mantenimiento con reservas ya confirmadas**: el dictamen queda registrado, pero qué pasa con las reservas siguientes sobre ese espacio: ver [spec-modulo2-13-cancelar-por-mantenimiento.md](spec-modulo2-13-cancelar-por-mantenimiento.md)
 
 ## Requirements *(mandatory)*
 
@@ -120,19 +116,18 @@ Como sistema, quiero recibir del Módulo 3 el check-out de cada espacio después
 - **FR-005**: El sistema NO DEBE calcular ni aplicar la sanción por mora ni el cobro por daño; eso corresponde al Módulo 3.
 - **FR-006**: El sistema NO DEBE cerrar un préstamo por su cuenta. Sin check-out recibido, el préstamo sigue abierto y ocupando su periodo, incluso después de vencido el plazo.
 - **FR-007**: Un mismo check-out NO DEBE procesarse más de una vez, ni producir un segundo cierre del préstamo.
-- **FR-008**: El sistema DEBE rechazar el check-out que llegue sobre un préstamo que no está abierto, explicando el motivo, y DEBE confirmarle al Módulo 3 el resultado en ambos casos.
-- **FR-009**: El sistema DEBE mostrar como pendientes los préstamos cuya hora pactada ya pasó y sobre los que no ha llegado ningún check-out.
-- **FR-010**: El sistema DEBE guardar la fecha y hora en que recibió cada check-out, además de las que el check-out reporta, para poder auditar la diferencia entre lo que pasó y cuándo nos enteramos.
-- **FR-011**: El sistema NO DEBE recibir ni guardar la descripción de los daños de un activo; esa información va del Módulo 3 al Módulo 1.
-- **FR-012**: El sistema DEBE aceptar del Módulo 3 el check-out de una reserva de espacio ya terminada, con la fecha y hora de la revisión y su dictamen: `SIN_NOVEDAD` o `REQUIERE_MANTENIMIENTO`.
-- **FR-013**: El sistema DEBE registrar el dictamen sobre la reserva revisada. El check-out de un espacio NO DEBE liberar ni ocupar ninguna franja: la liberación sigue ocurriendo por la hora de fin, según `Actualizar estado de los recursos` FR-010.
-- **FR-014**: El sistema DEBE rechazar, explicando el motivo, el check-out de un espacio sobre una reserva cancelada, marcada como no asistencia o cuya franja no ha terminado. FR-007 y FR-008 aplican también a estos check-out.
-- **FR-015**: El sistema DEBE mostrar como pendientes de revisión las reservas de espacio ya terminadas sobre las que no ha llegado ningún check-out.
+- **FR-008**: El sistema DEBE rechazar el check-out que llegue sobre un préstamo que no está abierto, explicando el motivo.
+- **FR-009**: El sistema DEBE guardar la fecha y hora en que recibió cada check-out, además de las que el check-out reporta, para poder auditar la diferencia entre lo que pasó y cuándo nos enteramos.
+- **FR-010**: El sistema NO DEBE recibir ni guardar la descripción de los daños de un activo; esa información va del Módulo 3 al Módulo 1.
+- **FR-011**: El sistema DEBE aceptar del Módulo 3 el check-out de una reserva de espacio ya terminada, con la fecha y hora de la revisión y su dictamen: `SIN_NOVEDAD` o `REQUIERE_MANTENIMIENTO`.
+- **FR-012**: El sistema DEBE registrar el dictamen sobre la reserva revisada. El check-out de un espacio NO DEBE liberar ni ocupar ninguna franja: la liberación sigue ocurriendo por la hora de fin, según `Actualizar estado de los recursos` FR-010.
+- **FR-013**: El sistema DEBE rechazar, explicando el motivo, el check-out de un espacio sobre una reserva cancelada, marcada como no asistencia o cuya franja no ha terminado. FR-007 y FR-008 aplican también a estos check-out.
+- **FR-014**: El sistema DEBE mostrar como pendientes de revisión las reservas de espacio ya terminadas sobre las que no ha llegado ningún check-out.
 
 ### Key Entities
 
-- **Préstamo**: entrega de un recurso a una persona por un tiempo acordado. Atributos: persona, recurso, fecha y hora de entrega, fecha y hora pactadas de devolución, fecha y hora reales de devolución, estado. La fecha pactada no se decide aquí: la calcula `Reservar recursos` al confirmar el préstamo (UC2 FR-012 a FR-014), y una renovación la desplaza una única vez (UC2 FR-016), así que la vigente es la que haya quedado tras ella.
-- **CheckOut**: aviso que llega del Módulo 3 diciendo que un activo volvió o que un espacio fue revisado. Atributos: préstamo o reserva de espacio de origen, fecha y hora reales de la devolución o de la revisión, dictamen (solo en espacios: `SIN_NOVEDAD` o `REQUIERE_MANTENIMIENTO`), fecha y hora en que se recibió el aviso, resultado de su procesamiento.
+- **Préstamo**: entrega de un recurso a una persona por un tiempo acordado. Atributos: persona, recurso, fecha y hora de entrega, fecha y hora pactadas de devolución, fecha y hora reales de devolución, estado. La fecha pactada no se decide aquí: la calcula `Reservar recursos` al confirmar el préstamo (UC2 FR-012 a FR-014).
+- **CheckOut**: aviso que llega del Módulo 3 diciendo que un activo volvió o que un espacio fue revisado. Atributos: préstamo o reserva de espacio de origen, fecha y hora reales de la devolución o de la revisión, dictamen, fecha y hora en que se recibió el aviso, resultado de su procesamiento.
 - **Recurso**: el activo prestado cuyo periodo queda libre, o el espacio revisado después de su uso.
 - **Usuario**: la persona responsable del préstamo, que recupera un cupo al cerrarse, o de la reserva del espacio revisado.
 
@@ -144,5 +139,4 @@ Como sistema, quiero recibir del Módulo 3 el check-out de cada espacio después
 - **SC-002**: Un activo con check-out procesado vuelve a poder reservarse en menos de 5 segundos, salvo que el Módulo 1 lo tenga en `EN_MANTENIMIENTO`.
 - **SC-003**: Cero préstamos cerrados dos veces por un check-out repetido.
 - **SC-004**: Cero préstamos cerrados sin que haya llegado su check-out.
-- **SC-005**: Cero préstamos vencidos sin check-out que no aparezcan en la lista de pendientes de devolución.
-- **SC-006**: El 100 % de los check-out de espacios recibidos quedan registrados sobre su reserva con su dictamen, y ninguno cambia la disponibilidad de una franja.
+- **SC-005**: El 100 % de los check-out de espacios recibidos quedan registrados sobre su reserva con su dictamen, y ninguno cambia la disponibilidad de una franja.

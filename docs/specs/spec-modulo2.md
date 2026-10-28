@@ -15,7 +15,7 @@ Motor de reglas de negocio encargado de gestionar el uso de los recursos físico
 | Estudiante | Primario (humano) | Consulta recursos, reserva y cancela sus propias reservas. |
 | Monitor | Primario (humano) | Especialización de Estudiante: hereda todas sus capacidades. |
 | Dirección de Programa | Primario (humano) | Importa la carga académica semestral y consulta el catálogo de recursos. |
-| Módulo 1 | Secundario (sistema) | Inventario físico: es dueño del catálogo y del estado operativo de cada recurso (`DISPONIBLE`, `EN_USO`, `EN_MANTENIMIENTO`). El Módulo 2 lo consulta y no le guarda reservas ni bloqueos. |
+| Módulo 1 | Secundario (sistema) | Inventario físico: es dueño del catálogo y del estado operativo de cada recurso (`DISPONIBLE`, `EN_USO`, `EN_MANTENIMIENTO`). El Módulo 2 lo consulta y no le guarda reservas ni bloqueos; lo único que le envía es el inicio de uso de una reserva, para que pase el recurso a `EN_USO`. |
 | Módulo 3 | Secundario (sistema) | Control de uso, sanciones y analítica: **recibe** de nosotros la ficha de cada reserva confirmada y las cancelaciones; **nos reporta** lo que solo él ve, las ausencias que constata y el check-out de cada activo que vuelve; y **provee de vuelta** el reporte de cumplimiento con las sanciones vigentes. Es quien decide y aplica las sanciones. |
 
 ## Reparto de estados entre módulos
@@ -24,13 +24,13 @@ Motor de reglas de negocio encargado de gestionar el uso de los recursos físico
 
 | Estado | Dueño | Qué significa |
 |---|---|---|
-| `DISPONIBLE`, `EN_USO`, `EN_MANTENIMIENTO` | Módulo 1 | Estado operativo del recurso. El Módulo 2 lo consulta; no lo guarda ni lo decide. |
+| `DISPONIBLE`, `EN_USO`, `EN_MANTENIMIENTO` | Módulo 1 | Estado operativo del recurso. El Módulo 2 lo consulta y no lo guarda; de los tres, el único que decide es el paso a `EN_USO`, porque el inicio de uso es un hecho de la reserva, y se lo comunica al Módulo 1 (UC7 FR-004). |
 | `RESERVADO`, `BLOQUEO_ACADEMICO` | Módulo 2 | Ocupación de una franja por una reserva o una clase, o de un periodo por un préstamo. Vive en la base del Módulo 2, y el Módulo 1 no la necesita. |
 | `CONFIRMADA`, `CANCELADA`, `CANCELADA_POR_PRIORIDAD_ACADEMICA`, `CANCELADA_POR_RECURSO_NO_DISPONIBLE`, `FINALIZADA` | Módulo 2 | Estados de la reserva. |
 
 Al estudiante se le sigue mostrando una sola etiqueta por recurso, que arma el Módulo 2 juntando las dos fuentes. Si en una franja aplica más de una, se muestra la de mayor prioridad: `EN_MANTENIMIENTO`, luego `BLOQUEO_ACADEMICO`, luego `EN_USO` o `RESERVADO`, y por último `DISPONIBLE`.
 
-Lo que el Módulo 3 constata en el sitio sigue la misma regla: los daños de un recurso se los reporta directamente al Módulo 1, y al Módulo 2 solo le llega lo que toca a la reserva, es decir, la ausencia y el check-out que cierra el préstamo. Si el Módulo 2 le sigue avisando algo al Módulo 1, y cómo se entera de que un recurso entró a mantenimiento, está en P-20 de [pendientes-clarificacion.md](./pendientes-clarificacion.md).
+Lo que el Módulo 3 constata en el sitio sigue la misma regla: los daños de un recurso se los reporta directamente al Módulo 1, y al Módulo 2 solo le llega lo que toca a la reserva, es decir, la ausencia y el check-out que cierra el préstamo. En el otro sentido, del Módulo 2 al Módulo 1 sale un solo aviso, el inicio de uso —de una reserva cuando la persona llega, y de una clase cuando empieza—, y va con el tramo que durará, así que el Módulo 1 libera un espacio al terminarlo sin que haya que avisarle otra vez. La devolución de un activo y la entrada a `EN_MANTENIMIENTO` las constata el Módulo 3 y se las reporta él. Cómo se entera el Módulo 2 de que un recurso entró a mantenimiento sigue abierto en P-20 de [pendientes-clarificacion.md](./pendientes-clarificacion.md).
 
 ## Trazabilidad diagrama → specs
 
@@ -47,6 +47,14 @@ Lo que el Módulo 3 constata en el sitio sigue la misma regla: los daños de un 
 | Reportar información de la reserva `<<include>>` | P3 | [spec-modulo2-uc10-reportar-informacion-reserva.md](./spec-modulo2-uc10-reportar-informacion-reserva.md) |
 | Reportar cancelación de reserva `<<include>>` | P2 | [spec-modulo2-uc11-reportar-cancelacion-reserva.md](./spec-modulo2-uc11-reportar-cancelacion-reserva.md) |
 | Recibir check-out | P3 | [spec-modulo2-uc12-recibir-check-out.md](./spec-modulo2-uc12-recibir-check-out.md) |
+
+### Especificaciones que no son casos de uso
+
+Reglas de negocio que no tienen óvalo propio en el diagrama y se resuelven con casos de uso que ya existen.
+
+| Regla | Prioridad | Archivo de especificación |
+|---|---|---|
+| Cancelar reservas por mantenimiento de un espacio (sale de `Recibir check-out`) | P3 | [spec-modulo2-cancelar-por-mantenimiento.md](spec-modulo2-13-cancelar-por-mantenimiento.md) |
 
 ## Orden de entrega sugerido
 
@@ -70,5 +78,5 @@ Lo que el Módulo 3 constata en el sitio sigue la misma regla: los daños de un 
 - El Monitor ya no tiene ninguna capacidad propia dentro del módulo: heredaba de Estudiante y lo que lo distinguía era consultar reportes, que ahora ejecuta el sistema. [NEEDS CLARIFICATION]
 - Política de sanción retroactiva: ¿se cancelan las reservas ya confirmadas de un estudiante sancionado, o solo se le impide crear nuevas? [NEEDS CLARIFICATION]
 - Umbral de no-show: definido en 10 minutos desde el inicio de la franja (ver `Reservar recursos`, FR-010). Queda abierto su encadenamiento con las sanciones. [NEEDS CLARIFICATION: cuántas ausencias acumuladas originan sanción y cuánto dura]
-- Parámetros ya definidos: **límite máximo de préstamos simultáneos, 3 reservas vigentes por persona** (`Reservar recursos`, FR-008) y **antelación mínima de cancelación, 10 minutos** (`Cancelar reserva`, FR-007). La **duración máxima de la reserva de un espacio** quedó en **2 horas continuas** (`Reservar recursos`, FR-009), y el **plazo de préstamo de un activo** depende de su tipo y viene como atributo del Módulo 1, en días hábiles (`Reservar recursos`, FR-012). Un préstamo se puede **renovar una sola vez** antes de vencer, sumando otra vez el plazo desde el vencimiento vigente y sin ocupar cupo nuevo (`Reservar recursos`, FR-016 y FR-017).
+- Parámetros ya definidos: **límite máximo de préstamos simultáneos, 3 reservas vigentes por persona** (`Reservar recursos`, FR-008) y **antelación mínima de cancelación, 10 minutos** (`Cancelar reserva`, FR-007). La **duración máxima de la reserva de un espacio** quedó en **2 horas continuas** (`Reservar recursos`, FR-009), y el **plazo de préstamo de un activo** depende de su tipo y viene como atributo del Módulo 1, en días hábiles (`Reservar recursos`, FR-012).
 - **Horario de reservas y cambio de día**: Se definió que la ventana de operación es de 06:00 a 22:00 del mismo día (hora Colombia, `America/Bogota`). No se permiten reservas nocturnas (de 10:00 p. m. a 06:00 a. m. del día siguiente) ni franjas que crucen la medianoche.

@@ -53,12 +53,7 @@ Como sistema, quiero enviarle al Módulo 3 la ficha de cada reserva en cuanto se
    - **When** la reserva queda `CONFIRMADA`
    - **Then** la ficha incluye además la fecha y hora de recogida y el vencimiento calculado, que es contra lo que el Módulo 3 medirá el check-out
 
-3. **Scenario**: Renovación de un préstamo
-   - **Given** un préstamo informado antes se renueva y su vencimiento se desplaza
-   - **When** la renovación queda confirmada
-   - **Then** el sistema le informa al Módulo 3 el vencimiento nuevo, para que no reclame el recurso contra una fecha que ya no rige
-
-4. **Scenario**: El Módulo 3 no responde
+3. **Scenario**: El Módulo 3 no responde
    - **Given** el Módulo 3 está caído temporalmente
    - **When** un Estudiante confirma una reserva
    - **Then** la reserva se confirma igual y el recurso queda apartado igual; la ficha queda pendiente y se reintenta hasta entregarse
@@ -72,7 +67,6 @@ Como sistema, quiero enviarle al Módulo 3 la ficha de cada reserva en cuanto se
 
 - **Reserva denegada**: si la reserva no llega a confirmarse —por conflicto académico, cupo o sanción— no hay ficha que enviar. Solo se informa lo que quedó `CONFIRMADA`.
 - **Fichas repetidas**: si un envío se reintenta, el Módulo 3 no puede terminar contando dos veces la misma reserva ni vigilando dos veces al mismo titular.
-- **Reserva que cambia después de informada**: una renovación mueve el vencimiento, y una cancelación la deshace. Lo primero se informa desde aquí; lo segundo, desde `Reportar cancelación de reserva`. La ficha enviada nunca se corrige en silencio.
 - **Reserva de origen académico**: en el diagrama, `Importar horarios semestrales` incluye a `Reservar recursos`, así que cada bloqueo académico pasa por reservar y, con eso, también por este caso de uso: su ficha sale igual que la de cualquier reserva. Lo que cambia es lo que lleva: no tiene titular estudiantil sino la asignatura, el programa y el docente de la clase, y va marcada con origen académico para que el Módulo 3 no le atribuya ausencias ni sanciones a nadie. Volver a cargar el mismo horario no crea bloqueos repetidos (UC3 FR-007) y tampoco debe repetir fichas (FR-006).
 
 ## Requirements *(mandatory)*
@@ -81,13 +75,12 @@ Como sistema, quiero enviarle al Módulo 3 la ficha de cada reserva en cuanto se
 
 - **FR-001**: El sistema DEBE enviarle al Módulo 3 la ficha de cada reserva en el momento en que queda confirmada, como parte del flujo de `Reservar recursos`.
 - **FR-002**: Cada ficha DEBE indicar el identificador de la reserva, su titular (o, si es un bloqueo académico, lo que pide FR-009), el recurso apartado y el tiempo que ocupa: la franja horaria cuando es un espacio, y el periodo de préstamo con su fecha y hora de vencimiento cuando es un activo.
-- **FR-003**: El sistema DEBE informar el vencimiento nuevo cuando un préstamo se renueve, porque es la fecha contra la que el Módulo 3 mide el retraso.
-- **FR-004**: El sistema NO DEBE decidir ni aplicar sanciones; solo entrega la información, y el Módulo 3 saca las consecuencias.
-- **FR-005**: Si el Módulo 3 no está disponible, la reserva DEBE confirmarse igualmente y la ficha DEBE reintentarse hasta entregarse.
-- **FR-006**: Reenviar una ficha NO DEBE producir una segunda reserva contabilizada para el Módulo 3.
-- **FR-007**: El sistema DEBE conservar el registro de cada ficha enviada y de si llegó o no.
-- **FR-008**: El sistema NO DEBE enviar ficha de una reserva que no llegó a confirmarse.
-- **FR-009**: El sistema DEBE enviar también la ficha de cada bloqueo académico que entre por `Importar horarios semestrales`. Esa ficha DEBE ir marcada con origen académico, llevar la asignatura, el programa y el docente en lugar del titular, e indicar que no es sancionable.
+- **FR-003**: El sistema NO DEBE decidir ni aplicar sanciones; solo entrega la información, y el Módulo 3 saca las consecuencias.
+- **FR-004**: Si el Módulo 3 no está disponible, la reserva DEBE confirmarse igualmente y la ficha DEBE reintentarse hasta entregarse.
+- **FR-005**: Reenviar una ficha NO DEBE producir una segunda reserva contabilizada para el Módulo 3.
+- **FR-006**: El sistema DEBE conservar el registro de cada ficha enviada y de si llegó o no.
+- **FR-007**: El sistema NO DEBE enviar ficha de una reserva que no llegó a confirmarse.
+- **FR-008**: El sistema DEBE enviar también la ficha de cada bloqueo académico que entre por `Importar horarios semestrales`. Esa ficha DEBE ir marcada con origen académico, llevar la asignatura, el programa y el docente en lugar del titular, e indicar que no es sancionable.
 
 ### Key Entities
 
@@ -102,7 +95,7 @@ Como sistema, quiero enviarle al Módulo 3 la ficha de cada reserva en cuanto se
 
 - **SC-001**: El 100 % de las reservas confirmadas, incluidos los bloqueos académicos, quedan informadas al Módulo 3 con su titular —o su asignatura, programa y docente—, su recurso y su tiempo apartado.
 - **SC-002**: La ficha sale en menos de 5 segundos desde que la reserva queda confirmada.
-- **SC-003**: Cero reservas contabilizadas dos veces por un reenvío.
+- **SC-003**: Cero reservas contabilizadas de más por un reenvío.
 - **SC-004**: Cero fichas perdidas ante una caída del Módulo 3 de hasta 30 minutos.
 - **SC-005**: Cero reservas denegadas informadas como si fueran confirmadas.
 - **SC-006**: Cero fichas de origen académico que el Módulo 3 pueda tomar por reservas sancionables.
