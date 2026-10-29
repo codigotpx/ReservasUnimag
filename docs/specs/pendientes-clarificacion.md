@@ -2,7 +2,7 @@
 
 Lista de decisiones que faltan por definir. Cada entrada dice **qué hay que preguntar** y **exactamente dónde se aplica** una vez se tenga la respuesta, para no volver a rastrear los archivos.
 
-**Última revisión**: 2026-10-05
+**Última revisión**: 2026-10-26
 
 ---
 
@@ -271,7 +271,7 @@ Como `Importar horarios semestrales` incluye a `Reservar recursos`, cada clase i
 Con el nuevo reparto, el Módulo 1 es dueño de `DISPONIBLE`, `EN_USO` y `EN_MANTENIMIENTO`, y el Módulo 2 de `RESERVADO`, `BLOQUEO_ACADEMICO` y los estados de la reserva. Eso cambia varias cosas que habíamos acordado con el Módulo 1:
 
 1. **¿El Módulo 2 le sigue avisando algo al Módulo 1?** *Resuelto: sí, un solo aviso.* El inicio de uso es un hecho de la reserva y es nuestro, así que el Módulo 2 le comunica el paso a `EN_USO` (UC7 FR-004), tanto el de una reserva con titular como el de una clase cuando llega su hora. El aviso lleva el tramo de uso, con el que el Módulo 1 libera un espacio por sí solo (UC7 FR-004a); la devolución de un activo y la entrada a `EN_MANTENIMIENTO` las constata el Módulo 3 y se las reporta directamente, igual que los daños (UC7 FR-012). La flecha `Actualizar estado de los recursos` → Módulo 1 del diagrama se queda, con ese único contenido. Lo que falta es acordar con su equipo el medio y los datos del aviso; el registro de la llegada de una persona sigue en P-02.
-2. **Que el Módulo 1 nos avise cuando un recurso deja de estar disponible.** Si un recurso entra a `EN_MANTENIMIENTO` —porque volvió dañado, porque un salón tiene una gotera o porque hay mantenimiento programado—, las reservas que ya estaban confirmadas sobre él tienen que cancelarse (UC4 FR-010). Como el daño va del Módulo 3 al Módulo 1, nadie nos lo dice. Al consultar sí lo vemos; el hueco son las reservas hechas antes. Como alternativa de respaldo, el check-out del Módulo 3 podría traer solo una marca de "volvió con daño", pero no cubriría los espacios ni el mantenimiento programado.
+2. **Que el Módulo 1 nos avise cuando un recurso deja de estar disponible.** Si un recurso entra a `EN_MANTENIMIENTO` —porque volvió dañado, porque un salón tiene una gotera o porque hay mantenimiento programado—, las reservas que ya estaban confirmadas sobre él tienen que cancelarse (UC4 FR-010). Como el daño va del Módulo 3 al Módulo 1, nadie nos lo dice. Al consultar sí lo vemos; el hueco son las reservas hechas antes. Como alternativa de respaldo, el check-out del Módulo 3 podría traer solo una marca de "volvió con daño", pero no cubriría los espacios ni el mantenimiento programado. *Mientras tanto (2026-10-26):* la cancelación ya está implementada detrás de `CancelForMaintenancePort`, y Dirección de Programa la dispara a mano con `POST /api/resources/{resourceId}/cancel-reservations` (plan de UC4, Contratos §2). Cuando llegue el aviso, quien lo reciba llamará al mismo puerto.
 3. **¿`EN_MANTENIMIENTO` trae fechas?** Su estado es el de ahora, pero nosotros preguntamos por franjas futuras. Si un salón entra hoy a mantenimiento, ¿sigue bloqueado para la reserva del martes?
 4. **Quitar `RESERVADO` y `BLOQUEO_ACADEMICO` de su spec**, donde todavía aparecen como estados suyos.
 5. **Quién le avisa al estudiante desplazado por una clase.** UC3 decía que el Módulo 1 recibía las cancelaciones "para informar a los estudiantes afectados"; con el reparto ya no se le envían.
@@ -287,6 +287,143 @@ Con el nuevo reparto, el Módulo 1 es dueño de `DISPONIBLE`, `EN_USO` y `EN_MAN
 | `spec-modulo2-uc1-consultar-recursos.md` | Edge case **Mantenimiento que empieza dentro de la franja** | Ajustar según la respuesta 3. |
 | `spec-modulo2-uc8-consultar-disponibilidad-recursos.md` | **FR-002** | Igual. |
 | `spec-modulo2-uc3-importar-horarios-semestrales.md` | Escenario 3 y **FR-005** | Decir quién avisa al estudiante, según la respuesta 5. |
+
+---
+
+## P-21 — `CAN-001` y `CAN-002` dicen cosas distintas en el consolidado y en UC4
+
+**Estado**: abierto. Detectado al implementar UC4 (2026-10-26).
+
+El diccionario de errores de `spec-modulo2.md` asigna `CAN-001` a "no es el titular" y `CAN-002` a "ya no es cancelable". El spec de UC4, en cambio, usa `CAN-001` para la reserva fuera de plazo (tabla de errores, escenario 3 y FR-003), y el escenario 5 de UC11 dice lo mismo. Los dos no pueden tener razón a la vez.
+
+La implementación sigue a UC4 y UC11, que son tres lugares contra uno: `CAN-001` sale cuando la reserva ya no es cancelable, por plazo o porque el activo ya se entregó, y lleva un `reason` que distingue los dos casos. Cancelar la reserva de otra persona responde `404` sin código, porque un `403` confirmaría que el identificador existe (plan de UC4, Decisiones de diseño). `CAN-002` queda declarado en el código pero no se emite.
+
+**Qué decidir**: si el consolidado se corrige para que coincida con UC4, o si se quiere un código propio para "no es el titular" aunque nunca llegue al cliente.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2.md` | Diccionario de errores | `CAN-001` = la reserva ya no es cancelable (plazo o activo entregado). Quitar `CAN-002`, o reasignarlo según la decisión. |
+| `spec-modulo2-uc4-cancelar-reserva.md` | Tabla de errores | Mencionar que "no es el titular" se responde como reserva inexistente. |
+
+---
+
+## P-22 — El acuse de no asistencia: lo que hay que acordar con el Módulo 3
+
+**Estado**: abierto. Detectado al implementar UC9 (2026-10-26).
+
+UC9 consume `module3.reservation.no-show.v1` y responde por un topic nuevo, `module2.reservation.no-show-ack.v1` (plan de UC9, Contratos §1 y §2). El Módulo 3 todavía no los ha visto. Además, al implementar aparecieron tres motivos de rechazo que el plan no listaba:
+
+| `rejection` | Cuándo |
+|---|---|
+| `ALREADY_PICKED_UP` | El activo ya se recogió: la persona sí se presentó. |
+| `RESERVATION_FINISHED` | La reserva ya estaba cerrada, por ejemplo por una ausencia que luego se anuló. |
+| `ACADEMIC_BLOCK` | La reserva es una clase, sin titular al que anotarle la ausencia. |
+
+Otras decisiones que el Módulo 3 debe conocer:
+
+- La **anulación** (`NoShowReportVoided`) no tiene acuse: el plan no lo pedía. Si la anulan dos veces, la segunda no hace nada.
+- Un evento que no se puede leer, o que apunta a una reserva que no existe, va a `module2.dlt.module3.reservation.no-show.v1` con la causa en las cabeceras. Nadie consume ese topic todavía.
+- Si nuestra base está caída, el consumidor reintenta sin tope y se queda en ese evento, como dice el plan general. El plan de UC9 proponía 5 reintentos y luego el DLT, pero eso mandaría al DLT reportes válidos.
+
+**Qué preguntar**: si el Módulo 3 acepta los dos topics y el JSON tal cual, si los tres rechazos nuevos les sirven, y si quieren acuse también para la anulación.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `docs/plan/plan-uc9-recibir-reporte-no-asistencia.md` | Contratos §2 | Sumar los tres rechazos nuevos a la tabla de `rejection`. |
+| `docs/plan/contratos-integracion.md` | Lo que publicamos | Cambiar el estado del acuse de "por acordar" a "acordado" cuando respondan. |
+
+---
+
+## P-23 — El check-out: lo que hay que acordar con el Módulo 3 y lo que quedó sin hacer
+
+**Estado**: abierto. Detectado al implementar UC12 (2026-10-26).
+
+UC12 consume `module3.reservation.check-out.v1` y responde por `module2.reservation.check-out-ack.v1` (plan de UC12, Contratos §1 y §2). Hay que acordar con el Módulo 3:
+
+- **Los dos topics y su JSON**, sobre todo que el instante de negocio es `data.occurredAt` y no el del envoltorio.
+- **Cómo nos mandan daños, si lo hacen por error.** Rechazamos con `VERDICT_REQUIRED` un activo con dictamen o con alguno de los campos `damage`, `damages` o `damageDescription`. Si usan otro nombre, no lo detectamos; igual no se guarda, porque solo leemos los campos del contrato.
+- **Un check-out repetido** se acepta con `duplicate: true` y los datos del primero, y lleva `loanClosed: false` y `quotaReleased: false` porque esa copia no cerró ni liberó nada.
+
+Decisiones tomadas al implementar que el plan no tenía:
+
+- **Cinco rechazos en vez de ocho.** `ALREADY_REVIEWED` y `LOAN_NOT_OPEN` se resuelven como duplicados: un préstamo solo se cierra con un check-out, así que "ya cerrado" es siempre "ya hay check-out". `LOAN_DECLARED_LOST` no existe mientras no exista el umbral de pérdida.
+- **"Pendiente de revisión"** es un espacio cuya franja terminó, sin check-out y sin ausencia vigente. El plan decía "una reserva `FINALIZADA`", pero un espacio sigue `CONFIRMADA` al terminar su franja: con esa definición la lista habría salido vacía.
+- **El dictamen `REQUIERE_MANTENIMIENTO` cancela las reservas estudiantiles que el espacio tenía por delante** (spec 13), en la misma transacción que el check-out.
+
+**Lo que quedó sin hacer — el umbral de pérdida de 7 días** (fase 4 del plan, edge case *Devolución que nunca llega*). Pide un estado nuevo (`NO_DEVUELTO_PERDIDO`), una tarea diaria que cierre préstamos por su cuenta, dar de baja el recurso para que UC1 deje de ofrecerlo y un evento `LoanDeclaredLost` hacia el Módulo 3. Depende de **P-08**, que no está ratificado. Mientras tanto, la lista de préstamos pendientes ya muestra `lossThresholdAt` y cuenta los que están a menos de 48 horas, y `reservations.loan-loss-threshold` fija el plazo.
+
+**Qué preguntar**: al Módulo 3, los dos topics y si les sirve el acuse tal cual; al equipo, si se implementa ya el umbral de pérdida o se espera a P-08.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `docs/plan/plan-uc12-recibir-check-out.md` | Decisiones de diseño | La tabla de rechazos (cinco) y la definición de pendiente de revisión. |
+| `docs/plan/contratos-integracion.md` | Lo que publicamos | El estado del acuse de check-out cuando respondan. |
+
+---
+
+## P-24 — El inicio de uso: lo que hay que acordar y lo que se decidió al implementar UC7
+
+**Estado**: abierto. Detectado al implementar UC7 (2026-10-26).
+
+UC7 publica `ResourceUseStarted` en `module2.resource.status.v1` (plan de UC7, Contratos §4). Es lo único que le mandamos al Módulo 1. Hay que acordar con su equipo:
+
+- **El topic y el JSON**, y que **deduplique por `eventId`**: la entrega es *at-least-once*.
+- **Que cierre el uso por su cuenta con `useEndsAt`** en los espacios. En un activo no viaja, porque su uso termina con la devolución que le reporta el Módulo 3.
+
+Sigue abierto **P-02**: por dónde entra el registro de que una persona llegó. Mientras tanto, el titular lo registra desde la app con `POST /api/reservations/{reservationId}/start-use`. Las clases no lo necesitan: empiezan solas a su hora, con una tarea que corre cada minuto.
+
+Decisiones tomadas al implementar que el plan no fijaba o que cambian lo que decía:
+
+- **`USO-001` y `USO-002`** son códigos nuevos, propuestos por el plan. Hay que añadirlos al diccionario consolidado de `spec-modulo2.md`.
+- **Quien no es titular recibe `404`, no `403`**, como al cancelar (UC4): un `403` confirmaría que la reserva existe.
+- **La ventana para registrar la llegada es el mismo plazo de cancelación** (`reservations.min-cancellation-notice`, 10 minutos): no hay un tercer umbral que mantener.
+- **Una reserva con la llegada registrada ya no admite ausencia** (nuevo rechazo `USE_ALREADY_STARTED` en el acuse de UC9) **ni cancelación** (`CAN-001` con `reason: USE_STARTED`). La cancelación por mantenimiento se la salta, igual que a un activo en manos de alguien.
+- **SC-005 se cumple por la *outbox***: el aviso es una fila más en la misma transacción, así que una caída del Módulo 1 o de Kafka no afecta a la operación. No hay prueba con el adaptador lanzando a propósito, porque un fallo al escribir en la base deshace la transacción entera, que es lo correcto.
+
+**Qué preguntar**: al Módulo 1, el contrato del topic; al equipo, P-02 y los dos códigos nuevos.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `spec-modulo2.md` | Diccionario de errores | Añadir `USO-001` y `USO-002`. |
+| `docs/plan/contratos-integracion.md` | Lo que publicamos | El estado de `module2.resource.status.v1` cuando responda el Módulo 1. |
+| `docs/plan/plan-uc7-actualizar-estado-recursos.md` | Contratos §3 | El `404` en lugar del `403`. |
+
+---
+
+## P-25 — La carga del horario: decisiones de implementación de UC3 que el plan no tenía
+
+**Estado**: abierto. Detectado al implementar UC3 (2026-10-26).
+
+Lo que cambió respecto al plan, y por qué:
+
+- **Las sesiones entran por UC2, pero por su rama académica** (`AcademicBlockCreator`), no llamando a `ReserveResourcesUseCase` sesión por sesión. Ese caso de uso le pide la ficha al Módulo 1 en cada llamada, y un semestre son miles de sesiones. La rama académica recibe la ficha ya consultada, se salta sanción, cupo, tope de 2 horas y titular, y pasa igual por UC7 y UC10, así que el `<<include>>` de P-06 se cumple.
+- **Al Módulo 1 se le pregunta una vez por recurso distinto** con la ficha de cada uno, no con la operación por lote de estado operativo: esa operación no trae el nombre del recurso, que el reporte necesita. Siguen siendo decenas de llamadas por carga, no miles.
+- **Retirar una clase es un cuarto origen de cancelación, `SCHEDULE_WITHDRAWN`**, con estado `CANCELADA` y no atribuible a nadie. UC11 y el contrato del evento hablaban de tres orígenes; hay que avisarle al Módulo 3 que puede llegar este cuarto.
+- **Solo se crean sesiones que todavía no empezaron**, y una recarga solo retira bloqueos futuros. Con eso, una carga a mitad de semestre no crea bloqueos en el pasado ni desplaza reservas que ya terminaron.
+- **Una clase sobre un activo no crea préstamo**: la reserva académica de un activo no tiene fila en `loan`.
+- **`IMPACT_CHANGED` compara los conjuntos de reservas y bloqueos, no solo cuántos son**: si cambió cuáles, aunque sean los mismos en número, se rechaza.
+- **La parte del multipart se llama `file`**, no `archivo` como decía la tabla de Contratos §1; el resto del contrato está en inglés.
+- **Una reserva estudiantil en la que ya se registró la llegada (UC7) tampoco se desplaza**: sale como `ASSET_ALREADY_PICKED_UP`, igual que un activo en manos de alguien.
+
+Sigue abierto lo que el plan ya decía: el calendario real de festivos de la universidad, para no crear sesiones en días no hábiles, y que la Dirección de Programa confirme que puede exportar el CSV de Contratos §5.
+
+**Qué preguntar**: al Módulo 3, si acepta el cuarto origen; a la Dirección de Programa, el formato del archivo y el calendario de festivos.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `docs/plan/plan-uc11-reportar-cancelacion-reserva.md` | Contratos §1 | Añadir la columna de `SCHEDULE_WITHDRAWN` a la tabla de las formas del evento. |
+| `docs/plan/plan-uc3-importar-horarios-semestrales.md` | Contratos §1 | El nombre de la parte del multipart. |
+| `application.properties` | `reservations.holidays` | El calendario real de la universidad. |
 
 ---
 

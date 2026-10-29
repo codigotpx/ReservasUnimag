@@ -1,0 +1,10 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/cancellation-denied",
+  "title": "La reserva ya no es cancelable",
+  "status": 409,
+  "detail": "Esta reserva empieza en menos de 10 minutos. El plazo mínimo para cancelar es de 10 minutos de antelación.",
+  "instance": "/api/reservations/9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+  "code": "CAN-001",
+  "minNoticeMinutes": 10,
+  "referenceAt": "2026-09-01T10:00:00-05:00"
+}

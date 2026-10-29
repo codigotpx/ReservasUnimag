@@ -1,0 +1,28 @@
+{
+  "eventId": "c3a7f1d2-4e58-4b09-9a61-7d2e8f0b5c34",
+  "type": "ReservationRecordCreated",
+  "version": 1,
+  "occurredAt": "2026-08-30T09:14:22-05:00",
+  "data": {
+    "reservationId": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+    "origin": "ESTUDIANTIL",
+    "sanctionable": true,
+    "resource": {
+      "id": "ESP-0107",
+      "name": "Sala de Estudio 3",
+      "category": "ESPACIO",
+      "type": "SALA_DE_ESTUDIO",
+      "location": "Biblioteca, piso 1"
+    },
+    "holder": {
+      "userId": "5f1b9c2d-7a34-4e81-b0f6-3c8d1e9a4b72",
+      "code": "2019114045",
+      "name": "Camilo Cerpa",
+      "role": "ESTUDIANTE"
+    },
+    "occupancy": {
+      "start": "2026-09-01T10:00:00-05:00",
+      "end": "2026-09-01T12:00:00-05:00"
+    }
+  }
+}

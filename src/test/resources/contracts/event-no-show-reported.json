@@ -1,0 +1,12 @@
+{
+  "eventId": "6a1f3b84-2c57-4e90-81d6-9f4e0a7c3b25",
+  "type": "NoShowReported",
+  "version": 1,
+  "occurredAt": "2026-09-01T10:11:03-05:00",
+  "data": {
+    "reservationId": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+    "verifiedAt": "2026-09-01T10:10:30-05:00",
+    "verifiedBy": "MODULO_3",
+    "note": "Se verificó en sitio a los 10 minutos."
+  }
+}

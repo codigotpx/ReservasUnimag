@@ -84,4 +84,21 @@ class TimeSlotTest {
         assertThat(new TimeSlot(DAY.plusDays(2), LocalTime.of(6, 0), LocalTime.of(8, 0))
                 .overlaps(loanStart, loanEnd)).isTrue();
     }
+
+    @Test
+    void aSpaceSlotOverTheMaximumDurationIsRejectedWithTheLimitAndWhatWasAsked() {
+        assertThatThrownBy(() -> slot("09:00", "12:00").requireMaxDuration(java.time.Duration.ofHours(2)))
+                .isInstanceOfSatisfying(edu.unimagdalena.reservasunimag.domain.model.error.DurationExceededException.class,
+                        exception -> {
+                            assertThat(exception.limitMinutes()).isEqualTo(120);
+                            assertThat(exception.requestedMinutes()).isEqualTo(180);
+                        });
+    }
+
+    @Test
+    void aSlotExactlyAtTheMaximumDurationIsAccepted() {
+        TimeSlot slot = slot("09:00", "11:00");
+
+        assertThat(slot.requireMaxDuration(java.time.Duration.ofHours(2))).isSameAs(slot);
+    }
 }

@@ -1,0 +1,10 @@
+{
+  "person": { "code": "2019114045" },
+  "activeSanctions": [
+    { "reason": "Dos ausencias no justificadas en el semestre", "start": "2026-09-01", "end": "2026-09-30", "scope": "RESERVAS" },
+    { "reason": "Devolución tardía", "start": "2026-08-20", "end": "2026-09-10", "scope": "RESERVAS" }
+  ],
+  "absenceCount": 2,
+  "lateReturns": 1,
+  "generatedAt": "2026-09-01T09:14:21-05:00"
+}

@@ -1,0 +1,10 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/reservation-denied",
+  "title": "Reserva denegada",
+  "status": 409,
+  "detail": "El recurso está en mantenimiento y no se puede reservar.",
+  "instance": "/api/reservations",
+  "code": "RES-004",
+  "detectedStatus": "EN_MANTENIMIENTO",
+  "resourceId": "ACT-000912"
+}

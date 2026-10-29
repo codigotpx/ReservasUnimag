@@ -1,0 +1,12 @@
+{
+  "id": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+  "resourceId": "ESP-0107",
+  "name": "Sala de Estudio 3",
+  "category": "ESPACIO",
+  "status": "CONFIRMADA",
+  "origin": "ESTUDIANTIL",
+  "start": "2026-09-01T10:00:00-05:00",
+  "end": "2026-09-01T12:00:00-05:00",
+  "createdAt": "2026-08-30T09:14:22-05:00",
+  "quota": { "used": 2, "max": 3 }
+}

@@ -24,7 +24,11 @@ class HttpClientsConfig {
     }
 
     private static RestClient build(RestClient.Builder builder, URI baseUrl, Duration timeout) {
-        HttpClient httpClient = HttpClient.newBuilder().connectTimeout(timeout).build();
+        // HTTP/1.1 a propósito: con cuerpo, el cliente del JDK intenta subir a h2c y varios servidores lo rechazan.
+        HttpClient httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
+                .connectTimeout(timeout)
+                .build();
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
         requestFactory.setReadTimeout(timeout);
         return builder.clone()

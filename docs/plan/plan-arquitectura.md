@@ -386,9 +386,9 @@ El bloqueo académico es una reserva con `origin = 'ACADEMICO'`, porque cada cla
 | reservation_id | uuid PK, FK | |
 | semester_schedule_id | uuid FK, nulo | nulo si es una necesidad extraordinaria |
 | type | varchar | `REGULAR`, `EXTRAORDINARIO` |
-| course | varchar | |
-| program | varchar | |
-| instructor | varchar | |
+| course_code, course, group_code, program | varchar | la clase |
+| instructor | varchar, nulo | nulo si todavía no se asignó |
+| session_key | varchar, único | la huella de la sesión que hace idempotente la recarga (UC3 FR-007); se pone a `NULL` al cancelar el bloqueo |
 
 **`semester_schedule`**
 | Columna | Tipo | Nota |
@@ -396,25 +396,35 @@ El bloqueo académico es una reserva con `origin = 'ACADEMICO'`, porque cada cla
 | id | uuid PK | |
 | academic_term | varchar | p. ej. `2026-2` |
 | uploaded_by | uuid FK → app_user | Dirección de Programa |
-| uploaded_at | timestamptz | |
-| result | jsonb | resumen de la carga: creados, choques, rechazos |
+| uploaded_at | timestamptz | cuándo se validó |
+| file_name, term_starts_on, term_ends_on | | el archivo y el periodo |
+| status | varchar | `VALIDATED`, `APPLIED`, `REJECTED`, `EXPIRED` |
+| expires_at, applied_at | timestamptz, nulos | la vigencia de la validación y cuándo se aplicó |
+| summary, impact | jsonb | el resumen del reporte y lo que se mostró que se cancelaría |
+| result | jsonb | lo que hizo la confirmación |
+
+**`schedule_upload_row`** (UC3): cada fila del archivo con su dictamen y sus datos en `jsonb`, con clave `(semester_schedule_id, row_number)`.
 
 **`absence`** (UC9)
 | Columna | Tipo | Nota |
 |---|---|---|
-| id | uuid PK | |
-| reservation_id | uuid FK, único | |
+| reservation_id | uuid PK, FK | una ausencia por reserva; ver [UC9 § Contratos §3](./plan-uc9-recibir-reporte-no-asistencia.md#3-la-tabla-absence) |
+| source_event_id | uuid, único | el `eventId` del Módulo 3 |
+| verified_at | timestamptz | la comprobación en sitio, que es la que mide el plazo |
 | reported_at | timestamptz | cuándo llegó el aviso del Módulo 3 |
-| voided | boolean | anulación de un reporte enviado por error |
+| resource_released | boolean | `false` si la franja ya había terminado |
+| voided, voided_at, voided_reason | | anulación de un reporte enviado por error |
 
 **`check_out`** (UC12)
 | Columna | Tipo | Nota |
 |---|---|---|
-| id | uuid PK | |
-| reservation_id | uuid FK, único | |
-| occurred_at | timestamptz | devolución o revisión real |
-| verdict | varchar, nulo | solo espacios: `NO_ISSUES`, `NEEDS_MAINTENANCE` |
-| received_at | timestamptz | |
+| reservation_id | uuid PK, FK | un check-out por reserva; ver [UC12 § Contratos §5](./plan-uc12-recibir-check-out.md#5-la-tabla-check_out) |
+| kind | varchar | `ASSET_RETURN`, `SPACE_REVIEW` |
+| source_event_id | uuid, único | el `eventId` del Módulo 3 |
+| occurred_at | timestamptz | devolución o revisión real, sin redondear |
+| received_at | timestamptz | cuándo llegó el aviso |
+| verdict | varchar, nulo | solo espacios: `SIN_NOVEDAD`, `REQUIERE_MANTENIMIENTO` |
+| due_at_snapshot | timestamptz, nulo | solo activos: el vencimiento contra el que se cerró |
 
 **`status_change`** (UC7): el historial de FR-009. Una fila por cambio de ocupación, con el motivo y, solo en el inicio de uso, el aviso que salió.
 | Columna | Tipo | Nota |
@@ -429,7 +439,7 @@ El bloqueo académico es una reserva con `origin = 'ACADEMICO'`, porque cada cla
 | reason | varchar | `RESERVATION_CONFIRMED`, `ACADEMIC_BLOCK_CREATED`, `USE_STARTED`, `RESERVATION_CANCELLED`, `NO_SHOW_REGISTERED`, `CHECK_OUT_RECEIVED`, `LOAN_DECLARED_LOST` |
 | changed_at | timestamptz | |
 | notified_status | varchar | `NOT_SENT`, `PENDING`, `SENT`, `FAILED`; solo `USE_STARTED` nace `PENDING` |
-| outbox_message_id | uuid FK, nulo | el aviso al Módulo 1, si lo hubo |
+| outbox_message_id | uuid, nulo | el aviso al Módulo 1, si lo hubo; sin FK, porque la *outbox* se purga y el historial se queda |
 
 **`denial`** (UC2)
 | Columna | Tipo | Nota |

@@ -1,8 +1,10 @@
 package edu.unimagdalena.reservasunimag.domain.model.reservation;
 
+import edu.unimagdalena.reservasunimag.domain.model.error.DurationExceededException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException.Reason;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -48,6 +50,20 @@ public record TimeSlot(LocalDate date, LocalTime start, LocalTime end) {
 
     public Instant endsAt() {
         return date.atTime(end).atZone(ZONE).toInstant();
+    }
+
+    /** Una franja de espacio no puede durar más que el tope (UC2 FR-009); es una franja mal formada, no una denegación. */
+    public TimeSlot requireMaxDuration(Duration max) {
+        Duration requested = Duration.between(start, end);
+        if (requested.compareTo(max) > 0) {
+            throw new DurationExceededException(max.toMinutes(), requested.toMinutes());
+        }
+        return this;
+    }
+
+    /** Si el instante cae dentro de {@code [inicio, fin)}. */
+    public boolean contains(Instant instant) {
+        return !instant.isBefore(startsAt()) && instant.isBefore(endsAt());
     }
 
     /** Cruce de intervalos semiabiertos: 10:00–12:00 y 12:00–14:00 no se cruzan. */

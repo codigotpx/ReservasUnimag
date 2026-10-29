@@ -1,0 +1,10 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/reservation-denied",
+  "title": "Reserva denegada",
+  "status": 409,
+  "detail": "El recurso está reservado para actividad docente en la franja solicitada.",
+  "instance": "/api/reservations",
+  "code": "RES-001",
+  "resourceId": "ESP-0412",
+  "occupiedUntil": "2026-09-01T10:00:00-05:00"
+}

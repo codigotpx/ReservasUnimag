@@ -52,32 +52,56 @@ erDiagram
         uuid        reservation_id          PK  "tambien FK"
         uuid        semester_schedule_id    FK  "nulo si es necesidad extraordinaria"
         varchar     type                        "REGULAR | EXTRAORDINARIO"
+        varchar     course_code
         varchar     course
+        varchar     group_code
         varchar     program
-        varchar     instructor
+        varchar     instructor                  "nulo si no se ha asignado"
+        varchar     session_key                 "unico; huella de la sesion, nulo al cancelar"
     }
 
     semester_schedule {
         uuid        id                      PK
         varchar     academic_term               "p. ej. 2026-2"
         uuid        uploaded_by             FK  "app_user de Direccion de Programa"
-        timestamptz uploaded_at
-        jsonb       result                      "resumen de la carga: creados, choques, rechazos"
+        timestamptz uploaded_at                 "cuando se valido"
+        varchar     file_name
+        date        term_starts_on
+        date        term_ends_on
+        varchar     status                      "VALIDATED | APPLIED | REJECTED | EXPIRED"
+        timestamptz expires_at                  "solo si quedo VALIDATED"
+        timestamptz applied_at
+        jsonb       summary                     "resumen del reporte"
+        jsonb       impact                      "reservas a cancelar y bloqueos a retirar que se mostraron"
+        jsonb       result                      "lo que hizo la confirmacion"
+    }
+
+    schedule_upload_row {
+        uuid        semester_schedule_id    PK  "tambien FK"
+        int         row_number              PK  "numero real de la fila en el archivo"
+        varchar     verdict                     "dictamen de la fila"
+        jsonb       data                        "la fila tal como se reporto"
     }
 
     absence {
-        uuid        id                      PK
-        uuid        reservation_id          FK  "unico"
+        uuid        reservation_id          PK  "FK; una ausencia por reserva"
+        uuid        source_event_id             "unico; el eventId del Modulo 3"
+        timestamptz verified_at                 "comprobacion en sitio; la que mide el plazo"
         timestamptz reported_at                 "cuando llego el aviso del Modulo 3"
+        boolean     resource_released           "false si la franja ya habia terminado"
         boolean     voided                      "anulacion de un reporte enviado por error"
+        timestamptz voided_at
+        varchar     voided_reason
     }
 
     check_out {
-        uuid        id                      PK
-        uuid        reservation_id          FK  "unico"
-        timestamptz occurred_at                 "devolucion o revision real"
-        varchar     verdict                     "nulo; solo espacios: NO_ISSUES | NEEDS_MAINTENANCE"
-        timestamptz received_at
+        uuid        reservation_id          PK  "FK; un check-out por reserva"
+        varchar     kind                        "ASSET_RETURN | SPACE_REVIEW"
+        uuid        source_event_id             "unico; el eventId del Modulo 3"
+        timestamptz occurred_at                 "devolucion o revision real, sin redondear"
+        timestamptz received_at                 "cuando llego el aviso"
+        varchar     verdict                     "solo espacios: SIN_NOVEDAD | REQUIERE_MANTENIMIENTO"
+        timestamptz due_at_snapshot             "solo activos: el vencimiento al cerrar"
     }
 
     status_change {
@@ -92,7 +116,7 @@ erDiagram
         varchar     reason                      "RESERVATION_CONFIRMED | ACADEMIC_BLOCK_CREATED | USE_STARTED | RESERVATION_CANCELLED | NO_SHOW_REGISTERED | CHECK_OUT_RECEIVED | LOAN_DECLARED_LOST"
         timestamptz changed_at
         varchar     notified_status             "NOT_SENT | PENDING | SENT | FAILED"
-        uuid        outbox_message_id       FK  "nulo; el aviso al Modulo 1, si lo hubo"
+        uuid        outbox_message_id           "nulo; el aviso al Modulo 1, si lo hubo; sin FK"
     }
 
     denial {
@@ -144,6 +168,7 @@ erDiagram
     reservation            |o--o{ inbox_message  : "referida por"
 
     semester_schedule  ||--o{ academic_block : "genera"
+    semester_schedule  ||--|{ schedule_upload_row : "reporta"
 
     resource_module1    ||--o{ reservation           : "se reserva (por resource_id, sin FK)"
     resource_module1    ||--o{ denial        : "se deniega (por resource_id, sin FK)"
@@ -159,7 +184,7 @@ erDiagram
 | `reservation` → `loan` | 1 a 0..1 | Solo las reservas de activos tienen préstamo. La PK de `loan` es la propia `reservation_id`, así que no puede haber dos. |
 | `reservation` → `academic_block` | 1 a 0..1 | Solo las de origen `ACADEMICO`. Mismo patrón: PK compartida con `reservation`. |
 | `semester_schedule` → `academic_block` | 1 a 0..* | Una carga semestral genera muchos bloqueos; un bloqueo extraordinario no viene de ninguna carga, de ahí que `semester_schedule_id` admita nulo. |
-| `reservation` → `absence` / `check_out` | 1 a 0..1 | El `reservation_id` es único en las dos tablas: un solo reporte por reserva. |
+| `reservation` → `absence` / `check_out` | 1 a 0..1 | Un solo reporte por reserva. En las dos el `reservation_id` es la clave primaria (planes de UC9 y UC12, Contratos §3 y §5). |
 | `reservation` → `status_change` | 1 a 0..* | Cada cambio de ocupación deja una fila: confirmación, inicio de uso, cancelación, ausencia y check-out (UC7 FR-009). |
 | `reservation` → `outbox_message` | 1 a 0..* | Una reserva produce la ficha (UC10) y, si se cancela, el reporte de cancelación (UC11); el inicio de uso añade el aviso al Módulo 1 (UC7). |
 | `status_change` → `outbox_message` | 0..1 a 0..1 | Solo el cambio con motivo `USE_STARTED` tiene aviso, y `outbox_message_id` permite ir del historial a la entrega y al revés. |

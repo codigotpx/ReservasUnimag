@@ -1,0 +1,14 @@
+{
+  "eventId": "3f8b6d20-9a14-4e75-b0c8-5d1e7f2a9c46",
+  "type": "NoShowReportAcknowledged",
+  "version": 1,
+  "occurredAt": "2026-09-01T10:04:12-05:00",
+  "data": {
+    "reservationId": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+    "sourceEventId": "c2a7e591-8d36-4b04-97fe-0a3d1c8b5f27",
+    "accepted": false,
+    "rejection": "TOO_EARLY",
+    "acceptedFrom": "2026-09-01T10:10:00-05:00",
+    "detail": "El reporte se admite a partir de las 10:10. La persona todavía está a tiempo de llegar."
+  }
+}

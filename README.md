@@ -53,6 +53,7 @@ estudiantil.
 - Java 21
 - Spring Boot 4.1.1 (Web MVC, Data JPA, Security con JWT propio, Validation, RestClient)
 - PostgreSQL con Flyway para las migraciones
+- Apache Kafka para los eventos hacia el Módulo 3, detrás de una *outbox* en PostgreSQL
 - springdoc-openapi: la API se documenta en `/swagger-ui.html`
 - JUnit 5, Testcontainers, ArchUnit y WireMock para las pruebas
 - Gradle con Groovy DSL (con wrapper incluido)
@@ -91,6 +92,36 @@ La sesión se abre con `POST /api/auth/login` y queda en una cookie `httpOnly`. 
 solo se usa entre el frontend y nuestra API: las llamadas a los Módulos 1 y 3 van sin
 autenticación.
 
+### Kafka y la outbox
+
+Todo lo que sale del módulo —la ficha de la reserva, la cancelación, los acuses al Módulo 3 y el
+inicio de uso al Módulo 1— se guarda en la tabla `outbox_message` dentro de la misma transacción que
+la operación, y un publicador (`@Scheduled`, cada 5 s) lo lleva a su topic. **Reservar, cancelar y
+registrar una llegada funcionan aunque Kafka esté caído**: los eventos quedan `PENDING` y salen
+cuando el broker vuelve, con espera creciente entre reintentos (5 s, 30 s, 2 min, 10 min) hasta
+quedar `FAILED` tras `reservations.outbox.max-attempts`.
+
+Lo que llega del Módulo 3 (la no asistencia y el check-out) se consume con una *inbox*
+(`inbox_message`) que descarta los eventos repetidos. Un evento ilegible, o que apunta a una reserva
+que no existe, va a `module2.dlt.<topic de origen>` con la causa en las cabeceras.
+
+Para tener un broker en desarrollo:
+
+```bash
+docker compose up -d kafka        # o `docker compose up -d` para PostgreSQL y Kafka
+```
+
+Para ver qué está esperando o falló:
+
+```sql
+SELECT type, status, attempts, next_attempt_at, last_error
+FROM outbox_message WHERE status <> 'SENT' ORDER BY created_at;
+```
+
+Si no quieres el publicador (por ejemplo, sin Docker para Kafka), arranca con
+`--reservations.outbox.enabled=false`. Las pruebas ya lo desactivan, salvo `OutboxPublisherIT`,
+que levanta su propio Kafka con Testcontainers.
+
 Ejecutar las pruebas:
 
 ```bash
@@ -104,6 +135,44 @@ Compilar el empaquetado:
 ```
 
 En Windows, usar `gradlew.bat` en lugar de `./gradlew`.
+
+### Cargar un horario de prueba
+
+Con el perfil local, la Dirección de Programa (`direccion@unimagdalena.edu.co`, contraseña
+`unimag2026`) carga el horario en dos pasos. El archivo de ejemplo está en
+`src/test/resources/contracts/schedule-valid.csv` y usa recursos del inventario falso:
+
+```bash
+# Iniciar sesión y guardar la cookie
+curl -c cookies.txt -H 'Content-Type: application/json' \
+     -d '{"email":"direccion@unimagdalena.edu.co","password":"unimag2026"}' \
+     http://localhost:8080/api/auth/login
+
+# Paso 1: validar. No cambia ninguna reserva; devuelve el reporte por fila y el uploadId
+curl -b cookies.txt -F file=@src/test/resources/contracts/schedule-valid.csv \
+     -F academicTerm=2026-2 -F termStart=2026-11-02 -F termEnd=2026-11-30 \
+     http://localhost:8080/api/schedules/validations
+
+# Paso 2: confirmar, dentro de los 30 minutos siguientes
+curl -b cookies.txt -X POST http://localhost:8080/api/schedules/<uploadId>/confirmation
+```
+
+Recargar el mismo archivo no duplica nada: las clases que ya estaban quedan `UNCHANGED`, y las que
+desaparecieron del archivo se proponen para retirar.
+
+### El estado de un recurso no es una columna
+
+El Módulo 2 no guarda en qué estado está un recurso: lo deduce de las ocupaciones que tiene
+escritas. Una reserva `CONFIRMADA` que cruza la franja es `RESERVADO` (o `BLOQUEO_ACADEMICO` si es
+una clase), y cuando la franja termina el recurso vuelve a estar libre sin que corra ninguna tarea.
+Un préstamo entregado sigue ocupando hasta su check-out, aunque esté vencido. `EN_MANTENIMIENTO` lo
+dice el Módulo 1.
+
+Cada cambio de ocupación deja una fila en `status_change`, que se consulta con
+`GET /api/resources/{resourceId}/status-changes`. Lo único que le avisamos al Módulo 1 es el **inicio
+de uso** (`module2.resource.status.v1`): cuando la persona registra su llegada o cuando una clase
+llega a su hora. Las dos válvulas para apagarlo son `reservations.module1.notify-use-started` y
+`reservations.academic.use-start-enabled`.
 
 ## Estructura del repositorio
 

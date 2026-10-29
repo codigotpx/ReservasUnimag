@@ -1,0 +1,15 @@
+{
+  "eventId": "1d7f4a62-0c95-4b38-8e21-5a3c9f0b7d46",
+  "type": "ResourceUseStarted",
+  "version": 1,
+  "occurredAt": "2026-09-01T14:32:10-05:00",
+  "source": "MODULE_2",
+  "data": {
+    "resourceId": "ACT-004512",
+    "resourceCategory": "ACTIVO",
+    "reservationId": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+    "occupancy": { "start": "2026-09-01T14:30:00-05:00", "end": "2026-09-10T22:00:00-05:00" },
+    "newStatus": "EN_USO",
+    "reason": "USE_STARTED"
+  }
+}

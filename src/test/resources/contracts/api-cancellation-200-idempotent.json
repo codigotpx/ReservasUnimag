@@ -1,0 +1,8 @@
+{
+  "reservationId": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+  "status": "CANCELADA",
+  "cancellationOrigin": "HOLDER",
+  "cancelledAt": "2026-08-31T09:14:22-05:00",
+  "alreadyCancelled": true,
+  "quota": { "used": 1, "max": 3 }
+}

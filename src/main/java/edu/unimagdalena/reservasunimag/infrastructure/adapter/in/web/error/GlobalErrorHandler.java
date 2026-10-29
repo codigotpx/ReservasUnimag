@@ -1,8 +1,25 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.error;
 
+import edu.unimagdalena.reservasunimag.domain.model.error.AcademicConflictException;
+import edu.unimagdalena.reservasunimag.domain.model.error.CancellationDeniedException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ExternalServiceUnavailableException;
+import edu.unimagdalena.reservasunimag.domain.model.error.DurationExceededException;
+import edu.unimagdalena.reservasunimag.domain.model.error.IncompleteResourceDetailsException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidCredentialsException;
+import edu.unimagdalena.reservasunimag.domain.model.error.InvalidFilterException;
+import edu.unimagdalena.reservasunimag.domain.model.error.InvalidScheduleFileException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException;
+import edu.unimagdalena.reservasunimag.domain.model.error.NotAnAssetException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ReservationAlreadyClosedException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ReservationDeniedException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ReservationNotFoundException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ReservationShapeException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ResourceNotFoundException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ScheduleUploadNotFoundException;
+import edu.unimagdalena.reservasunimag.domain.model.error.UploadNotApplicableException;
+import edu.unimagdalena.reservasunimag.domain.model.error.UploadNotYoursException;
+import edu.unimagdalena.reservasunimag.domain.model.error.UseStartRejectedException;
+import edu.unimagdalena.reservasunimag.infrastructure.time.IsoTimes;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -13,6 +30,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
@@ -20,6 +38,8 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -48,17 +68,159 @@ class GlobalErrorHandler extends ResponseEntityExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(InvalidFilterException.class)
+    ProblemDetail invalidFilter(InvalidFilterException exception) {
+        return invalidParameters(List.of(fieldError(exception.field(), exception.getMessage())));
+    }
+
     @ExceptionHandler(ExternalServiceUnavailableException.class)
     ProblemDetail externalServiceUnavailable(ExternalServiceUnavailableException exception) {
         ProblemDetail problem = switch (exception.module()) {
             case MODULO_1 -> problem(HttpStatus.SERVICE_UNAVAILABLE, "inventory-unavailable",
                     "Inventario no disponible",
                     "La información de recursos no está disponible en este momento. Intenta de nuevo en unos minutos.");
-            case MODULO_3 -> problem(HttpStatus.SERVICE_UNAVAILABLE, "compliance-unavailable",
-                    "Sanciones no disponibles",
-                    "No se pudo comprobar la situación de sanciones en este momento. Intenta de nuevo en unos minutos.");
+            // Solo llega aquí al reservar: en la consulta (UC1) la caída del Módulo 3 es un aviso, no un error.
+            case MODULO_3 -> problem(HttpStatus.SERVICE_UNAVAILABLE, "sanctions-not-verifiable",
+                    "No se pudo comprobar tu situación",
+                    "No se pudo comprobar si tienes sanciones activas, así que la reserva no se confirmó. "
+                            + "Intenta de nuevo en unos minutos.");
         };
         problem.setProperty("module", exception.module().name());
+        return problem;
+    }
+
+    /** Las cuatro denegaciones del diccionario: un solo {@code code} y los campos que su mensaje necesita. */
+    @ExceptionHandler(ReservationDeniedException.class)
+    ProblemDetail reservationDenied(ReservationDeniedException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "reservation-denied", "Reserva denegada",
+                exception.getMessage());
+        problem.setProperty("code", exception.code().code());
+        exception.extensions().forEach((name, value) -> problem.setProperty(name, formatted(value)));
+        return problem;
+    }
+
+    /** UC4: siempre {@code CAN-001}; el {@code reason} dice qué tiene que hacer la persona. */
+    @ExceptionHandler(CancellationDeniedException.class)
+    ProblemDetail cancellationDenied(CancellationDeniedException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "cancellation-denied", "La reserva ya no es cancelable",
+                exception.getMessage());
+        problem.setProperty("code", exception.code().code());
+        exception.extensions().forEach((name, value) -> problem.setProperty(name, formatted(value)));
+        return problem;
+    }
+
+    /** No existe o es de otra persona: el mismo cuerpo, sin nada que confirme que el identificador existe. */
+    @ExceptionHandler(ReservationNotFoundException.class)
+    ProblemDetail reservationNotFound() {
+        return problem(HttpStatus.NOT_FOUND, "reservation-not-found", "Reserva no encontrada",
+                "La reserva no existe.");
+    }
+
+    /** UC7: USO-001 o USO-002, con lo que la persona necesita para entender por qué. */
+    @ExceptionHandler(UseStartRejectedException.class)
+    ProblemDetail useStartRejected(UseStartRejectedException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "use-start-rejected",
+                "No se pudo registrar el inicio de uso", exception.getMessage());
+        problem.setProperty("code", exception.code().code());
+        exception.extensions().forEach((name, value) -> problem.setProperty(name, formatted(value)));
+        return problem;
+    }
+
+    /** UC3: el archivo o el periodo no permiten ni empezar la carga. */
+    @ExceptionHandler(InvalidScheduleFileException.class)
+    ProblemDetail invalidScheduleFile(InvalidScheduleFileException exception) {
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "invalid-file", "Archivo de horario inválido",
+                exception.getMessage());
+        problem.setProperty("code", exception.code().name());
+        if (!exception.missingColumns().isEmpty()) {
+            problem.setProperty("missingColumns", exception.missingColumns());
+        }
+        return problem;
+    }
+
+    @ExceptionHandler(UploadNotApplicableException.class)
+    ProblemDetail uploadNotApplicable(UploadNotApplicableException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "upload-not-applicable", "La carga no se puede aplicar",
+                exception.getMessage());
+        problem.setProperty("code", exception.code().name());
+        exception.extensions().forEach((name, value) -> problem.setProperty(name, formatted(value)));
+        return problem;
+    }
+
+    @ExceptionHandler(ScheduleUploadNotFoundException.class)
+    ProblemDetail scheduleUploadNotFound(ScheduleUploadNotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, "upload-not-found", "Carga no encontrada", exception.getMessage());
+    }
+
+    @ExceptionHandler(UploadNotYoursException.class)
+    ProblemDetail uploadNotYours(UploadNotYoursException exception) {
+        return problem(HttpStatus.FORBIDDEN, "forbidden", "Acción no permitida", exception.getMessage());
+    }
+
+    /** UC3 FR-006 y FR-010: la necesidad extraordinaria no puede tomar la franja. */
+    @ExceptionHandler(AcademicConflictException.class)
+    ProblemDetail academicConflict(AcademicConflictException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "conflicting-academic-block",
+                "La franja ya tiene actividad docente", exception.getMessage());
+        problem.setProperty("verdict", exception.verdict().name());
+        var conflicting = exception.conflictingBlock();
+        if (conflicting != null) {
+            problem.setProperty("conflictingBlock", Map.of("course", conflicting.course(),
+                    "courseCode", conflicting.courseCode(), "group", conflicting.group()));
+        }
+        return problem;
+    }
+
+    @ExceptionHandler(ReservationAlreadyClosedException.class)
+    ProblemDetail reservationAlreadyClosed() {
+        return problem(HttpStatus.CONFLICT, "reservation-closed", "La reserva ya está cerrada",
+                "Esta reserva ya se cerró por otra vía y no se puede cancelar.");
+    }
+
+    @ExceptionHandler(DurationExceededException.class)
+    ProblemDetail durationExceeded(DurationExceededException exception) {
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "invalid-time-slot", "Franja horaria inválida",
+                "Una reserva de espacio puede durar como máximo " + formatHours(exception.limitMinutes())
+                        + ". Ajusta la franja.");
+        problem.setProperty("code", "DURATION_EXCEEDED");
+        problem.setProperty("limitMinutes", exception.limitMinutes());
+        problem.setProperty("requestedMinutes", exception.requestedMinutes());
+        return problem;
+    }
+
+    @ExceptionHandler(ReservationShapeException.class)
+    ProblemDetail reservationShape(ReservationShapeException exception) {
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "invalid-reservation-shape",
+                "Solicitud que no corresponde al recurso", exception.getMessage());
+        problem.setProperty("code", "SHAPE_DOES_NOT_MATCH_CATEGORY");
+        return problem;
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    ProblemDetail resourceNotFound(ResourceNotFoundException exception) {
+        ProblemDetail problem = problem(HttpStatus.NOT_FOUND, "resource-not-found", "Recurso no encontrado",
+                exception.getMessage());
+        problem.setProperty("resourceId", exception.resourceId());
+        return problem;
+    }
+
+    /** El contrato del Módulo 1 vino incompleto: no es culpa de la persona ni una regla de negocio. */
+    @ExceptionHandler(IncompleteResourceDetailsException.class)
+    ProblemDetail incompleteResourceDetails(IncompleteResourceDetailsException exception) {
+        ProblemDetail problem = problem(HttpStatus.SERVICE_UNAVAILABLE, "inventory-unavailable",
+                "Inventario no disponible",
+                "No se pudo consultar el recurso en este momento. Intenta de nuevo en unos minutos.");
+        problem.setProperty("code", "INCOMPLETE_RESOURCE_DETAILS");
+        problem.setProperty("module", "MODULO_1");
+        return problem;
+    }
+
+    @ExceptionHandler(NotAnAssetException.class)
+    ProblemDetail notAnAsset(NotAnAssetException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "not-an-asset", "El recurso no es un activo",
+                exception.getMessage());
+        problem.setProperty("code", "NOT_AN_ASSET");
+        problem.setProperty("resourceId", exception.resourceId());
         return problem;
     }
 
@@ -99,12 +261,34 @@ class GlobalErrorHandler extends ResponseEntityExceptionHandler {
     }
 
     @Override
+    protected ResponseEntity<Object> handleMissingServletRequestParameter(
+            MissingServletRequestParameterException exception, HttpHeaders headers, HttpStatusCode status,
+            WebRequest request) {
+        return badRequest(invalidParameters(List.of(fieldError(exception.getParameterName(), "es obligatorio"))));
+    }
+
+    @Override
     protected ResponseEntity<Object> handleTypeMismatch(TypeMismatchException exception, HttpHeaders headers,
                                                         HttpStatusCode status, WebRequest request) {
         String field = exception instanceof MethodArgumentTypeMismatchException mismatch
                 ? mismatch.getName()
                 : exception.getPropertyName();
         return badRequest(invalidParameters(List.of(fieldError(field, "formato inválido"))));
+    }
+
+    /** Los instantes y las fechas viajan como los fija el contrato; lo demás, tal cual. */
+    private static Object formatted(Object value) {
+        if (value instanceof Instant instant) {
+            return IsoTimes.offset(instant);
+        }
+        if (value instanceof LocalDate date) {
+            return date.toString();
+        }
+        return value;
+    }
+
+    private static String formatHours(long minutes) {
+        return minutes % 60 == 0 ? (minutes / 60) + (minutes == 60 ? " hora" : " horas") : minutes + " minutos";
     }
 
     private static ResponseEntity<Object> badRequest(ProblemDetail problem) {
