@@ -19,6 +19,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -179,6 +180,8 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
         if (updated != 1) {
             throw new IllegalStateException("la reserva " + id + " no estaba confirmada al cancelarla");
         }
+        // Un bloqueo cancelado suelta su huella, para que la misma clase se pueda volver a cargar (UC3 FR-007).
+        jdbc.sql("UPDATE academic_block SET session_key = NULL WHERE reservation_id = :id").param("id", id).update();
     }
 
     @Override
@@ -235,6 +238,23 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
     }
 
     @Override
+    public List<Reservation> findStudentOccupying(Collection<String> resourceIds, Instant from, Instant to) {
+        if (resourceIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbc.sql(SELECT + """
+                        WHERE r.resource_id IN (:resourceIds) AND r.origin = 'ESTUDIANTIL' AND r.status = 'CONFIRMADA'
+                          AND ( r.occupancy && tstzrange(CAST(:from AS timestamptz), CAST(:to AS timestamptz), '[)')
+                             OR (p.picked_up_at IS NOT NULL AND p.returned_at IS NULL AND r.starts_at < :to) )
+                        ORDER BY r.starts_at, r.id""")
+                .param("resourceIds", List.copyOf(resourceIds))
+                .param("from", utc(from))
+                .param("to", utc(to))
+                .query(ReservationPersistenceAdapter::toReservation)
+                .list();
+    }
+
+    @Override
     public List<Reservation> findUpcomingByResource(String resourceId, Instant now) {
         return jdbc.sql(SELECT + """
                         WHERE r.resource_id = :resourceId
@@ -251,7 +271,8 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
 
     private static Reservation toReservation(ResultSet row, int rowNumber) throws SQLException {
         ResourceCategory category = ResourceCategory.valueOf(row.getString("resource_category"));
-        Loan loan = category == ResourceCategory.ACTIVO
+        // Un bloqueo académico sobre un activo no tiene fila de préstamo.
+        Loan loan = row.getObject("term_business_days") != null
                 ? new Loan(row.getInt("term_business_days"), instant(row, "picked_up_at"), instant(row, "returned_at"))
                 : null;
         return new Reservation(

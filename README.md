@@ -136,6 +136,30 @@ Compilar el empaquetado:
 
 En Windows, usar `gradlew.bat` en lugar de `./gradlew`.
 
+### Cargar un horario de prueba
+
+Con el perfil local, la Dirección de Programa (`direccion@unimagdalena.edu.co`, contraseña
+`unimag2026`) carga el horario en dos pasos. El archivo de ejemplo está en
+`src/test/resources/contracts/schedule-valid.csv` y usa recursos del inventario falso:
+
+```bash
+# Iniciar sesión y guardar la cookie
+curl -c cookies.txt -H 'Content-Type: application/json' \
+     -d '{"email":"direccion@unimagdalena.edu.co","password":"unimag2026"}' \
+     http://localhost:8080/api/auth/login
+
+# Paso 1: validar. No cambia ninguna reserva; devuelve el reporte por fila y el uploadId
+curl -b cookies.txt -F file=@src/test/resources/contracts/schedule-valid.csv \
+     -F academicTerm=2026-2 -F termStart=2026-11-02 -F termEnd=2026-11-30 \
+     http://localhost:8080/api/schedules/validations
+
+# Paso 2: confirmar, dentro de los 30 minutos siguientes
+curl -b cookies.txt -X POST http://localhost:8080/api/schedules/<uploadId>/confirmation
+```
+
+Recargar el mismo archivo no duplica nada: las clases que ya estaban quedan `UNCHANGED`, y las que
+desaparecieron del archivo se proponen para retirar.
+
 ### El estado de un recurso no es una columna
 
 El Módulo 2 no guarda en qué estado está un recurso: lo deduce de las ocupaciones que tiene

@@ -2,12 +2,16 @@ package edu.unimagdalena.reservasunimag.infrastructure.config;
 
 import edu.unimagdalena.reservasunimag.domain.model.compliance.NoShowPolicy;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationPolicy;
+import edu.unimagdalena.reservasunimag.domain.port.in.ApplySchedulePort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CancelForMaintenancePort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CancelReservationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CheckAvailabilityPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ListMyReservationsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryCancellationReportsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryPendingCheckOutsPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.QueryScheduleUploadsPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.RegisterExtraordinaryNeedPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.ValidateSchedulePort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryStatusChangesPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.RegisterUseStartedPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.UpdateResourceStatusPort;
@@ -23,6 +27,7 @@ import edu.unimagdalena.reservasunimag.domain.port.in.SignInPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.VoidNoShowPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.AbsenceRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.Clock;
+import edu.unimagdalena.reservasunimag.domain.port.out.AcademicBlockRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.BusinessCalendar;
 import edu.unimagdalena.reservasunimag.domain.port.out.CancellationReportRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.CheckOutRepositoryPort;
@@ -30,6 +35,8 @@ import edu.unimagdalena.reservasunimag.domain.port.out.CompliancePort;
 import edu.unimagdalena.reservasunimag.domain.port.out.DenialRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.Module3NotifierPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.ReservationRepositoryPort;
+import edu.unimagdalena.reservasunimag.domain.port.out.ScheduleReader;
+import edu.unimagdalena.reservasunimag.domain.port.out.ScheduleUploadRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.TransactionPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.InventoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.InventoryStatusNotifierPort;
@@ -44,6 +51,12 @@ import edu.unimagdalena.reservasunimag.domain.usecase.cancelreservation.CancelRe
 import edu.unimagdalena.reservasunimag.domain.usecase.cancelreservation.ReservationCanceller;
 import edu.unimagdalena.reservasunimag.domain.usecase.checkavailability.CheckAvailabilityUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.checksanctions.CheckSanctionsUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.importschedule.ApplyScheduleUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.importschedule.QueryScheduleUploadsUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.importschedule.RegisterExtraordinaryNeedUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.importschedule.SchedulePlanner;
+import edu.unimagdalena.reservasunimag.domain.usecase.importschedule.SessionExpander;
+import edu.unimagdalena.reservasunimag.domain.usecase.importschedule.ValidateScheduleUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.listreservations.ListMyReservationsUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.receivecheckout.CheckOutValidator;
 import edu.unimagdalena.reservasunimag.domain.usecase.receivecheckout.QueryPendingCheckOutsUseCase;
@@ -53,6 +66,7 @@ import edu.unimagdalena.reservasunimag.domain.usecase.receivenoshow.VoidNoShowUs
 import edu.unimagdalena.reservasunimag.domain.usecase.reportcancellation.QueryCancellationReportsUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reportcancellation.ReportCancellationUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reportreservation.ReportReservationUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.reserveresources.AcademicBlockCreator;
 import edu.unimagdalena.reservasunimag.domain.usecase.reserveresources.DueDateCalculator;
 import edu.unimagdalena.reservasunimag.domain.usecase.reserveresources.ReserveResourcesUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.searchresources.NextFreeSlotFinder;
@@ -126,6 +140,53 @@ class UseCasesConfig {
     @Bean
     QueryStatusChangesPort queryStatusChangesPort(StatusChangeRepositoryPort statusChanges, InventoryPort inventory) {
         return new QueryStatusChangesUseCase(statusChanges, inventory);
+    }
+
+    @Bean
+    AcademicBlockCreator academicBlockCreator(ReservationRepositoryPort reservations,
+                                              AcademicBlockRepositoryPort academicBlocks,
+                                              UpdateResourceStatusPort updateStatus,
+                                              ReportReservationPort reportReservation, Clock clock) {
+        return new AcademicBlockCreator(reservations, academicBlocks, updateStatus, reportReservation, clock);
+    }
+
+    @Bean
+    SchedulePlanner schedulePlanner(InventoryPort inventory, AcademicBlockRepositoryPort academicBlocks,
+                                    ReservationRepositoryPort reservations, UserRepositoryPort users,
+                                    BusinessCalendar calendar) {
+        return new SchedulePlanner(inventory, academicBlocks, reservations, users, new SessionExpander(calendar));
+    }
+
+    @Bean
+    ValidateSchedulePort validateSchedulePort(ScheduleReader reader, SchedulePlanner planner,
+                                              ScheduleUploadRepositoryPort uploads, TransactionPort transactions,
+                                              Clock clock, ReservationProperties properties) {
+        return new ValidateScheduleUseCase(reader, planner, uploads, transactions, clock,
+                properties.upload().validity());
+    }
+
+    @Bean
+    ApplySchedulePort applySchedulePort(ScheduleUploadRepositoryPort uploads, SchedulePlanner planner,
+                                        CancelReservationPort cancelReservation, AcademicBlockCreator blockCreator,
+                                        TransactionPort transactions, Clock clock) {
+        return new ApplyScheduleUseCase(uploads, planner, cancelReservation, blockCreator, transactions, clock);
+    }
+
+    @Bean
+    QueryScheduleUploadsPort queryScheduleUploadsPort(ScheduleUploadRepositoryPort uploads) {
+        return new QueryScheduleUploadsUseCase(uploads);
+    }
+
+    @Bean
+    RegisterExtraordinaryNeedPort registerExtraordinaryNeedPort(InventoryPort inventory,
+                                                                AcademicBlockRepositoryPort academicBlocks,
+                                                                ReservationRepositoryPort reservations,
+                                                                UserRepositoryPort users,
+                                                                CancelReservationPort cancelReservation,
+                                                                AcademicBlockCreator blockCreator,
+                                                                TransactionPort transactions) {
+        return new RegisterExtraordinaryNeedUseCase(inventory, academicBlocks, reservations, users, cancelReservation,
+                blockCreator, transactions);
     }
 
     @Bean

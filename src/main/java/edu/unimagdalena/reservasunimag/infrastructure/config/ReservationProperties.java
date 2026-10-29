@@ -31,7 +31,8 @@ public record ReservationProperties(
         @Valid @NotNull Module3 module3,
         @Valid @NotNull Jwt jwt,
         @Valid @NotNull Kafka kafka,
-        @Valid @NotNull Outbox outbox) {
+        @Valid @NotNull Outbox outbox,
+        @Valid @NotNull Upload upload) {
 
     /**
      * {@code pageSize} es el tamaño de página que se le pide al Módulo 1 y {@code maxPages} el tope de páginas del
@@ -68,5 +69,12 @@ public record ReservationProperties(
      */
     public record Outbox(boolean enabled, @NotNull Duration interval, @Min(1) int batch, @Min(1) int maxAttempts,
                          @NotNull Duration alertAfter) {
+    }
+
+    /**
+     * La carga del horario (UC3). {@code validity} es cuánto se puede confirmar una carga validada antes de que el
+     * impacto que se mostró deje de ser de fiar.
+     */
+    public record Upload(@NotNull @DurationMin(minutes = 1) Duration validity) {
     }
 }

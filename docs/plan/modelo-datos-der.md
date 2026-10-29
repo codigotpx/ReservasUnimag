@@ -52,17 +52,35 @@ erDiagram
         uuid        reservation_id          PK  "tambien FK"
         uuid        semester_schedule_id    FK  "nulo si es necesidad extraordinaria"
         varchar     type                        "REGULAR | EXTRAORDINARIO"
+        varchar     course_code
         varchar     course
+        varchar     group_code
         varchar     program
-        varchar     instructor
+        varchar     instructor                  "nulo si no se ha asignado"
+        varchar     session_key                 "unico; huella de la sesion, nulo al cancelar"
     }
 
     semester_schedule {
         uuid        id                      PK
         varchar     academic_term               "p. ej. 2026-2"
         uuid        uploaded_by             FK  "app_user de Direccion de Programa"
-        timestamptz uploaded_at
-        jsonb       result                      "resumen de la carga: creados, choques, rechazos"
+        timestamptz uploaded_at                 "cuando se valido"
+        varchar     file_name
+        date        term_starts_on
+        date        term_ends_on
+        varchar     status                      "VALIDATED | APPLIED | REJECTED | EXPIRED"
+        timestamptz expires_at                  "solo si quedo VALIDATED"
+        timestamptz applied_at
+        jsonb       summary                     "resumen del reporte"
+        jsonb       impact                      "reservas a cancelar y bloqueos a retirar que se mostraron"
+        jsonb       result                      "lo que hizo la confirmacion"
+    }
+
+    schedule_upload_row {
+        uuid        semester_schedule_id    PK  "tambien FK"
+        int         row_number              PK  "numero real de la fila en el archivo"
+        varchar     verdict                     "dictamen de la fila"
+        jsonb       data                        "la fila tal como se reporto"
     }
 
     absence {
@@ -150,6 +168,7 @@ erDiagram
     reservation            |o--o{ inbox_message  : "referida por"
 
     semester_schedule  ||--o{ academic_block : "genera"
+    semester_schedule  ||--|{ schedule_upload_row : "reporta"
 
     resource_module1    ||--o{ reservation           : "se reserva (por resource_id, sin FK)"
     resource_module1    ||--o{ denial        : "se deniega (por resource_id, sin FK)"

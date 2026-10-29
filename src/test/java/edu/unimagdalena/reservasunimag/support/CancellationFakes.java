@@ -139,6 +139,17 @@ public final class CancellationFakes {
         }
 
         @Override
+        public List<Reservation> findStudentOccupying(java.util.Collection<String> resourceIds, Instant from,
+                                                      Instant to) {
+            return stored.values().stream()
+                    .filter(r -> resourceIds.contains(r.resourceId()))
+                    .filter(r -> r.origin() == ReservationOrigin.ESTUDIANTIL && r.status() == ReservationStatus.CONFIRMADA)
+                    .filter(r -> r.startsAt().isBefore(to) && (r.inHands() || r.endsAt().isAfter(from)))
+                    .sorted(Comparator.comparing(Reservation::startsAt))
+                    .toList();
+        }
+
+        @Override
         public List<Reservation> findUpcomingByResource(String resourceId, Instant now) {
             return stored.values().stream()
                     .filter(r -> r.resourceId().equals(resourceId))

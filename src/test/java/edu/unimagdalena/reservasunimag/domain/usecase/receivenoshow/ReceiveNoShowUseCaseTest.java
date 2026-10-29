@@ -134,7 +134,8 @@ class ReceiveNoShowUseCaseTest {
 
     @Test
     void aCancelledReservationNeverGetsAnAbsenceWhoeverCancelledIt() {
-        for (CancellationOrigin origin : CancellationOrigin.values()) {
+        for (CancellationOrigin origin : new CancellationOrigin[]{CancellationOrigin.HOLDER,
+                CancellationOrigin.ACADEMIC_PRIORITY, CancellationOrigin.RESOURCE_UNAVAILABLE}) {
             Reservation reservation = space(10, 12);
             reservations.markCancelled(reservation.id(), new Cancellation(origin, "x",
                     origin == CancellationOrigin.HOLDER ? 40 : null, at(9, 0)));

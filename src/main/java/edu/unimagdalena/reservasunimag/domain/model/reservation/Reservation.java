@@ -8,9 +8,9 @@ import java.util.UUID;
 
 /**
  * Lo que una persona aparta: un recurso del Módulo 1 durante {@code [startsAt, endsAt)}. En un espacio es la
- * franja; en un activo, de la recogida al vencimiento. {@code userId} es {@code null} solo en un bloqueo académico
- * y {@code loan} solo en un activo. {@code useStartedAt} es cuándo empezó el uso (UC7 FR-004), {@code null} mientras
- * nadie lo registre.
+ * franja; en un activo, de la recogida al vencimiento. {@code userId} es {@code null} solo en un bloqueo académico,
+ * y {@code loan} existe solo en el activo de una reserva estudiantil: una clase que aparta un activo no es un
+ * préstamo. {@code useStartedAt} es cuándo empezó el uso (UC7 FR-004), {@code null} mientras nadie lo registre.
  */
 public record Reservation(
         UUID id,
@@ -39,8 +39,8 @@ public record Reservation(
         if ((origin == ReservationOrigin.ACADEMICO) != (userId == null)) {
             throw new IllegalArgumentException("solo una reserva académica queda sin titular");
         }
-        if ((category == ResourceCategory.ACTIVO) != (loan != null)) {
-            throw new IllegalArgumentException("el préstamo existe si y solo si el recurso es un activo");
+        if ((category == ResourceCategory.ACTIVO && origin == ReservationOrigin.ESTUDIANTIL) != (loan != null)) {
+            throw new IllegalArgumentException("el préstamo existe si y solo si es un activo apartado por una persona");
         }
     }
 

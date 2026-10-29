@@ -141,10 +141,13 @@ class OutboxPublisherIT {
             reservationWithPendingEvent(jdbc, i);
         }
         // Lotes chicos para que las dos instancias de verdad se repartan los pendientes.
-        var smallBatches = new ReservationProperties(properties.pageSize(), properties.nextSlotStep(),
-                properties.maxQuota(), properties.maxSpaceDuration(), properties.minCancellationNotice(), properties.noShowGrace(), properties.loanLossThreshold(), properties.holidays(),
-                properties.resourceTypes(), properties.module1(), properties.module3(), properties.jwt(),
-                properties.kafka(), new ReservationProperties.Outbox(true, Duration.ofHours(1), 4, 10, Duration.ofMinutes(25)));
+        var smallBatches = new ReservationProperties(
+                properties.pageSize(), properties.nextSlotStep(), properties.maxQuota(),
+                properties.maxSpaceDuration(), properties.minCancellationNotice(), properties.noShowGrace(),
+                properties.loanLossThreshold(), properties.holidays(), properties.resourceTypes(),
+                properties.module1(), properties.module3(), properties.jwt(), properties.kafka(),
+                new ReservationProperties.Outbox(true, Duration.ofHours(1), 4, 10, Duration.ofMinutes(25)),
+                properties.upload());
         var first = new OutboxPublisher(jdbc, kafka, transactionManager, smallBatches);
         var second = new OutboxPublisher(jdbc, kafka, transactionManager, smallBatches);
 

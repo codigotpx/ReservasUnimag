@@ -1,5 +1,6 @@
 package edu.unimagdalena.reservasunimag.domain.usecase.reportreservation;
 
+import edu.unimagdalena.reservasunimag.domain.model.academicblock.AcademicData;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Reservation;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationHolder;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationRecord;
@@ -24,5 +25,10 @@ public class ReportReservationUseCase implements ReportReservationPort {
     public void reportCreated(Reservation reservation, Resource resource, User holder) {
         notifier.reservationCreated(
                 new ReservationRecord(reservation, resource, ReservationHolder.of(holder), clock.now()));
+    }
+
+    @Override
+    public void reportAcademicCreated(Reservation reservation, Resource resource, AcademicData academic) {
+        notifier.reservationCreated(new ReservationRecord(reservation, resource, null, academic, clock.now()));
     }
 }

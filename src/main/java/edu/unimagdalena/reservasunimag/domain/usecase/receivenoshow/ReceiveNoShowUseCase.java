@@ -90,11 +90,12 @@ public class ReceiveNoShowUseCase implements ReceiveNoShowPort {
     }
 
     private static Optional<NoShowRejection> rejectionFor(Reservation reservation) {
-        if (reservation.status().isCancellation()) {
-            return Optional.of(NoShowRejection.RESERVATION_CANCELLED);
-        }
+        // Una clase nunca tiene ausencia, esté vigente o retirada del horario.
         if (reservation.origin() == ReservationOrigin.ACADEMICO) {
             return Optional.of(NoShowRejection.ACADEMIC_BLOCK);
+        }
+        if (reservation.status().isCancellation()) {
+            return Optional.of(NoShowRejection.RESERVATION_CANCELLED);
         }
         if (reservation.loan() != null && reservation.loan().returned()) {
             return Optional.of(NoShowRejection.ALREADY_RETURNED);

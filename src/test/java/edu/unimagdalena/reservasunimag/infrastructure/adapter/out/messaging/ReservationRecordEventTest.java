@@ -64,4 +64,23 @@ class ReservationRecordEventTest {
         JSONAssert.assertEquals(read("event-reservation-record-created-student-space.json"), payload, true);
         assertThat(payload).doesNotContain("\"loan\"").doesNotContain("null");
     }
+
+    @Test
+    void anAcademicBlockCarriesItsClassInsteadOfAHolderAndIsNotSanctionable() throws Exception {
+        var block = new Reservation(UUID.fromString("b7c2e418-3d65-4f09-a2b8-1e5c9d0a7f34"), null, "ESP-0412",
+                ResourceCategory.ESPACIO, edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationOrigin.ACADEMICO,
+                edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationStatus.CONFIRMADA,
+                at(2026, 9, 1, 8, 0, 0), at(2026, 9, 1, 10, 0, 0), OCCURRED, null);
+        var lab = Resource.space("ESP-0412", "Laboratorio de Redes", "LABORATORIO", "Bloque 7, piso 2",
+                OperationalStatus.DISPONIBLE, "Ingeniería", 30, List.of());
+        var academic = new edu.unimagdalena.reservasunimag.domain.model.academicblock.AcademicData("IS-402",
+                "Redes de Computadores", "1", "Ingeniería de Sistemas", "Nombre del instructor");
+
+        String payload = mapper.writeValueAsString(ReservationRecordEvent.from(
+                UUID.fromString("8d41b6c0-2f93-4a7e-8c15-9b0e3d7f2a68"),
+                new ReservationRecord(block, lab, null, academic, OCCURRED)));
+
+        JSONAssert.assertEquals(read("event-reservation-record-created-academic.json"), payload, true);
+        assertThat(payload).doesNotContain("holder").doesNotContain("null");
+    }
 }

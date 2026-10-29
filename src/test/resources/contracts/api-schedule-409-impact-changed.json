@@ -1,0 +1,10 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/upload-not-applicable",
+  "title": "La carga no se puede aplicar",
+  "status": 409,
+  "detail": "El impacto cambió desde que se validó: ahora se cancelarían 5 reservas en vez de 3. Vuelve a validar el archivo.",
+  "instance": "/api/schedules/7e2a4c81-3f95-4d60-b8a7-1c9e5d0f2a63/confirmation",
+  "code": "IMPACT_CHANGED",
+  "reservationsToCancelAtValidation": 3,
+  "reservationsToCancelNow": 5
+}

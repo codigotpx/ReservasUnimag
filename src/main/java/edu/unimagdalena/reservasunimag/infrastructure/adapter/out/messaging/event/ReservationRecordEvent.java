@@ -11,7 +11,7 @@ import java.util.UUID;
 /**
  * {@code ReservationRecordCreated} tal como viaja al Módulo 3 (UC2 Contratos §6): el envoltorio común y, en
  * {@code data}, la ficha. Nunca lleva un {@code null}; {@code holder} y {@code academic} son excluyentes y
- * {@code loan} existe solo en un activo.
+ * {@code loan} existe solo en el préstamo de un activo.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ReservationRecordEvent(String eventId, String type, int version, String occurredAt, Data data) {
@@ -23,6 +23,7 @@ public record ReservationRecordEvent(String eventId, String type, int version, S
         var resource = record.resource();
         boolean student = reservation.origin() == ReservationOrigin.ESTUDIANTIL;
         var holder = record.holder();
+        var academic = record.academic();
         return new ReservationRecordEvent(eventId.toString(), TYPE, 1, IsoTimes.offset(record.occurredAt()),
                 new Data(
                         reservation.id().toString(),
@@ -32,9 +33,11 @@ public record ReservationRecordEvent(String eventId, String type, int version, S
                                 resource.type(), resource.location()),
                         student ? new HolderBody(holder.userId().toString(), holder.code(), holder.name(),
                                 holder.role().name()) : null,
+                        academic == null ? null
+                                : new AcademicBody(academic.course(), academic.program(), academic.instructor()),
                         new OccupancyBody(IsoTimes.offset(reservation.startsAt()),
                                 IsoTimes.offset(reservation.endsAt())),
-                        reservation.category() == ResourceCategory.ACTIVO
+                        reservation.category() == ResourceCategory.ACTIVO && reservation.loan() != null
                                 ? new LoanBody(IsoTimes.offset(reservation.startsAt()),
                                 IsoTimes.offset(reservation.endsAt()), reservation.loan().termBusinessDays())
                                 : null));
@@ -42,7 +45,12 @@ public record ReservationRecordEvent(String eventId, String type, int version, S
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Data(String reservationId, String origin, boolean sanctionable, ResourceBody resource,
-                       HolderBody holder, OccupancyBody occupancy, LoanBody loan) {
+                       HolderBody holder, AcademicBody academic, OccupancyBody occupancy, LoanBody loan) {
+    }
+
+    /** La clase de un bloqueo académico; sin titular, porque no lo tiene. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record AcademicBody(String course, String program, String instructor) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

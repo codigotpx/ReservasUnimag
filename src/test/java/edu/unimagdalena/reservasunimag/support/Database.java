@@ -21,6 +21,8 @@ public final class Database {
         jdbc.sql("DELETE FROM outbox_message").update();
         jdbc.sql("DELETE FROM denial").update();
         jdbc.sql("DELETE FROM academic_block").update();
+        jdbc.sql("DELETE FROM schedule_upload_row").update();
+        jdbc.sql("DELETE FROM semester_schedule").update();
         jdbc.sql("DELETE FROM loan").update();
         jdbc.sql("DELETE FROM reservation").update();
         jdbc.sql("DELETE FROM app_user WHERE code LIKE 'IT-%'").update();

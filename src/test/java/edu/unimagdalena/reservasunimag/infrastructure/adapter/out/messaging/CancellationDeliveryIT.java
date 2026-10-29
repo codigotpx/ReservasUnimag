@@ -86,11 +86,13 @@ class CancellationDeliveryIT {
         KafkaTemplate<String, String> broken = mock(KafkaTemplate.class);
         when(broken.send(anyString(), anyString(), anyString()))
                 .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("Connection refused")));
-        var props = new ReservationProperties(properties.pageSize(), properties.nextSlotStep(), properties.maxQuota(),
-                properties.maxSpaceDuration(), properties.minCancellationNotice(), properties.noShowGrace(), properties.loanLossThreshold(), properties.holidays(),
-                properties.resourceTypes(), properties.module1(), properties.module3(), properties.jwt(),
-                properties.kafka(), new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, maxAttempts,
-                Duration.ofMinutes(25)));
+        var props = new ReservationProperties(
+                properties.pageSize(), properties.nextSlotStep(), properties.maxQuota(),
+                properties.maxSpaceDuration(), properties.minCancellationNotice(), properties.noShowGrace(),
+                properties.loanLossThreshold(), properties.holidays(), properties.resourceTypes(),
+                properties.module1(), properties.module3(), properties.jwt(), properties.kafka(),
+                new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, maxAttempts, Duration.ofMinutes(25)),
+                properties.upload());
         return new OutboxPublisher(jdbc, broken, transactionManager, props);
     }
 

@@ -6,6 +6,7 @@ import edu.unimagdalena.reservasunimag.domain.model.reservation.QuotaUsage;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.Reservation;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,4 +75,10 @@ public interface ReservationRepositoryPort {
 
     /** Los bloqueos académicos confirmados que ya empezaron, no han terminado y no tienen el uso marcado. */
     List<Reservation> findAcademicBlocksToStart(Instant now);
+
+    /**
+     * Las reservas estudiantiles confirmadas de esos recursos que ocupan algo de {@code [from, to)}: las que se cruzan,
+     * y los préstamos en manos de alguien que empezaron antes de {@code to}, que ocupan sin fin (UC3, UC7 FR-011).
+     */
+    List<Reservation> findStudentOccupying(Collection<String> resourceIds, Instant from, Instant to);
 }

@@ -81,7 +81,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "reservations.outbox.interval=5s",
         "reservations.outbox.batch=50",
         "reservations.outbox.max-attempts=10",
-        "reservations.outbox.alert-after=25m"})
+        "reservations.outbox.alert-after=25m",
+        "reservations.upload.validity=30m"})
 class ResourceControllerTest {
 
     private static final String QUERY = "/api/resources?date=2026-09-01&start=10:00&end=12:00";

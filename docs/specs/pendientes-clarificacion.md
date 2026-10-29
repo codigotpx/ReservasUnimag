@@ -398,6 +398,35 @@ Decisiones tomadas al implementar que el plan no fijaba o que cambian lo que dec
 
 ---
 
+## P-25 — La carga del horario: decisiones de implementación de UC3 que el plan no tenía
+
+**Estado**: abierto. Detectado al implementar UC3 (2026-10-26).
+
+Lo que cambió respecto al plan, y por qué:
+
+- **Las sesiones entran por UC2, pero por su rama académica** (`AcademicBlockCreator`), no llamando a `ReserveResourcesUseCase` sesión por sesión. Ese caso de uso le pide la ficha al Módulo 1 en cada llamada, y un semestre son miles de sesiones. La rama académica recibe la ficha ya consultada, se salta sanción, cupo, tope de 2 horas y titular, y pasa igual por UC7 y UC10, así que el `<<include>>` de P-06 se cumple.
+- **Al Módulo 1 se le pregunta una vez por recurso distinto** con la ficha de cada uno, no con la operación por lote de estado operativo: esa operación no trae el nombre del recurso, que el reporte necesita. Siguen siendo decenas de llamadas por carga, no miles.
+- **Retirar una clase es un cuarto origen de cancelación, `SCHEDULE_WITHDRAWN`**, con estado `CANCELADA` y no atribuible a nadie. UC11 y el contrato del evento hablaban de tres orígenes; hay que avisarle al Módulo 3 que puede llegar este cuarto.
+- **Solo se crean sesiones que todavía no empezaron**, y una recarga solo retira bloqueos futuros. Con eso, una carga a mitad de semestre no crea bloqueos en el pasado ni desplaza reservas que ya terminaron.
+- **Una clase sobre un activo no crea préstamo**: la reserva académica de un activo no tiene fila en `loan`.
+- **`IMPACT_CHANGED` compara los conjuntos de reservas y bloqueos, no solo cuántos son**: si cambió cuáles, aunque sean los mismos en número, se rechaza.
+- **La parte del multipart se llama `file`**, no `archivo` como decía la tabla de Contratos §1; el resto del contrato está en inglés.
+- **Una reserva estudiantil en la que ya se registró la llegada (UC7) tampoco se desplaza**: sale como `ASSET_ALREADY_PICKED_UP`, igual que un activo en manos de alguien.
+
+Sigue abierto lo que el plan ya decía: el calendario real de festivos de la universidad, para no crear sesiones en días no hábiles, y que la Dirección de Programa confirme que puede exportar el CSV de Contratos §5.
+
+**Qué preguntar**: al Módulo 3, si acepta el cuarto origen; a la Dirección de Programa, el formato del archivo y el calendario de festivos.
+
+**Dónde aplicarlo**:
+
+| Archivo | Punto | Qué cambiar |
+|---|---|---|
+| `docs/plan/plan-uc11-reportar-cancelacion-reserva.md` | Contratos §1 | Añadir la columna de `SCHEDULE_WITHDRAWN` a la tabla de las formas del evento. |
+| `docs/plan/plan-uc3-importar-horarios-semestrales.md` | Contratos §1 | El nombre de la parte del multipart. |
+| `application.properties` | `reservations.holidays` | El calendario real de la universidad. |
+
+---
+
 ## Resueltos
 
 - **El Módulo 2 le sigue comunicando el `EN_USO` al Módulo 1** — se cierra el primer punto de **P-20** y con él la marca de clarificación de UC7. El Módulo 3 le reporta directamente al Módulo 1 los cambios físicos que constata en el sitio, pero el inicio de uso es un hecho de la reserva y es nuestro: cuando la persona llega y empieza a usar lo que apartó, el Módulo 2 se lo comunica al Módulo 1 para que pase el recurso a `EN_USO`. El regreso a `DISPONIBLE` y la entrada a `EN_MANTENIMIENTO` no salen de aquí. La flecha `Actualizar estado de los recursos` → Módulo 1 del diagrama se queda, con ese único contenido. Se reescribió UC7 entero: contexto, actores, tabla de estados con su dueño, user story, los seis escenarios, los edge cases, FR-001 a FR-005 y FR-007 a FR-011, el nuevo FR-012 que prohíbe enviarle cualquier otro estado, las entidades y SC-001, SC-003 y SC-004. Lo que falta ahora es solo acordar el medio y los datos del aviso con el equipo del Módulo 1. *(2026-10-05)*

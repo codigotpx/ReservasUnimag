@@ -173,7 +173,7 @@ class CheckOutPersistenceAdapter implements CheckOutRepositoryPort {
 
     private static PendingCheckOut toPending(ResultSet row, int rowNumber) throws SQLException {
         ResourceCategory category = ResourceCategory.valueOf(row.getString("resource_category"));
-        Loan loan = category == ResourceCategory.ACTIVO
+        Loan loan = row.getObject("term_business_days") != null
                 ? new Loan(row.getInt("term_business_days"), instant(row, "picked_up_at"), instant(row, "returned_at"))
                 : null;
         UUID userId = row.getObject("user_id", UUID.class);

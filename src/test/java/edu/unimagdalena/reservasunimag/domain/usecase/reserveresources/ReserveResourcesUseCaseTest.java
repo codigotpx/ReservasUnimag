@@ -187,6 +187,11 @@ class ReserveResourcesUseCaseTest {
         public List<Reservation> findAcademicBlocksToStart(Instant now) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public List<Reservation> findStudentOccupying(Collection<String> resourceIds, Instant from, Instant to) {
+            throw new UnsupportedOperationException();
+        }
     };
 
     private final edu.unimagdalena.reservasunimag.support.RecordingStatusUpdates statusUpdates =

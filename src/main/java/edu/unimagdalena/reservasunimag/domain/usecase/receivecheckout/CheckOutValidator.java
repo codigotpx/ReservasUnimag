@@ -34,7 +34,7 @@ public class CheckOutValidator {
         if (report.verdict() != null || report.carriesDamage()) {
             return Optional.of(CheckOutRejection.VERDICT_REQUIRED);
         }
-        if (!reservation.loan().pickedUp()) {
+        if (reservation.loan() == null || !reservation.loan().pickedUp()) {
             return Optional.of(CheckOutRejection.ASSET_NOT_PICKED_UP);
         }
         return Optional.empty();

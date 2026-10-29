@@ -1,11 +1,13 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.error;
 
+import edu.unimagdalena.reservasunimag.domain.model.error.AcademicConflictException;
 import edu.unimagdalena.reservasunimag.domain.model.error.CancellationDeniedException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ExternalServiceUnavailableException;
 import edu.unimagdalena.reservasunimag.domain.model.error.DurationExceededException;
 import edu.unimagdalena.reservasunimag.domain.model.error.IncompleteResourceDetailsException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidCredentialsException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidFilterException;
+import edu.unimagdalena.reservasunimag.domain.model.error.InvalidScheduleFileException;
 import edu.unimagdalena.reservasunimag.domain.model.error.InvalidTimeSlotException;
 import edu.unimagdalena.reservasunimag.domain.model.error.NotAnAssetException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ReservationAlreadyClosedException;
@@ -13,6 +15,9 @@ import edu.unimagdalena.reservasunimag.domain.model.error.ReservationDeniedExcep
 import edu.unimagdalena.reservasunimag.domain.model.error.ReservationNotFoundException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ReservationShapeException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ResourceNotFoundException;
+import edu.unimagdalena.reservasunimag.domain.model.error.ScheduleUploadNotFoundException;
+import edu.unimagdalena.reservasunimag.domain.model.error.UploadNotApplicableException;
+import edu.unimagdalena.reservasunimag.domain.model.error.UploadNotYoursException;
 import edu.unimagdalena.reservasunimag.domain.model.error.UseStartRejectedException;
 import edu.unimagdalena.reservasunimag.infrastructure.time.IsoTimes;
 import org.springframework.beans.TypeMismatchException;
@@ -118,6 +123,51 @@ class GlobalErrorHandler extends ResponseEntityExceptionHandler {
                 "No se pudo registrar el inicio de uso", exception.getMessage());
         problem.setProperty("code", exception.code().code());
         exception.extensions().forEach((name, value) -> problem.setProperty(name, formatted(value)));
+        return problem;
+    }
+
+    /** UC3: el archivo o el periodo no permiten ni empezar la carga. */
+    @ExceptionHandler(InvalidScheduleFileException.class)
+    ProblemDetail invalidScheduleFile(InvalidScheduleFileException exception) {
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "invalid-file", "Archivo de horario inválido",
+                exception.getMessage());
+        problem.setProperty("code", exception.code().name());
+        if (!exception.missingColumns().isEmpty()) {
+            problem.setProperty("missingColumns", exception.missingColumns());
+        }
+        return problem;
+    }
+
+    @ExceptionHandler(UploadNotApplicableException.class)
+    ProblemDetail uploadNotApplicable(UploadNotApplicableException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "upload-not-applicable", "La carga no se puede aplicar",
+                exception.getMessage());
+        problem.setProperty("code", exception.code().name());
+        exception.extensions().forEach((name, value) -> problem.setProperty(name, formatted(value)));
+        return problem;
+    }
+
+    @ExceptionHandler(ScheduleUploadNotFoundException.class)
+    ProblemDetail scheduleUploadNotFound(ScheduleUploadNotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, "upload-not-found", "Carga no encontrada", exception.getMessage());
+    }
+
+    @ExceptionHandler(UploadNotYoursException.class)
+    ProblemDetail uploadNotYours(UploadNotYoursException exception) {
+        return problem(HttpStatus.FORBIDDEN, "forbidden", "Acción no permitida", exception.getMessage());
+    }
+
+    /** UC3 FR-006 y FR-010: la necesidad extraordinaria no puede tomar la franja. */
+    @ExceptionHandler(AcademicConflictException.class)
+    ProblemDetail academicConflict(AcademicConflictException exception) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "conflicting-academic-block",
+                "La franja ya tiene actividad docente", exception.getMessage());
+        problem.setProperty("verdict", exception.verdict().name());
+        var conflicting = exception.conflictingBlock();
+        if (conflicting != null) {
+            problem.setProperty("conflictingBlock", Map.of("course", conflicting.course(),
+                    "courseCode", conflicting.courseCode(), "group", conflicting.group()));
+        }
         return problem;
     }
 

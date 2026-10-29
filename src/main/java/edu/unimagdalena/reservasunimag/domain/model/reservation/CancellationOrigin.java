@@ -10,7 +10,9 @@ public enum CancellationOrigin {
     /** Una clase de la carga de horarios desplazó la reserva (UC3). */
     ACADEMIC_PRIORITY(ReservationStatus.CANCELADA_POR_PRIORIDAD_ACADEMICA, false),
     /** El recurso quedó fuera de servicio (UC4 FR-010). */
-    RESOURCE_UNAVAILABLE(ReservationStatus.CANCELADA_POR_RECURSO_NO_DISPONIBLE, false);
+    RESOURCE_UNAVAILABLE(ReservationStatus.CANCELADA_POR_RECURSO_NO_DISPONIBLE, false),
+    /** Una clase salió del horario al recargarlo (UC3 FR-007); solo afecta bloqueos académicos. */
+    SCHEDULE_WITHDRAWN(ReservationStatus.CANCELADA, false);
 
     private final ReservationStatus status;
     private final boolean attributableToPerson;

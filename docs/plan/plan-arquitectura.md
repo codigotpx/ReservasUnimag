@@ -386,9 +386,9 @@ El bloqueo académico es una reserva con `origin = 'ACADEMICO'`, porque cada cla
 | reservation_id | uuid PK, FK | |
 | semester_schedule_id | uuid FK, nulo | nulo si es una necesidad extraordinaria |
 | type | varchar | `REGULAR`, `EXTRAORDINARIO` |
-| course | varchar | |
-| program | varchar | |
-| instructor | varchar | |
+| course_code, course, group_code, program | varchar | la clase |
+| instructor | varchar, nulo | nulo si todavía no se asignó |
+| session_key | varchar, único | la huella de la sesión que hace idempotente la recarga (UC3 FR-007); se pone a `NULL` al cancelar el bloqueo |
 
 **`semester_schedule`**
 | Columna | Tipo | Nota |
@@ -396,8 +396,14 @@ El bloqueo académico es una reserva con `origin = 'ACADEMICO'`, porque cada cla
 | id | uuid PK | |
 | academic_term | varchar | p. ej. `2026-2` |
 | uploaded_by | uuid FK → app_user | Dirección de Programa |
-| uploaded_at | timestamptz | |
-| result | jsonb | resumen de la carga: creados, choques, rechazos |
+| uploaded_at | timestamptz | cuándo se validó |
+| file_name, term_starts_on, term_ends_on | | el archivo y el periodo |
+| status | varchar | `VALIDATED`, `APPLIED`, `REJECTED`, `EXPIRED` |
+| expires_at, applied_at | timestamptz, nulos | la vigencia de la validación y cuándo se aplicó |
+| summary, impact | jsonb | el resumen del reporte y lo que se mostró que se cancelaría |
+| result | jsonb | lo que hizo la confirmación |
+
+**`schedule_upload_row`** (UC3): cada fila del archivo con su dictamen y sus datos en `jsonb`, con clave `(semester_schedule_id, row_number)`.
 
 **`absence`** (UC9)
 | Columna | Tipo | Nota |
