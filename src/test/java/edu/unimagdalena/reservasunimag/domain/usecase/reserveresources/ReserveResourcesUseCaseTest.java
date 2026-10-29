@@ -197,6 +197,9 @@ class ReserveResourcesUseCaseTest {
     private final edu.unimagdalena.reservasunimag.support.RecordingStatusUpdates statusUpdates =
             new edu.unimagdalena.reservasunimag.support.RecordingStatusUpdates();
 
+    private final edu.unimagdalena.reservasunimag.support.RecordFakes.InMemoryReservationRecords records =
+            new edu.unimagdalena.reservasunimag.support.RecordFakes.InMemoryReservationRecords();
+
     private final Module3NotifierPort notifier = new Module3NotifierPort() {
         @Override
         public void reservationCreated(ReservationRecord record) {
@@ -226,7 +229,7 @@ class ReserveResourcesUseCaseTest {
             reservations,
             denials::add,
             new FixedUsers(),
-            new ReportReservationUseCase(notifier, CLOCK),
+            new ReportReservationUseCase(records, notifier, CLOCK),
             statusUpdates,
             new DueDateCalculator(date -> date.getDayOfWeek() != DayOfWeek.SATURDAY
                     && date.getDayOfWeek() != DayOfWeek.SUNDAY),

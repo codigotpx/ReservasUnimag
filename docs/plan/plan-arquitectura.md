@@ -446,6 +446,19 @@ El bloqueo académico es una reserva con `origin = 'ACADEMICO'`, porque cada cla
 | notified_status | varchar | `NOT_SENT`, `PENDING`, `SENT`, `FAILED`; solo `USE_STARTED` nace `PENDING` |
 | outbox_message_id | uuid, nulo | el aviso al Módulo 1, si lo hubo; sin FK, porque la *outbox* se purga y el historial se queda |
 
+**`reservation_record`** (UC10): la constancia de cada ficha enviada al Módulo 3 y de cómo acabó su envío (FR-006). Gemela de `cancellation_report` (UC11).
+| Columna | Tipo | Nota |
+|---|---|---|
+| reservation_id | uuid PK, FK | una ficha por reserva (FR-005) |
+| event_id | uuid, único | el `outbox_message.id`; sin FK, porque la *outbox* se purga |
+| origin, sanctionable | varchar, boolean | `sanctionable` es falso si y solo si el origen es `ACADEMICO` (FR-008) |
+| holder_user_id | uuid FK, nulo | nulo en las académicas; la clase sale de `academic_block` |
+| resource_id, resource_category | varchar | |
+| occupancy_starts_at, occupancy_ends_at | timestamptz | la franja, o de la recogida al vencimiento |
+| loan_term_business_days | int, nulo | solo en el préstamo de un activo |
+| sent_at | timestamptz | cuándo se encoló la ficha |
+| delivery_status, attempts, first_attempt_at, delivered_at, last_error | | lo mismo que en `cancellation_report` |
+
 **`denial`** (UC2)
 | Columna | Tipo | Nota |
 |---|---|---|

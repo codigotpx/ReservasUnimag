@@ -43,31 +43,39 @@ Este plan **no redefine el evento**: su contrato quedó cerrado en [UC2 § Contr
 src/main/java/edu/unimagdalena/reservasunimag/
 ├── domain/
 │   ├── model/reservation/
-│   │   ├── ReservationRecord.java          # nuevo: la constancia de FR-006
+│   │   ├── ReservationRecord.java          # (existe, de UC2) la ficha del evento; ahora nace con su eventId
+│   │   ├── ReservationRecordReport.java    # nuevo: la constancia de FR-006
+│   │   ├── ReservationRecordFilter.java    # nuevo: los filtros del listado
+│   │   ├── ReservationRecordPage.java      # nuevo: la página con su summary
+│   │   ├── Delivery.java                   # nuevo: el resultado del envío, sacado de CancellationReport
 │   │   └── DeliveryStatus.java             # (existe, de UC11) se reusa
 │   ├── port/
 │   │   ├── in/ReportReservationPort.java   # (existe, de UC2)
+│   │   ├── in/QueryReservationRecordsPort.java
 │   │   └── out/ReservationRecordRepositoryPort.java
 │   └── usecase/reportreservation/
-│       └── ReportReservationUseCase.java   # (existe, de UC2) se completa aquí
+│       ├── ReportReservationUseCase.java   # (existe, de UC2) se completa aquí
+│       └── QueryReservationRecordsUseCase.java
 │
 └── infrastructure/
     ├── adapter/
     │   ├── in/web/reservation/
-    │   │   └── ReservationRecordController.java    # GET de auditoría
+    │   │   ├── ReservationRecordController.java    # GET de auditoría
+    │   │   ├── ReservationRecordResponse.java
+    │   │   └── ReservationRecordsResponse.java
     │   └── out/
     │       ├── persistence/
-    │       │   ├── entity/ReservationRecordJpa.java
-    │       │   ├── repository/ReservationRecordJpaRepository.java
-    │       │   └── ReservationRecordPersistenceAdapter.java
+    │       │   └── ReservationRecordPersistenceAdapter.java   # JdbcClient, como el resto del módulo
     │       └── messaging/
+    │           ├── OutboxMessageEnqueued.java      # nuevo: el aviso de que algo quedó en la outbox
+    │           ├── OutboxNotifierAdapter.java      # (existe) usa el eventId de la ficha y avisa
     │           ├── OutboxPublisher.java            # (existe) + disparo tras el commit
-    │           └── event/ReservationRecordEvent.java   # (existe) sin cambios
+    │           └── event/ReservationRecordEvent.java   # (existe) toma el eventId de la ficha
     └── config/
         └── UseCasesConfig.java
 
 src/main/resources/db/migration/
-└── V7__reservation_record.sql
+└── V8__reservation_record.sql      # la V7 es de UC3
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/usecase/reportreservation/ReportReservationUseCaseTest.java
@@ -75,22 +83,34 @@ src/test/java/edu/unimagdalena/reservasunimag/
     ├── in/web/reservation/ReservationRecordControllerTest.java
     └── out/
         ├── persistence/ReservationRecordIT.java
-        └── messaging/RecordDeliveryIT.java
+        └── messaging/
+            ├── RecordDeliveryIT.java       # turnos a mano: entrega, caída y FAILED
+            └── PublishOnCommitIT.java      # el disparo tras el commit, con el reloj en una hora
 ```
 
-**Structure Decision**: ninguna carpeta nueva. UC10 es el gemelo de UC11 y comparte con él `DeliveryStatus`, la forma del historial y el endpoint de auditoría. Esa simetría es deliberada: dos tablas con la misma estructura y dos endpoints con la misma forma se entienden y se mantienen a la vez.
+**Structure Decision**: ninguna carpeta nueva. UC10 es el gemelo de UC11 y comparte con él `Delivery` y `DeliveryStatus`, la forma del historial y el endpoint de auditoría. Esa simetría es deliberada: dos tablas con la misma estructura y dos endpoints con la misma forma se entienden y se mantienen a la vez.
 
 ### Decisiones de diseño de este caso de uso
 
-**El historial, otra vez, y por qué no se unifica con el de UC11.** Las dos tablas se parecen tanto que la tentación es hacer una sola `module3_report` con una columna que diga de qué informa. Se mantienen separadas porque **los datos del negocio no son los mismos**: una ficha lleva el periodo de préstamo, el plazo y la asignatura; una cancelación lleva el origen, la antelación y si es imputable. Mezclarlas daría una tabla con media docena de columnas nulas según la fila, que es precisamente lo que la convención de "nunca `null`" evita en la API. Lo que sí se comparte es el tipo `DeliveryStatus`, los índices y la forma del endpoint.
+**El historial, otra vez, y por qué no se unifica con el de UC11.** Las dos tablas se parecen tanto que la tentación es hacer una sola `module3_report` con una columna que diga de qué informa. Se mantienen separadas porque **los datos del negocio no son los mismos**: una ficha lleva el periodo de préstamo, el plazo y la asignatura; una cancelación lleva el origen, la antelación y si es imputable. Mezclarlas daría una tabla con media docena de columnas nulas según la fila, que es precisamente lo que la convención de "nunca `null`" evita en la API. Lo que sí se comparte es el resultado del envío (`Delivery`, con su `DeliveryStatus`), los índices y la forma del endpoint.
+
+**La constancia se llama `ReservationRecordReport`.** `ReservationRecord` ya es la ficha que viaja en el evento, desde UC2. La constancia toma el nombre de su gemela de UC11, `CancellationReport`. La tabla sí se llama `reservation_record`.
 
 **El publicador se dispara al confirmar, no solo cada 5 segundos** (SC-002). El plan general dejó el publicador con `Scheduled` cada 5 segundos, lo que en el peor caso pone la ficha en el broker justo en el límite de SC-002, y si el reloj acaba de pasar, fuera. Se añade un disparo por evento de Spring (`TransactionalEventListener` con `AFTER_COMMIT`) que despierta al publicador en cuanto la transacción de la reserva confirma. El `Scheduled` **se queda**, como red de seguridad para lo que el disparo no alcance —un fallo del publicador, una instancia que se cayó—, y es lo que sigue garantizando SC-004. La *outbox* no se toca: lo único que cambia es cuándo se mira.
+
+Tres detalles de cómo se hizo:
+
+- El disparo corre **en un hilo aparte**: la reserva responde sin esperar a Kafka, que con el broker caído tarda hasta 3 s en rendirse.
+- **Junta en un solo turno** todo lo que se encoló antes de empezar. Una carga de horario deja miles de fichas en un commit y no debe pedir miles de turnos.
+- El turno del reloj y el del commit **no corren a la vez**, para no publicar fuera de orden los eventos de una misma reserva.
+
+El disparo vale para todo lo que entra a la outbox, no solo la ficha: también acelera las cancelaciones, los acuses y el aviso de inicio de uso al Módulo 1. Se apaga con `reservations.outbox.publish-on-commit=false`.
 
 **Un `eventId` por hecho, no por intento** (FR-005, SC-003). Es la regla que hace que un reenvío no cuente dos veces, y conviene decir con precisión qué garantiza cada lado:
 
 | Quién | Qué garantiza |
 |---|---|
-| Nosotros | Que el `eventId` de una ficha no cambie entre reintentos, porque es el `outbox_message.id`; y que no exista más de una ficha por reserva, porque el `reservation_id` es la clave del historial |
+| Nosotros | Que el `eventId` de una ficha no cambie entre reintentos, porque nace con la ficha en el dominio y es el `outbox_message.id` y el `event_id` de la constancia; y que no exista más de una ficha por reserva, porque el `reservation_id` es la clave del historial |
 | El Módulo 3 | Que al ver un `eventId` repetido lo descarte en vez de contar otra reserva |
 
 No podemos garantizar *exactly-once* contra un sistema ajeno, y el spec no lo pide: FR-005 dice que un reenvío no debe producir una segunda reserva **contabilizada**, y eso se cumple dándole al Módulo 3 lo que necesita para deduplicar. Hay que decírselo explícitamente (T014).
@@ -117,7 +137,7 @@ Queda un solo tipo en el topic `module2.reservation.record.v1`. El `ReservationR
 
 ### 2. `GET /api/reservations/{reservationId}/record`
 
-La cara consultable de FR-006. Titular o `DIRECCION_PROGRAMA`.
+La cara consultable de FR-006. Titular o `DIRECCION_PROGRAMA`. El préstamo de un activo:
 
 ```json
 {
@@ -127,30 +147,50 @@ La cara consultable de FR-006. Titular o `DIRECCION_PROGRAMA`.
     "origin": "ESTUDIANTIL",
     "sanctionable": true,
     "sentAt": "2026-08-30T09:14:22-05:00",
+    "resource": { "id": "ACT-000912", "name": "Microscopio M-014", "category": "ACTIVO" },
+    "holder": { "code": "2019114045", "name": "Nombre del estudiante" },
+    "occupancy": { "start": "2026-09-01T14:30:00-05:00", "end": "2026-09-10T22:00:00-05:00" },
     "loan": { "pickup": "2026-09-01T14:30:00-05:00", "dueAt": "2026-09-10T22:00:00-05:00", "termBusinessDays": 7 },
-    "delivery": { "status": "SENT", "attempts": 1, "deliveredAt": "2026-08-30T09:14:24-05:00", "lastError": null }
+    "delivery": {
+      "status": "SENT",
+      "attempts": 1,
+      "firstAttemptAt": "2026-08-30T09:14:24-05:00",
+      "deliveredAt": "2026-08-30T09:14:24-05:00",
+      "lastError": null
+    }
   }
 }
 ```
 
-Es un objeto y no una lista: una reserva produce **una** ficha. `delivery` tiene la misma forma que en [UC11 § Contratos §2](./plan-uc11-reportar-cancelacion-reserva.md#2-get-apireservationsreservationidcancellation-report), incluido el `lastError` que viaja como `null` a propósito.
+Es un objeto y no una lista: una reserva produce **una** ficha. Lleva el recurso, el titular y la ocupación con la misma forma que el reporte de cancelación, y `loan` solo en el préstamo de un activo. `delivery` tiene la misma forma que en [UC11 § Contratos §2](./plan-uc11-reportar-cancelacion-reserva.md#2-get-apireservationsreservationidcancellation-report), incluido el `lastError` que viaja como `null` a propósito, y el `nextAttemptAt` mientras quede un reintento programado.
 
 Una ficha académica se ve así, sin `holder` y con `academic`:
 
 ```json
 {
-  "eventId": "8d41b6c0-2f93-4a7e-8c15-9b0e3d7f2a68",
-  "origin": "ACADEMICO",
-  "sanctionable": false,
-  "sentAt": "2026-08-30T09:14:22-05:00",
-  "academic": { "course": "Redes de Computadores", "courseCode": "IS-402", "program": "Ingeniería de Sistemas" },
-  "delivery": { "status": "SENT", "attempts": 1, "deliveredAt": "2026-08-30T09:14:25-05:00", "lastError": null }
+  "reservationId": "5d2f8a41-7b63-4e90-a1c4-8f3e2b6d9c07",
+  "record": {
+    "eventId": "8d41b6c0-2f93-4a7e-8c15-9b0e3d7f2a68",
+    "origin": "ACADEMICO",
+    "sanctionable": false,
+    "sentAt": "2026-08-30T09:14:22-05:00",
+    "resource": { "id": "ESP-0412", "name": "Laboratorio de Redes", "category": "ESPACIO" },
+    "academic": { "course": "Redes de Computadores", "courseCode": "IS-402", "program": "Ingeniería de Sistemas" },
+    "occupancy": { "start": "2026-09-07T08:00:00-05:00", "end": "2026-09-07T10:00:00-05:00" },
+    "delivery": {
+      "status": "PENDING",
+      "attempts": 2,
+      "firstAttemptAt": "2026-08-30T09:14:25-05:00",
+      "nextAttemptAt": "2026-08-30T09:15:25-05:00",
+      "lastError": "Connection refused"
+    }
+  }
 }
 ```
 
 El `instructor` **no** aparece en el endpoint de auditoría aunque sí viaje en el evento: en la auditoría no hace falta y es un dato de una persona que no es parte de la reserva.
 
-**Errores**: `404` si la reserva no existe o no es del titular que pregunta; `403` si quien pregunta no es ni el titular ni Dirección de Programa.
+**Errores**: `404` si la reserva no existe, no tiene ficha o no es del titular que pregunta. Es un `404` y no un `403`, igual que en UC11: un `403` le diría a quien pregunta que la reserva existe. Una ficha académica no tiene titular, así que solo la ve Dirección de Programa.
 
 ---
 
@@ -204,12 +244,15 @@ CREATE INDEX reservation_record_origin ON reservation_record (origin, sent_at);
 
 Los datos académicos **no se copian**: salen de `academic_block` por la clave foránea de la reserva. El nombre del recurso tampoco (UC1 FR-005): lo pide el endpoint al Módulo 1 al responder.
 
+Además de la clave primaria, la base sostiene la regla de FR-008: `holder_user_id` es nulo si y solo si el origen es `ACADEMICO`, y `sanctionable` es verdadero si y solo si el origen es `ESTUDIANTIL`.
+
 ---
 
 ### 5. Fixtures compartidos
 
 ```text
 src/test/resources/contracts/
+├── api-reservation-record-asset.json
 ├── api-reservation-record-academic.json
 ├── api-reservation-records-list.json
 ```
@@ -226,10 +269,10 @@ Los dos de UC2 se renombran a `event-reservation-record-created-{student,academi
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T002 Escribir `V7__reservation_record.sql` con la tabla de [Contratos §4](#4-la-tabla-reservation_record), su clave primaria compuesta y sus dos índices
-- [ ] T003 [P] Crear `ReservationRecord` y en `domain/model/reservation/`, reusando el `DeliveryStatus` de UC11, con los invariantes: `holder_user_id` nulo si y solo si el origen es `ACADEMICO`, `sanctionable` falso en ese caso
+- [ ] T002 Escribir `V8__reservation_record.sql` con la tabla de [Contratos §4](#4-la-tabla-reservation_record), su clave primaria, las dos restricciones de FR-008 y sus dos índices
+- [ ] T003 [P] Crear `ReservationRecordReport` en `domain/model/reservation/`, con el `Delivery` que se saca de `CancellationReport` para compartirlo, con los invariantes: `holder_user_id` nulo si y solo si el origen es `ACADEMICO`, `sanctionable` falso en ese caso
 - [ ] T004 [P] Definir `ReservationRecordRepositoryPort` en `domain/port/out/`
-- [ ] T005 [P] Crear la entidad JPA, el repositorio y `ReservationRecordPersistenceAdapter`, con el `INSERT` que falla por clave repetida y la actualización del resultado del envío
+- [ ] T005 [P] Crear `ReservationRecordPersistenceAdapter` con `JdbcClient`, con el `INSERT` que falla por clave repetida y la actualización del resultado del envío
 
 **Checkpoint**: existe dónde guardar la constancia de cada ficha
 
@@ -248,11 +291,11 @@ Los dos de UC2 se renombran a `event-reservation-record-created-{student,academi
 - [ ] T008 [P] [US1] Prueba `ReservationRecordIT.java` con Testcontainers: la ficha, el `outbox_message` y la reserva se escriben en la misma transacción; una segunda ficha de la misma reserva choca con la clave primaria (FR-005, SC-003)
 - [ ] T009 [P] [US1] Prueba `RecordDeliveryIT.java` con Testcontainers de Kafka: la ficha sale **en menos de 5 segundos** desde el *commit* gracias al disparo tras la transacción (SC-002); el Módulo 3 caído 30 minutos no pierde ninguna (SC-004); `delivery_status` recorre `PENDING` → `SENT` con sus `attempts`; y al agotarlos queda `FAILED` con su `last_error`
 - [ ] T010 [P] [US1] Prueba de la carga masiva: un horario de UC3 con 300 clases produce 300 fichas, todas `ACADEMICO` y ninguna sancionable, y el `summary` del listado lo confirma con `sanctionable: 0` (SC-006)
-- [ ] T011 [P] [US1] Prueba `ReservationRecordControllerTest.java` contra los *fixtures*: la ficha con su `delivery`, la académica **sin** `instructor` en la respuesta, el filtrado y el `summary` del listado, el `404` de una reserva de otra persona y el `403` por rol
+- [ ] T011 [P] [US1] Prueba `ReservationRecordControllerTest.java` contra los *fixtures*: la ficha con su `delivery`, la académica **sin** `instructor` en la respuesta, el filtrado y el `summary` del listado, el `404` de una reserva de otra persona y el `403` del listado para quien no es Dirección de Programa
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Completar `ReportReservationUseCase`: guarda el `ReservationRecord` además de encolar el evento, con los invariantes de T003 (depende de T002 a T005)
+- [ ] T012 [US1] Completar `ReportReservationUseCase`: arma la ficha con su `eventId`, guarda el `ReservationRecordReport` además de encolar el evento, con los invariantes de T003 (depende de T002 a T005)
 - [ ] T013 [US1] Extender `OutboxPublisher` con el disparo tras el *commit* y con la actualización del resultado del envío en `reservation_record` (FR-006, SC-002)
 - [ ] T014 [US1] Implementar `ReservationRecordController` con los dos endpoints de [Contratos §2 y §3](#2-get-apireservationsreservationidrecord), y dejar escrito en el documento de contrato que el Módulo 3 debe deduplicar por `eventId` (FR-005)
 - [ ] T015 [US1] Registrar el bean y la transacción de UC10 en `UseCasesConfig`

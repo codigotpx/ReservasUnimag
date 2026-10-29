@@ -8,6 +8,7 @@ import edu.unimagdalena.reservasunimag.domain.port.in.CancelReservationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CheckAvailabilityPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ListMyReservationsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryCancellationReportsPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.QueryReservationRecordsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryPendingCheckOutsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryScheduleUploadsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.RegisterExtraordinaryNeedPort;
@@ -30,6 +31,7 @@ import edu.unimagdalena.reservasunimag.domain.port.out.Clock;
 import edu.unimagdalena.reservasunimag.domain.port.out.AcademicBlockRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.BusinessCalendar;
 import edu.unimagdalena.reservasunimag.domain.port.out.CancellationReportRepositoryPort;
+import edu.unimagdalena.reservasunimag.domain.port.out.ReservationRecordRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.CheckOutRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.CompliancePort;
 import edu.unimagdalena.reservasunimag.domain.port.out.DenialRepositoryPort;
@@ -64,6 +66,7 @@ import edu.unimagdalena.reservasunimag.domain.usecase.receivecheckout.ReceiveChe
 import edu.unimagdalena.reservasunimag.domain.usecase.receivenoshow.ReceiveNoShowUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.receivenoshow.VoidNoShowUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reportcancellation.QueryCancellationReportsUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.reportreservation.QueryReservationRecordsUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reportcancellation.ReportCancellationUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reportreservation.ReportReservationUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.reserveresources.AcademicBlockCreator;
@@ -115,8 +118,15 @@ class UseCasesConfig {
     }
 
     @Bean
-    ReportReservationPort reportReservationPort(Module3NotifierPort notifier, Clock clock) {
-        return new ReportReservationUseCase(notifier, clock);
+    ReportReservationPort reportReservationPort(ReservationRecordRepositoryPort records, Module3NotifierPort notifier,
+                                                Clock clock) {
+        return new ReportReservationUseCase(records, notifier, clock);
+    }
+
+    @Bean
+    QueryReservationRecordsPort queryReservationRecordsPort(ReservationRecordRepositoryPort records,
+                                                            InventoryPort inventory) {
+        return new QueryReservationRecordsUseCase(records, inventory);
     }
 
     @Bean

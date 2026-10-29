@@ -430,6 +430,26 @@ Sigue abierto lo que el plan ya decía: el calendario real de festivos de la uni
 
 ---
 
+## P-26 — La constancia de la ficha: decisiones de implementación de UC10 que el plan no tenía
+
+**Estado**: abierto. Detectado al implementar UC10 (2026-10-28).
+
+Lo que cambió respecto al plan, y por qué:
+
+- **La constancia se llama `ReservationRecordReport`**, no `ReservationRecord`: ese nombre ya lo tenía la ficha que viaja en el evento. Lo comparte con `CancellationReport`, su gemela de UC11. La tabla sí se llama `reservation_record`.
+- **El resultado del envío es un tipo propio, `Delivery`**, que antes vivía dentro de `CancellationReport`. Lo usan las dos constancias, y la API lo muestra igual en las dos.
+- **La migración es `V8`**, no `V7`: la `V7` la tomó la carga del horario (UC3). Y la persistencia va con `JdbcClient`, como el resto del módulo, no con JPA.
+- **El `eventId` nace en el dominio**, al armar la ficha, y no en el adaptador de la outbox. Así la constancia y el evento llevan el mismo desde el principio, como en UC11.
+- **El disparo después del commit corre en un hilo aparte** y junta en un solo turno todo lo que se encoló antes de que empiece: una carga de horario deja miles de fichas en un commit y no debe pedir miles de turnos. Los dos turnos, el del reloj y el del commit, no corren a la vez, para no publicar fuera de orden los eventos de una misma reserva. También despierta las cancelaciones, los acuses y el aviso de inicio de uso al Módulo 1.
+- **La ficha de otra persona es `404`, no `403`**, igual que el reporte de cancelación de UC11: un `403` le diría a quien pregunta que la reserva existe.
+- **La ficha muestra también el recurso, el titular y la ocupación**, además de lo que traía el ejemplo de Contratos §2. Es la misma forma que el reporte de cancelación. El docente sigue sin mostrarse.
+
+Lo que el plan ya decía sigue pendiente: que el Módulo 3 descarte por `eventId` (ver `contratos-integracion.md`).
+
+**Ya aplicado** en `docs/plan/plan-uc10-reportar-informacion-reserva.md`: Project Structure, las decisiones de diseño, Contratos §2, §4 y §5, y las tareas T002, T003, T005, T011 y T012.
+
+---
+
 ## Resueltos
 
 - **El Módulo 2 le sigue comunicando el `EN_USO` al Módulo 1** — se cierra el primer punto de **P-20** y con él la marca de clarificación de UC7. El Módulo 3 le reporta directamente al Módulo 1 los cambios físicos que constata en el sitio, pero el inicio de uso es un hecho de la reserva y es nuestro: cuando la persona llega y empieza a usar lo que apartó, el Módulo 2 se lo comunica al Módulo 1 para que pase el recurso a `EN_USO`. El regreso a `DISPONIBLE` y la entrada a `EN_MANTENIMIENTO` no salen de aquí. La flecha `Actualizar estado de los recursos` → Módulo 1 del diagrama se queda, con ese único contenido. Se reescribió UC7 entero: contexto, actores, tabla de estados con su dueño, user story, los seis escenarios, los edge cases, FR-001 a FR-005 y FR-007 a FR-011, el nuevo FR-012 que prohíbe enviarle cualquier otro estado, las entidades y SC-001, SC-003 y SC-004. Lo que falta ahora es solo acordar el medio y los datos del aviso con el equipo del Módulo 1. *(2026-10-05)*

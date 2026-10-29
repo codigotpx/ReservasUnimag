@@ -1,12 +1,9 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationOrigin;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationRecord;
 import edu.unimagdalena.reservasunimag.domain.model.resource.ResourceCategory;
 import edu.unimagdalena.reservasunimag.infrastructure.time.IsoTimes;
-
-import java.util.UUID;
 
 /**
  * {@code ReservationRecordCreated} tal como viaja al Módulo 3 (UC2 Contratos §6): el envoltorio común y, en
@@ -18,13 +15,13 @@ public record ReservationRecordEvent(String eventId, String type, int version, S
 
     public static final String TYPE = "ReservationRecordCreated";
 
-    public static ReservationRecordEvent from(UUID eventId, ReservationRecord record) {
+    public static ReservationRecordEvent from(ReservationRecord record) {
         var reservation = record.reservation();
         var resource = record.resource();
-        boolean student = reservation.origin() == ReservationOrigin.ESTUDIANTIL;
+        boolean student = record.sanctionable();
         var holder = record.holder();
         var academic = record.academic();
-        return new ReservationRecordEvent(eventId.toString(), TYPE, 1, IsoTimes.offset(record.occurredAt()),
+        return new ReservationRecordEvent(record.eventId().toString(), TYPE, 1, IsoTimes.offset(record.occurredAt()),
                 new Data(
                         reservation.id().toString(),
                         reservation.origin().name(),

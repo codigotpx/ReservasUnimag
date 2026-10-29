@@ -19,6 +19,7 @@ import edu.unimagdalena.reservasunimag.domain.usecase.reportreservation.ReportRe
 import edu.unimagdalena.reservasunimag.domain.usecase.reserveresources.AcademicBlockCreator;
 import edu.unimagdalena.reservasunimag.support.CancellationFakes.InMemoryReservations;
 import edu.unimagdalena.reservasunimag.support.CancellationFakes.RecordingNotifier;
+import edu.unimagdalena.reservasunimag.support.RecordFakes.InMemoryReservationRecords;
 import edu.unimagdalena.reservasunimag.support.RecordingStatusUpdates;
 import edu.unimagdalena.reservasunimag.support.ScheduleFakes.InMemoryAcademicBlocks;
 import edu.unimagdalena.reservasunimag.support.ScheduleFakes.InMemoryScheduleUploads;
@@ -105,10 +106,11 @@ class ScheduleTestBed {
     final InMemoryAcademicBlocks academicBlocks = new InMemoryAcademicBlocks(reservations);
     final InMemoryScheduleUploads uploads = new InMemoryScheduleUploads();
     final RecordingNotifier notifier = new RecordingNotifier();
+    final InMemoryReservationRecords records = new InMemoryReservationRecords();
     final RecordingStatusUpdates statusUpdates = new RecordingStatusUpdates();
     final RecordingCancellations cancellations = new RecordingCancellations(reservations, () -> now);
     final AcademicBlockCreator blockCreator = new AcademicBlockCreator(reservations, academicBlocks, statusUpdates,
-            new ReportReservationUseCase(notifier, () -> now), () -> now);
+            new ReportReservationUseCase(records, notifier, () -> now), () -> now);
     final SchedulePlanner planner = new SchedulePlanner(inventory, academicBlocks, reservations, users,
             new SessionExpander(date -> date.getDayOfWeek() != DayOfWeek.SATURDAY
                     && date.getDayOfWeek() != DayOfWeek.SUNDAY));

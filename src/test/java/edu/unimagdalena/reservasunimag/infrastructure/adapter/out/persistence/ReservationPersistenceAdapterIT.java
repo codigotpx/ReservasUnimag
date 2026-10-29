@@ -124,7 +124,7 @@ class ReservationPersistenceAdapterIT {
     // ------------------------------------------------------------------------------------------ atomicidad
 
     private ReservationRecord recordOf(Reservation reservation) {
-        return new ReservationRecord(reservation,
+        return ReservationRecord.student(UUID.randomUUID(), reservation,
                 Resource.space("ESP-1", "Sala de Estudio 3", "SALA_DE_ESTUDIO", "Biblioteca", OperationalStatus.DISPONIBLE,
                         "Biblioteca Central", 8, List.of()),
                 new ReservationHolder(STUDENT, "2021114001", "Estudiante de Prueba", Role.ESTUDIANTE), NOON);

@@ -63,6 +63,11 @@ class ApplyScheduleUseCaseTest {
             assertThat(record.holder()).isNull();
             assertThat(record.academic().courseCode()).isEqualTo("IS-402");
         });
+        // Y cada ficha deja su constancia, ninguna sancionable (UC10 FR-008, SC-006).
+        assertThat(bed.records.stored.values()).hasSize(4).allSatisfy(record -> {
+            assertThat(record.holder()).isNull();
+            assertThat(record.sanctionable()).isFalse();
+        });
         assertThat(bed.uploads.stored.get(validated.id()).status()).isEqualTo(UploadStatus.APPLIED);
     }
 

@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /** El publicador de la outbox contra un Kafka de verdad (UC2 T019). */
 @SpringBootTest(properties = {"reservations.outbox.enabled=true", "reservations.outbox.interval=1h",
+        "reservations.outbox.publish-on-commit=false",
         "reservations.kafka.topic.record=module2.reservation.record.it"})
 @ActiveProfiles("local")
 @Import({TestcontainersConfiguration.class, KafkaTestcontainersConfiguration.class})
@@ -146,7 +147,7 @@ class OutboxPublisherIT {
                 properties.maxSpaceDuration(), properties.minCancellationNotice(), properties.noShowGrace(),
                 properties.loanLossThreshold(), properties.holidays(), properties.resourceTypes(),
                 properties.module1(), properties.module3(), properties.jwt(), properties.kafka(),
-                new ReservationProperties.Outbox(true, Duration.ofHours(1), 4, 10, Duration.ofMinutes(25)),
+                new ReservationProperties.Outbox(true, Duration.ofHours(1), 4, 10, Duration.ofMinutes(25), false),
                 properties.upload());
         var first = new OutboxPublisher(jdbc, kafka, transactionManager, smallBatches);
         var second = new OutboxPublisher(jdbc, kafka, transactionManager, smallBatches);

@@ -36,7 +36,7 @@ class ReservationRecordEventTest {
     }
 
     private String json(ReservationRecord record) {
-        return mapper.writeValueAsString(ReservationRecordEvent.from(EVENT_ID, record));
+        return mapper.writeValueAsString(ReservationRecordEvent.from(record));
     }
 
     @Test
@@ -48,7 +48,7 @@ class ReservationRecordEventTest {
                 OperationalStatus.DISPONIBLE, "BUENO", 7);
 
         JSONAssert.assertEquals(read("event-reservation-record-created-student.json"),
-                json(new ReservationRecord(reservation, book, HOLDER, OCCURRED)), true);
+                json(ReservationRecord.student(EVENT_ID, reservation, book, HOLDER, OCCURRED)), true);
     }
 
     @Test
@@ -59,7 +59,7 @@ class ReservationRecordEventTest {
         var room = Resource.space("ESP-0107", "Sala de Estudio 3", "SALA_DE_ESTUDIO", "Biblioteca, piso 1",
                 OperationalStatus.DISPONIBLE, "Biblioteca Central", 8, List.of());
 
-        String payload = json(new ReservationRecord(reservation, room, HOLDER, OCCURRED));
+        String payload = json(ReservationRecord.student(EVENT_ID, reservation, room, HOLDER, OCCURRED));
 
         JSONAssert.assertEquals(read("event-reservation-record-created-student-space.json"), payload, true);
         assertThat(payload).doesNotContain("\"loan\"").doesNotContain("null");
@@ -76,9 +76,8 @@ class ReservationRecordEventTest {
         var academic = new edu.unimagdalena.reservasunimag.domain.model.academicblock.AcademicData("IS-402",
                 "Redes de Computadores", "1", "Ingeniería de Sistemas", "Nombre del instructor");
 
-        String payload = mapper.writeValueAsString(ReservationRecordEvent.from(
-                UUID.fromString("8d41b6c0-2f93-4a7e-8c15-9b0e3d7f2a68"),
-                new ReservationRecord(block, lab, null, academic, OCCURRED)));
+        String payload = mapper.writeValueAsString(ReservationRecordEvent.from(ReservationRecord.academic(
+                UUID.fromString("8d41b6c0-2f93-4a7e-8c15-9b0e3d7f2a68"), block, lab, academic, OCCURRED)));
 
         JSONAssert.assertEquals(read("event-reservation-record-created-academic.json"), payload, true);
         assertThat(payload).doesNotContain("holder").doesNotContain("null");

@@ -99,7 +99,20 @@ inicio de uso al Módulo 1— se guarda en la tabla `outbox_message` dentro de l
 la operación, y un publicador (`@Scheduled`, cada 5 s) lo lleva a su topic. **Reservar, cancelar y
 registrar una llegada funcionan aunque Kafka esté caído**: los eventos quedan `PENDING` y salen
 cuando el broker vuelve, con espera creciente entre reintentos (5 s, 30 s, 2 min, 10 min) hasta
-quedar `FAILED` tras `reservations.outbox.max-attempts`.
+quedar `FAILED` tras `reservations.outbox.max-attempts`. Además del reloj, el publicador se despierta
+en cuanto confirma una transacción que encoló algo (`reservations.outbox.publish-on-commit`), así
+la ficha de una reserva sale en menos de 5 s.
+
+Lo que se le reporta al Módulo 3 deja constancia propia, que no se purga con la outbox:
+`reservation_record` para las fichas (UC10) y `cancellation_report` para las cancelaciones (UC11).
+Dirección de Programa las audita en `GET /api/reservation-records` y `GET /api/cancellation-reports`,
+filtrando por `delivery=FAILED`. Para reencolar una que quedó `FAILED`, se devuelve su mensaje a
+`PENDING` y el siguiente turno la publica con el mismo `eventId`:
+
+```sql
+UPDATE outbox_message SET status = 'PENDING', attempts = 0, next_attempt_at = now()
+WHERE id = '<eventId>';
+```
 
 Lo que llega del Módulo 3 (la no asistencia y el check-out) se consume con una *inbox*
 (`inbox_message`) que descarta los eventos repetidos. Un evento ilegible, o que apunta a una reserva

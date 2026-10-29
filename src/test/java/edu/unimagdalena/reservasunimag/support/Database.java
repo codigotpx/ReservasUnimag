@@ -17,6 +17,7 @@ public final class Database {
         jdbc.sql("DELETE FROM absence").update();
         jdbc.sql("DELETE FROM inbox_message").update();
         jdbc.sql("DELETE FROM cancellation_report").update();
+        jdbc.sql("DELETE FROM reservation_record").update();
         jdbc.sql("DELETE FROM reservation_closure").update();
         jdbc.sql("DELETE FROM outbox_message").update();
         jdbc.sql("DELETE FROM denial").update();

@@ -50,7 +50,7 @@ class OutboxPublisherRetryIT {
                 properties.maxSpaceDuration(), properties.minCancellationNotice(), properties.noShowGrace(),
                 properties.loanLossThreshold(), properties.holidays(), properties.resourceTypes(),
                 properties.module1(), properties.module3(), properties.jwt(), properties.kafka(),
-                new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, maxAttempts, Duration.ofMinutes(25)),
+                new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, maxAttempts, Duration.ofMinutes(25), false),
                 properties.upload());
         return new OutboxPublisher(jdbc, broken, transactionManager, props);
     }

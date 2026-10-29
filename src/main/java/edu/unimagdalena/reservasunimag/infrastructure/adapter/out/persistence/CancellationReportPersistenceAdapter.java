@@ -7,6 +7,7 @@ import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationOrig
 import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReport;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReportFilter;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReportPage;
+import edu.unimagdalena.reservasunimag.domain.model.reservation.Delivery;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.DeliveryStatus;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationHolder;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.TimeSlot;
@@ -157,7 +158,7 @@ class CancellationReportPersistenceAdapter implements CancellationReportReposito
                 holder,
                 instant(row, "released_starts_at"),
                 instant(row, "released_ends_at"),
-                new CancellationReport.Delivery(status, row.getInt("attempts"), instant(row, "first_attempt_at"),
+                new Delivery(status, row.getInt("attempts"), instant(row, "first_attempt_at"),
                         instant(row, "delivered_at"),
                         status == DeliveryStatus.PENDING ? instant(row, "next_attempt_at") : null,
                         row.getString("last_error")));
