@@ -68,8 +68,6 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │       └── AcademicUseStartScheduler.java        # las clases que empiezan a su hora
     │   └── out/
     │       ├── persistence/
-    │       │   ├── entity/StatusChangeJpa.java
-    │       │   ├── repository/StatusChangeJpaRepository.java
     │       │   └── StatusChangePersistenceAdapter.java
     │       └── module1/
     │           └── ResourceStatusOutboxAdapter.java    # inserta el aviso en la outbox
@@ -77,8 +75,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
         └── UseCasesConfig.java
 
 src/main/resources/db/migration/
-├── V9__status_change.sql
-└── V11__reservation_use_started_at.sql
+├── V6__status_change.sql                 # use_started_at ya existía en reservation desde V1
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/usecase/updatestatus/
@@ -89,10 +86,9 @@ src/test/java/edu/unimagdalena/reservasunimag/
     │   ├── web/
     │   │   ├── resource/StatusChangeControllerTest.java
     │   │   └── reservation/StartUseControllerTest.java
-    │   └── scheduler/AcademicUseStartSchedulerTest.java
     └── out/persistence/
         ├── StatusChangeIT.java
-        ├── ResourceStatusCoherenceIT.java      # las pruebas transversales de SC-003
+        ├── StatusChangeIT.java                 # historial, aviso, clases que empiezan solas y concurrencia
         └── UseStartedNotificationIT.java       # entrega del aviso y caída de 30 min
 
 frontend/src/features/reservations/
@@ -265,7 +261,7 @@ Una segunda llamada sobre la misma reserva responde `200` con el mismo `useStart
 
 | Caso | Respuesta |
 |---|---|
-| Quien pide no es el titular | `403` |
+| Quien pide no es el titular | `404`, como al cancelar (UC4): un `403` confirmaría que la reserva existe |
 | La reserva no está `CONFIRMADA`, o es un bloqueo académico sin titular | `409` `USO-001` |
 | Falta más de 10 minutos para el inicio, o la franja ya terminó | `409` `USO-002` |
 | El Módulo 1 reporta el recurso `EN_MANTENIMIENTO` | `409` `RES-004` con `detectedStatus`, como UC2 |
@@ -344,7 +340,7 @@ src/test/resources/contracts/
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T002 Escribir `V9__status_change.sql` con la tabla de [Contratos §1](#1-la-tabla-status_change) y sus dos índices, y `V11__reservation_use_started_at.sql` con la columna nueva
+- [ ] T002 Escribir `V6__status_change.sql` con la tabla de [Contratos §1](#1-la-tabla-status_change) y sus dos índices. La columna `reservation.use_started_at` no hizo falta: ya estaba en `V1`
 - [ ] T003 [P] Crear `StatusChange` y `StatusChangeReason` —con los siete motivos de la tabla de decisiones— en `domain/model/resource/`
 - [ ] T004 [P] Definir `StatusChangeRepositoryPort`, `InventoryStatusNotifierPort` —cuyo único método recibe un inicio de uso, no un estado— y `RegisterUseStartedPort`, y completar `UpdateResourceStatusPort` con el motivo y la ocupación
 - [ ] T005 [P] Crear la entidad JPA, el repositorio y `StatusChangePersistenceAdapter`, con la consulta paginada por recurso
@@ -364,15 +360,15 @@ src/test/resources/contracts/
 
 - [ ] T007 [P] [US1] Pruebas en `UpdateResourceStatusUseCaseTest.java`: los siete motivos producen su registro con la franja y los dos estados correctos; el registro se escribe en la transacción de quien invoca; `previous_status_module2` nunca vale `EN_MANTENIMIENTO` (la decisión de diseño); y solo `USE_STARTED` nace `PENDING` con su `outbox_message_id` (FR-012)
 - [ ] T008 [P] [US1] Pruebas en `RegisterUseStartedUseCaseTest.java`: marca `use_started_at` y, en un activo, también `picked_up_at`; una segunda llamada no vuelve a marcar, registrar ni avisar (FR-008); fuera de la ventana de 10 minutos y sobre una reserva no `CONFIRMADA` se rechaza; con el recurso `EN_MANTENIMIENTO` no se marca ni se avisa (FR-005); con el Módulo 1 sin responder sí se marca y el aviso queda encolado; y el `useEndsAt` del aviso es la hora de fin en un espacio y nulo en un activo (FR-004a)
-- [ ] T008b [P] [US1] Pruebas en `AcademicUseStartSchedulerTest.java` con reloj inyectado: un bloqueo que llega a su hora produce **un** aviso con el tramo de la clase (escenario 7); antes de su hora no produce ninguno (escenario 6); un bloqueo cancelado o desplazado antes de empezar no produce ninguno; dos corridas seguidas tampoco lo repiten; y un salón que el Módulo 1 reporta `EN_MANTENIMIENTO` queda fuera del lote sin frenar a los demás
+- [ ] T008b [P] [US1] Pruebas en `StatusChangeIT.java` (no hay una prueba unitaria aparte del planificador): un bloqueo que llega a su hora produce **un** aviso con el tramo de la clase (escenario 7); antes de su hora no produce ninguno (escenario 6); un bloqueo cancelado o desplazado antes de empezar no produce ninguno; dos corridas seguidas tampoco lo repiten; y un salón que el Módulo 1 reporta `EN_MANTENIMIENTO` queda fuera del lote sin frenar a los demás
 - [ ] T009 [P] [US1] Prueba `StatusChangeIT.java`: cada caso de uso que invoca UC7 deja **exactamente un** registro por ocupación afectada —y una carga de UC3 con 50 bloqueos deja 50—; un *rollback* de la operación no deja ninguno ni deja un aviso en la *outbox* (FR-009)
-- [ ] T010 [P] [US1] Prueba `ResourceStatusCoherenceIT.java` para FR-006 y SC-003: con N hilos reservando, cancelando y cargando horarios sobre el mismo recurso, **nunca** quedan dos ocupaciones confirmadas solapadas, y la etiqueta que calcula UC1 es siempre una sola para cada instante; con N hilos registrando el mismo inicio de uso, sale **un** aviso
+- [ ] T010 [P] [US1] Pruebas en `ReservationConcurrencyIT.java` y `StatusChangeIT.java` para FR-006 y SC-003 (no hay una prueba `ResourceStatusCoherenceIT` aparte): con N hilos reservando, cancelando y cargando horarios sobre el mismo recurso, **nunca** quedan dos ocupaciones confirmadas solapadas, y la etiqueta que calcula UC1 es siempre una sola para cada instante; con N hilos registrando el mismo inicio de uso, sale **un** aviso
 - [ ] T011 [P] [US1] Prueba de FR-010: una franja que termina deja el recurso disponible en la consulta siguiente **sin que ninguna tarea haya corrido**, y si hay otra reserva encima, esa manda; y de FR-011: un préstamo entregado y vencido sigue ocupando y **no** se libera por el paso del tiempo
 - [ ] T012 [P] [US1] Prueba de FR-005: un recurso que el Módulo 1 reporta `EN_MANTENIMIENTO` con una reserva confirmada encima se muestra `EN_MANTENIMIENTO`; cancelar esa reserva **no** lo saca de mantenimiento; ninguna operación nuestra escribe ese estado; y el inicio de uso sobre él se rechaza con `RES-004`
 - [ ] T013 [P] [US1] Prueba de arquitectura de FR-012: `InventoryStatusNotifierPort` no tiene ningún método que acepte un estado arbitrario, y el único motivo que lo invoca es `USE_STARTED`. Es la prueba que impide que un caso de uso futuro le empiece a mandar `RESERVADO` sin que nadie lo note
 - [ ] T014 [P] [US1] Prueba `UseStartedNotificationIT.java` con Testcontainers de Kafka: el evento llega con el contenido del *fixture*; el Módulo 1 caído **30 minutos** no pierde el aviso y lo recibe al volver (SC-004); `notified_status` pasa de `PENDING` a `SENT`; al agotar los intentos queda `FAILED`; y con una reserva confirmada, una cancelación y un check-out **no sale ningún evento** hacia ese topic (FR-012)
 - [ ] T015 [P] [US1] Prueba de SC-005: con el adaptador del aviso lanzando una excepción a propósito, una reserva, una cancelación y un registro de inicio de uso **se completan igual**
-- [ ] T016 [P] [US1] Pruebas `StatusChangeControllerTest.java` y `StartUseControllerTest.java` contra los *fixtures*: el historial paginado y ordenado, el campo `note` presente, el filtrado por motivo, el `403` por rol y la respuesta sin `resourceName` cuando el Módulo 1 no contesta; y en el `POST`, el `200` con su `inventoryNotice`, la repetición idempotente, el `403` del no titular y los dos códigos nuevos
+- [ ] T016 [P] [US1] Pruebas `StatusChangeControllerTest.java` y `StartUseControllerTest.java` contra los *fixtures*: el historial paginado y ordenado, el campo `note` presente, el filtrado por motivo, el `403` por rol y la respuesta sin `resourceName` cuando el Módulo 1 no contesta; y en el `POST`, el `200` con su `inventoryNotice`, la repetición idempotente, el `404` del no titular y los dos códigos nuevos
 
 ### Implementation for User Story 1
 
@@ -434,5 +430,5 @@ src/test/resources/contracts/
 - Verify tests pass
 - Commit after each task or logical group
 - **Lo que ya estaba hecho y aquí solo se documenta**: FR-002 (UC2 y UC12), FR-006 y SC-003 (la restricción de exclusión), FR-010 y FR-011 (la consulta de ocupaciones de UC1), FR-005 en su mitad de escritura (el mantenimiento no es nuestro). Lo nuevo es el registro de FR-009 y el aviso de FR-004
-- **Decisiones de los contratos que el spec no fija**: el estado anterior se guarda solo con los datos del Módulo 2 y la columna se llama `previous_status_module2` para no confundirlo con la etiqueta completa; `notified_status` nace `PENDING` solo en el motivo que avisa; el historial lleva un campo `note` fijo que explica qué no está ahí; el aviso va por la *outbox* y no por REST síncrono (FR-007, SC-005); la ventana para registrar la llegada es la misma de 10 minutos de UC9 y UC4; y `USO-001` y `USO-002` son códigos nuevos que hay que añadir al diccionario
+- **Decisiones de los contratos que el spec no fija**: el estado anterior se guarda solo con los datos del Módulo 2 y la columna se llama `previous_status_module2` para no confundirlo con la etiqueta completa; `notified_status` nace `PENDING` solo en el motivo que avisa; el historial lleva un campo `note` fijo que explica qué no está ahí; el aviso va por la *outbox* y no por REST síncrono (FR-007, SC-005); la ventana para registrar la llegada es la misma de 10 minutos de UC9 y UC4, y se lee de `reservations.min-cancellation-notice`; quien no es titular recibe `404` y no `403`; una reserva con la llegada registrada ya no admite ausencia (`USE_ALREADY_STARTED` en el acuse de UC9) ni cancelación (`CAN-001` con `reason: USE_STARTED`), y la cancelación por mantenimiento se la salta; y `USO-001` y `USO-002` son códigos nuevos que hay que añadir al diccionario
 - **Decisión explícita de no hacer**: ninguna tarea programada que libere ocupaciones ni recalcule estados. La única que hay empieza el uso de las clases, porque ese hecho no lo registra nadie más, y no toca nada que el modelo ya sepa deducir

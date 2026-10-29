@@ -70,7 +70,7 @@ Dos consecuencias prácticas:
 | `domain.port.out` | Lo que la aplicación necesita del exterior: repositorios, Módulo 1, Módulo 3, reloj | `domain.model` |
 | `domain.usecase` | La implementación de cada caso de uso, que orquesta el modelo usando los puertos de salida | `domain.*` |
 | `infrastructure.adapter.in` | Controladores REST para el frontend y consumidores de Kafka para el Módulo 3 | `domain.port.in`, `domain.model` |
-| `infrastructure.adapter.out` | Persistencia JPA y clientes HTTP; cada uno implementa un puerto de salida | `domain.port.out`, `domain.model` |
+| `infrastructure.adapter.out` | Persistencia (JPA para `app_user`, `JdbcClient` para lo demás) y clientes HTTP; cada uno implementa un puerto de salida | `domain.port.out`, `domain.model` |
 | `infrastructure.config` | Beans de Spring, seguridad, propiedades | Todo |
 
 **Regla**: `domain` no importa nada de `infrastructure`, ni de Spring, JPA, Jackson o HTTP. Una prueba de ArchUnit lo verifica en cada build.
@@ -78,6 +78,7 @@ Dos consecuencias prácticas:
 Decisiones que se derivan de la regla:
 
 - **El dominio es puro.** Las entidades de `domain.model` no llevan `@Entity`. Las entidades JPA viven en `infrastructure.adapter.out.persistence`, y un mapper traduce entre las dos.
+- **JPA solo donde hay entidad que mantener.** Al implementar, solo `app_user` quedó con JPA (`UserJpaEntity`, `UserJpaRepository`, `UserMapper`). Las reservas, los historiales y la *outbox* se leen y escriben con `JdbcClient` y SQL a mano: son rangos `tstzrange`, `FOR UPDATE SKIP LOCKED`, `jsonb` y conteos con `FILTER`, que en JPA serían consultas nativas de todas formas. Por eso los planes de los casos de uso nombran un `*PersistenceAdapter` y no entidades ni repositorios Spring Data.
 - **Los casos de uso no llevan `@Service`.** Se registran como beans en `infrastructure.config`, y las transacciones (`@Transactional`) se abren en esa misma capa, envolviendo el caso de uso.
 - **La hora se inyecta con un puerto `Clock`.** Casi todas las reglas dependen de "ahora" (10 minutos de no-show, vencimiento a las 22:00, antelación de cancelación), y las pruebas necesitan controlarlo.
 - **Los `<<include>>` del diagrama son llamadas entre casos de uso.** Por ejemplo, `ReserveResourcesUseCase` usa `CheckAvailability`, `CheckSanctions`, `UpdateResourceStatus` y `ReportReservation` a través de sus puertos de entrada.
@@ -245,10 +246,10 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │                                inbox y envío al DLT
     │   └── out/
     │       ├── persistence/
-    │       │   ├── entity/              entidades JPA
+    │       │   ├── entity/              entidades JPA (solo app_user)
     │       │   ├── repository/          interfaces Spring Data
     │       │   ├── mapper/              dominio ↔ JPA
-    │       │   └── *Adapter.java        implementan los *RepositoryPort
+    │       │   └── *Adapter.java        implementan los *RepositoryPort; los de reservas, con JdbcClient
     │       ├── module1/                 cliente RestClient → InventoryPort
     │       ├── module3/                 cliente RestClient → CompliancePort
     │       ├── messaging/               outbox: el adaptador que guarda el evento
@@ -425,6 +426,10 @@ El bloqueo académico es una reserva con `origin = 'ACADEMICO'`, porque cada cla
 | received_at | timestamptz | cuándo llegó el aviso |
 | verdict | varchar, nulo | solo espacios: `SIN_NOVEDAD`, `REQUIERE_MANTENIMIENTO` |
 | due_at_snapshot | timestamptz, nulo | solo activos: el vencimiento contra el que se cerró |
+
+**`cancellation_report`** (UC11): la constancia de cada cancelación reportada al Módulo 3 (FR-010). Columnas: `reservation_id` (PK, FK), `event_id` (único, sin FK a la *outbox*), `cancellation_origin` (`HOLDER`, `ACADEMIC_PRIORITY`, `RESOURCE_UNAVAILABLE`, `SCHEDULE_WITHDRAWN`), `reservation_status`, `reason`, `attributable_to_person` (verdadero solo con `HOLDER`), `notice_minutes` (solo con `HOLDER`), `cancelled_at`, el recurso, el titular (nulo en un bloqueo), la franja liberada y el resultado de la entrega (`delivery_status`, `attempts`, `first_attempt_at`, `delivered_at`, `last_error`). El detalle está en [UC11 § Contratos §4](./plan-uc11-reportar-cancelacion-reserva.md#4-la-tabla-cancellation_report).
+
+**`reservation_closure`** (UC4, UC9): `reservation_id` (PK, FK) y `closure_type` (`CANCELLATION`, `ABSENCE`). Una reserva se cierra una sola vez: si ya se canceló no se puede registrar la ausencia, y al revés.
 
 **`status_change`** (UC7): el historial de FR-009. Una fila por cambio de ocupación, con el motivo y, solo en el inicio de uso, el aviso que salió.
 | Columna | Tipo | Nota |
