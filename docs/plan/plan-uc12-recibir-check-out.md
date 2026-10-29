@@ -47,20 +47,20 @@ src/main/java/edu/unimagdalena/reservasunimag/
 │   │   │   ├── CheckOut.java                   # nuevo
 │   │   │   ├── CheckOutKind.java               # nuevo: ASSET_RETURN, SPACE_REVIEW
 │   │   │   ├── Verdict.java                    # nuevo: SIN_NOVEDAD, REQUIERE_MANTENIMIENTO
-│   │   │   └── CheckOutRejection.java          # nuevo: los motivos de FR-008 y FR-014
+│   │   │   └── CheckOutRejection.java          # nuevo: los cinco motivos de FR-008 y FR-014
+│   │   │   └── PendingReturns.java             # y PendingReviews, PendingReviewFilter, PendingCheckOut: las dos listas
 │   │   └── reservation/
-│   │       └── ReservationStatus.java          # (existe) + NO_DEVUELTO_PERDIDO
+│   │       └── ReservationStatus.java          # (existe) NO_DEVUELTO_PERDIDO queda pendiente (Phase 4)
 │   ├── port/
 │   │   ├── in/
 │   │   │   ├── ReceiveCheckOutPort.java
-│   │   │   └── DeclareLoanLostPort.java        # el umbral de 7 días
+│   │   │   └── QueryPendingCheckOutsPort.java  # las dos listas de pendientes
 │   │   └── out/
-│   │       ├── CheckOutRepositoryPort.java
-│   │       └── LoanRepositoryPort.java         # pendientes y cierre
+│   │       ├── CheckOutRepositoryPort.java     # el check-out y las dos consultas de pendientes
 │   └── usecase/receivecheckout/
 │       ├── ReceiveCheckOutUseCase.java
 │       ├── CheckOutValidator.java              # las dos tablas de rechazo
-│       └── DeclareLoanLostUseCase.java
+│       └── QueryPendingCheckOutsUseCase.java   # pide los nombres al Módulo 1
 │
 └── infrastructure/
     ├── adapter/
@@ -68,31 +68,29 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │   ├── messaging/
     │   │   │   ├── CheckOutListener.java       # @KafkaListener
     │   │   │   ├── InboxGuard.java             # (existe, de UC9) se reusa
-    │   │   │   └── event/CheckOutRegisteredEvent.java
+    │   │   │   └── CheckOutMessage.java            # lee el evento del Módulo 3
     │   │   └── web/loan/
-    │   │       ├── PendingReturnsController.java    # FR-009 y FR-015
-    │   │       └── PendingResponse.java
+    │   │       ├── PendingCheckOutsController.java   # FR-009 y FR-015
+    │   │       ├── PendingReturnsResponse.java
+    │   │       ├── PendingReviewsResponse.java
     │   └── out/
     │       ├── persistence/
-    │       │   ├── entity/CheckOutJpa.java
-    │       │   ├── repository/CheckOutJpaRepository.java
-    │       │   └── CheckOutPersistenceAdapter.java
+    │       │   └── CheckOutPersistenceAdapter.java   # con JdbcClient
     │       └── messaging/
     │           └── event/CheckOutAckEvent.java
     └── config/
         └── UseCasesConfig.java
 
 src/main/resources/db/migration/
-└── V8__check_out.sql
+└── V5__check_out.sql
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/usecase/receivecheckout/
 │   ├── CheckOutValidatorTest.java
-│   ├── ReceiveCheckOutUseCaseTest.java
-│   └── DeclareLoanLostUseCaseTest.java
+│   └── ReceiveCheckOutUseCaseTest.java
 └── infrastructure/adapter/
     ├── in/messaging/CheckOutListenerIT.java
-    ├── in/web/loan/PendingReturnsControllerTest.java
+    ├── in/web/loan/PendingCheckOutsControllerTest.java
     └── out/persistence/CheckOutIT.java
 
 frontend/src/
@@ -120,20 +118,20 @@ frontend/src/
 
 **Por qué el check-out de un espacio no libera nada.** Un espacio se libera solo al cumplirse la hora de fin de su franja, llegue o no la revisión. Si el check-out liberase algo, estaría liberando una franja que ya pasó, lo que no cambia nada, o adelantando una liberación, lo que sería un error. Por eso SC-006 dice "ninguno cambia la disponibilidad de una franja", y la prueba de T011 lo comprueba de la única forma que vale: mirando que la consulta de UC1 dé **lo mismo** antes y después del check-out.
 
-**La validación: ocho motivos de rechazo** (FR-008, FR-014). Un consumidor de Kafka no puede devolver un error, así que cada rechazo produce un acuse, igual que en UC9:
+**La validación: cinco motivos de rechazo** (FR-008, FR-014). Un consumidor de Kafka no puede devolver un error, así que cada rechazo produce un acuse, igual que en UC9:
 
 | `rejection` | Cuándo | FR |
 |---|---|---|
-| `LOAN_NOT_OPEN` | El préstamo ya tiene `returned_at` | FR-008, edge case **Check-out repetido** |
 | `RESERVATION_CANCELLED` | La reserva se canceló antes de la entrega | FR-008, edge case |
 | `ASSET_NOT_PICKED_UP` | El activo nunca se recogió: `picked_up_at` nulo. No hay devolución posible | decisión de este plan |
-| `LOAN_DECLARED_LOST` | El préstamo ya se cerró por el umbral de 7 días | decisión de este plan |
 | `SLOT_NOT_FINISHED` | Revisión de un espacio cuya franja no ha terminado | FR-014, edge case |
 | `RESERVATION_NOT_USED` | Revisión de un espacio cancelado o con ausencia | FR-014, edge case |
-| `VERDICT_REQUIRED` | Revisión de espacio sin dictamen, o activo **con** dictamen | FR-012, FR-011 |
-| `ALREADY_REVIEWED` | Ya hay un check-out de esa reserva | FR-007 |
+| `VERDICT_REQUIRED` | Revisión de espacio sin dictamen, o activo **con** dictamen o con alguno de los campos `damage`, `damages` o `damageDescription` | FR-012, FR-011 |
 
-`ALREADY_REVIEWED` y `LOAN_NOT_OPEN` responden `accepted: true` con `duplicate: true`, igual que en UC9: el estado que el Módulo 3 buscaba ya existe. Los otros seis responden `accepted: false`.
+Todos responden `accepted: false`. El plan proponía ocho; al implementar quedaron cinco (P-23):
+
+- **`ALREADY_REVIEWED` y `LOAN_NOT_OPEN` no son rechazos, son duplicados.** Un préstamo solo se cierra con un check-out, así que "ya cerrado" es siempre "ya hay check-out". Los dos casos responden `accepted: true` con `duplicate: true` y los datos del primero, igual que en UC9, con `loanClosed: false` y `quotaReleased: false`, porque esa copia no cerró ni liberó nada.
+- **`LOAN_DECLARED_LOST` no existe** mientras no exista el umbral de pérdida (Phase 4, pendiente de P-08).
 
 **Decisión: un dictamen en un activo es un rechazo, no un dato que se ignora.** FR-011 prohíbe recibir y guardar la descripción del daño de un activo. Lo más fácil sería aceptar el evento y descartar el campo, pero entonces el Módulo 3 nunca sabría que nos está mandando algo que no debe, y el día que lo miren creerán que lo guardamos. Se rechaza con `VERDICT_REQUIRED` —el mismo código, en su variante inversa— y el `detail` lo explica.
 
@@ -155,7 +153,7 @@ Pero el edge case pide **tres cosas que el plan general no soporta**:
 
 **El check-out a las 22:00 en punto** (edge case). El criterio lo aplica el Módulo 3, no nosotros: lo único que este plan garantiza es que el dato permita distinguirlo sin ambigüedad. Por eso `occurred_at` se guarda como `timestamptz` con la precisión que llegue, **sin redondear a minutos ni a días**, y el acuse lo devuelve tal cual. Una devolución a las 22:00:00 y otra a las 22:00:01 son distinguibles, y quién llega tarde lo decide quien calcula la mora.
 
-**Las dos listas de pendientes** (FR-009, FR-015). Son consultas, no tablas: un préstamo pendiente es uno `CONFIRMADA` con `picked_up_at` y sin `returned_at` cuyo vencimiento ya pasó; una reserva de espacio pendiente de revisión es una `FINALIZADA` sin fila en `check_out` cuya franja ya terminó. Nada que mantener, nada que pueda desincronizarse. La segunda lista va a ser **grande** —cada clase y cada reserva de espacio del semestre aparece ahí si nadie revisa—, así que se pagina y se ordena por antigüedad, y la pantalla avisa de que la revisión de espacios es opcional.
+**Las dos listas de pendientes** (FR-009, FR-015). Son consultas, no tablas: un préstamo pendiente es uno `CONFIRMADA` con `picked_up_at` y sin `returned_at` cuyo vencimiento ya pasó; una reserva de espacio pendiente de revisión es una cuya franja ya terminó, sin fila en `check_out` y sin ausencia vigente. Al implementar se corrigió la definición original, que pedía una reserva `FINALIZADA`: un espacio sigue `CONFIRMADA` al terminar su franja, así que con esa condición la lista habría salido vacía (P-23). Nada que mantener, nada que pueda desincronizarse. La segunda lista va a ser **grande** —cada clase y cada reserva de espacio del semestre aparece ahí si nadie revisa—, así que se pagina y se ordena por antigüedad, y la pantalla avisa de que la revisión de espacios es opcional.
 
 ## Contratos
 
@@ -395,7 +393,7 @@ src/test/resources/contracts/
 ├── event-check-out-ack-asset.json
 ├── event-check-out-ack-space.json
 ├── event-check-out-ack-rejected.json
-├── event-loan-declared-lost.json
+├── event-loan-declared-lost.json            # pendiente, con la Phase 4
 ├── api-pending-returns.json
 └── api-pending-reviews.json
 ```
@@ -404,17 +402,17 @@ src/test/resources/contracts/
 
 ## Phase 1: Setup
 
-- [ ] T001 Añadir a `application.properties` el topic `reservations.kafka.topic.check-out-ack=module2.reservation.check-out-ack.v1`, el umbral `reservations.loan.loss-threshold=7d`, su interruptor `reservations.loan.loss-threshold-enabled=true` y la hora del trabajo diario, y extenderlo todo en `ReservationProperties`
+- [ ] T001 Añadir a `application.properties` el topic `reservations.kafka.topic.check-out-ack=module2.reservation.check-out-ack.v1` y el umbral `reservations.loan-loss-threshold=7d` (el interruptor y la hora del trabajo diario llegan con la Phase 4), y extenderlo todo en `ReservationProperties`
 - [ ] T002 [P] Añadir los dos eventos nuevos —el acuse de check-out y `LoanDeclaredLost`— a la tabla de topics de [plan-arquitectura.md](./plan-arquitectura.md#mensajería-con-kafka)
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T003 Escribir `V8__check_out.sql` con la tabla de [Contratos §5](#5-la-tabla-check_out): `reservation_id` como clave primaria, `kind`, `source_event_id` único, los dos instantes, el `CHECK` del dictamen por tipo y el índice
+- [ ] T003 Escribir `V5__check_out.sql` con la tabla de [Contratos §5](#5-la-tabla-check_out): `reservation_id` como clave primaria, `kind`, `source_event_id` único, los dos instantes, el `CHECK` del dictamen por tipo y el índice
 - [ ] T004 [P] Añadir `NO_DEVUELTO_PERDIDO` a `ReservationStatus`, fuera del conjunto que la restricción de exclusión considera ocupado, y documentar la transición desde `CONFIRMADA`
 - [ ] T005 [P] Crear `CheckOut`, `CheckOutKind`, `Verdict` y `CheckOutRejection` en `domain/model/compliance/`
-- [ ] T006 [P] Definir `ReceiveCheckOutPort` y `DeclareLoanLostPort` en `domain/port/in/`, y `CheckOutRepositoryPort` y `LoanRepositoryPort` en `domain/port/out/`, con las dos consultas de pendientes
+- [ ] T006 [P] Definir `ReceiveCheckOutPort` y `QueryPendingCheckOutsPort` en `domain/port/in/`, y `CheckOutRepositoryPort` en `domain/port/out/`, con las dos consultas de pendientes
 - [ ] T007 [P] Crear la entidad JPA, el repositorio y `CheckOutPersistenceAdapter`, con el `INSERT` que falla por clave repetida y las dos consultas paginadas
 
 **Checkpoint**: existe dónde registrar el check-out
@@ -429,21 +427,21 @@ src/test/resources/contracts/
 
 ### Tests for User Story 1
 
-- [ ] T008 [P] [US1] Pruebas en `CheckOutValidatorTest.java`: un caso por cada uno de los ocho `rejection` de la tabla; que `ALREADY_REVIEWED` y `LOAN_NOT_OPEN` responden `accepted: true` con `duplicate`; y que un activo **con** dictamen se rechaza en vez de ignorarse el campo (FR-011)
+- [ ] T008 [P] [US1] Pruebas en `CheckOutValidatorTest.java`: un caso por cada uno de los cinco `rejection` de la tabla; que un check-out repetido responde `accepted: true` con `duplicate`; y que un activo **con** dictamen se rechaza en vez de ignorarse el campo (FR-011)
 - [ ] T009 [P] [US1] Pruebas en `ReceiveCheckOutUseCaseTest.java` para un activo: cierra el préstamo con `returned_at`, pasa la reserva a `FINALIZADA`, libera el cupo (FR-003), guarda los dos instantes y el `due_at_snapshot`, y el acuse lleva `dueAt`, `loanClosed` y `quotaReleased`; el check-out el mismo día de la entrega se procesa igual (edge case); y **no** se calcula ninguna mora (FR-005)
 - [ ] T010 [P] [US1] Pruebas para un espacio: registra el dictamen, el acuse lleva `slotReleased: false`, y los rechazos de FR-014 —franja sin terminar, reserva cancelada y reserva con ausencia— con su motivo
 - [ ] T011 [P] [US1] Prueba de SC-006: la consulta de UC1 sobre la franja de un espacio devuelve **exactamente lo mismo** antes y después de su check-out, con los dos dictámenes
 - [ ] T012 [P] [US1] Prueba `CheckOutIT.java` con Testcontainers: tras el check-out de un activo **otra persona puede reservarlo** (SC-001, SC-002); un check-out repetido no cierra dos veces ni libera dos veces el cupo (FR-007, SC-003, edge case); el `CHECK` del dictamen rechaza un activo con dictamen y un espacio sin él; y un *rollback* no deja ninguna fila
 - [ ] T013 [P] [US1] Prueba `CheckOutListenerIT.java` con Testcontainers de Kafka, contra los *fixtures*: el evento nuevo se procesa; el repetido lo descarta la *inbox*; el que no tiene `reservationId` va al DLT; un rechazo de negocio **no** va al DLT y produce acuse; y el `data.occurredAt` se usa para el negocio y el del envoltorio solo para el log
 - [ ] T014 [P] [US1] Prueba de FR-006 y SC-004: sin evento de check-out, un préstamo vencido sigue abierto, sigue ocupando su periodo y sigue contando cupo, por mucho que pase el tiempo —con el umbral de pérdida desactivado
-- [ ] T015 [P] [US1] Prueba `PendingReturnsControllerTest.java`: la lista de préstamos pendientes incluye los vencidos sin check-out y **no** los devueltos ni los nunca recogidos (FR-009, SC-005), con su `overdueDays` y su `lossThresholdAt`; la de revisiones pendientes incluye las reservas de espacio terminadas sin check-out y separa origen en el `summary` (FR-015); y las dos exigen rol `DIRECCION_PROGRAMA`
+- [ ] T015 [P] [US1] Prueba `PendingCheckOutsControllerTest.java`: la lista de préstamos pendientes incluye los vencidos sin check-out y **no** los devueltos ni los nunca recogidos (FR-009, SC-005), con su `overdueDays` y su `lossThresholdAt`; la de revisiones pendientes incluye las reservas de espacio terminadas sin check-out y separa origen en el `summary` (FR-015); y las dos exigen rol `DIRECCION_PROGRAMA`
 
 ### Implementation for User Story 1
 
 - [ ] T016 [US1] Implementar `CheckOutValidator` con las dos tablas de rechazo, resolviendo el `kind` desde la categoría del recurso y no desde el evento (depende de T005)
 - [ ] T017 [US1] Implementar `ReceiveCheckOutUseCase`: validación, `InboxGuard`, `INSERT` del check-out, cierre del préstamo y de la reserva en los activos, registro del dictamen en los espacios, y el acuse por la *outbox* (depende de T007, T016)
 - [ ] T018 [US1] Implementar `CheckOutListener` reusando `KafkaConsumerConfig` e `InboxGuard` de UC9, y `CheckOutAckEvent` (depende de T017)
-- [ ] T019 [US1] Implementar `PendingReturnsController` con los dos endpoints de [Contratos §3 y §4](#3-get-apiloanspending-returns), paginados y con el nombre del recurso pedido al Módulo 1
+- [ ] T019 [US1] Implementar `PendingCheckOutsController` con los dos endpoints de [Contratos §3 y §4](#3-get-apiloanspending-returns), paginados y con el nombre del recurso pedido al Módulo 1
 - [ ] T020 [US1] Registrar los beans y las transacciones de UC12 en `UseCasesConfig`, y actualizar [modelo-datos-der.md](./modelo-datos-der.md) con la clave primaria y las columnas nuevas de `check_out`
 - [ ] T021 [P] [US1] Frontend: `features/checkout/types.ts` y `api.ts`, `PendingReturns.tsx` con el aviso de los que están cerca del umbral, y `PendingReviews.tsx` que deja claro que la revisión es opcional
 - [ ] T022 [US1] Frontend: `app/(direction)/pending-reviews/page.tsx` con las dos listas en pestañas
@@ -455,6 +453,8 @@ src/test/resources/contracts/
 ## Phase 4: Umbral de pérdida de 7 días
 
 **Purpose**: La excepción a FR-006 que introduce el edge case **Devolución que nunca llega**. Va en su propia fase porque es lo único de UC12 que actúa sin que nadie lo pida, y porque depende de pendientes abiertos.
+
+> **Estado: sin implementar.** Se espera a que se ratifique P-08 (P-23). Mientras tanto, la lista de préstamos pendientes ya muestra `lossThresholdAt` y cuenta los que están a menos de 48 horas, y `reservations.loan-loss-threshold=7d` fija el plazo; nada cierra préstamos por su cuenta. No existen todavía `NO_DEVUELTO_PERDIDO`, `DeclareLoanLostUseCase`, el trabajo diario, `LoanDeclaredLost` ni el rechazo `LOAN_DECLARED_LOST`.
 
 - [ ] T023 [P] Pruebas en `DeclareLoanLostUseCaseTest.java` con reloj inyectado: un préstamo con 7 días de mora se declara perdido y uno con 6 no; el estado queda `NO_DEVUELTO_PERDIDO`; la ocupación y el cupo se liberan; se emite `LoanDeclaredLost` con la placa y los días de mora; y un check-out que llegue **después** se rechaza con `LOAN_DECLARED_LOST`
 - [ ] T024 Implementar `DeclareLoanLostUseCase` y el trabajo `@Scheduled` diario, con una transacción por préstamo para que uno que falle no detenga a los demás, y con el interruptor de `reservations.loan.loss-threshold-enabled`

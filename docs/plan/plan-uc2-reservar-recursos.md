@@ -77,7 +77,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
 │   │   │   ├── TimeSlot.java                  # (existe) + tope de 2 horas de FR-009
 │   │   │   └── Occupancy.java                      # (existe)
 │   │   ├── resource/
-│   │   │   └── ResourceDetails.java                   # ficha de un recurso con su plazo de préstamo
+│   │   │   └── Resource.java                      # (existe) la ficha trae el plazo de préstamo del activo; no hay tipo aparte
 │   │   └── error/
 │   │       ├── DenialCode.java               # RES-001 a RES-004
 │   │       ├── ReservationDeniedException.java       # código + datos del mensaje
@@ -111,7 +111,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   ├── in/web/
     │   │   ├── reservation/
     │   │   │   ├── ReservationController.java          # POST /api/reservations, GET /api/reservations/mine
-    │   │   │   ├── LoanController.java         # GET /api/loans/expected-due-date
+    │   │   │   ├── ExpectedDueDateResponse.java    # GET /api/loans/expected-due-date vive en ReservationController
     │   │   │   ├── CreateReservationRequest.java
     │   │   │   ├── ReservationResponse.java
     │   │   │   └── MyReservationsResponse.java
@@ -119,10 +119,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │       └── GlobalErrorHandler.java     # (existe) + 409 con el código de denegación
     │   └── out/
     │       ├── persistence/
-    │       │   ├── entity/                         # + LoanJpa, DenialJpa, OutboxMessageJpa
-    │       │   ├── repository/                     # + ReservationJpaRepository, DenialJpaRepository,
-    │       │   │                                   #   OutboxMessageJpaRepository
-    │       │   ├── ReservationPersistenceAdapter.java  # la transacción de confirmación
+    │       │   ├── ReservationPersistenceAdapter.java  # la transacción de confirmación, con JdbcClient
     │       │   └── DenialPersistenceAdapter.java
     │       └── messaging/
     │           ├── OutboxNotifierAdapter.java   # → Module3NotifierPort
@@ -130,13 +127,12 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │           └── event/ReservationRecordEvent.java
     └── config/
         ├── ReservationProperties.java                # (existe) + cupo, tope de franja, festivos
-        ├── KafkaConfig.java                        # productor idempotente, acks=all
         └── UseCasesConfig.java                   # (existe) + los beans y transacciones de UC2
 
 src/main/resources/
-├── application.properties                          # + cupo, tope, festivos y bloque de Kafka
+├── application.properties                          # + cupo, tope, festivos y Kafka (productor idempotente, acks=all)
 └── db/migration/
-    └── V3__denial_and_outbox.sql                 # tablas denegacion y outbox_message
+    └── V2__denial_and_outbox.sql                 # tablas denegacion y outbox_message
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/model/reservation/TimeSlotTest.java     # (existe) + tope de 2 horas
@@ -764,9 +760,9 @@ Se suman a los que creó el plan de UC1 en la misma carpeta:
 
 ```text
 src/test/resources/contracts/
-├── module1-asset-details.json            # con loanTermBusinessDays
-├── module1-asset-details-no-term.json  # el 503 INCOMPLETE_RESOURCE_DETAILS (P-16)
-├── module1-space-details.json
+├── module1-asset-details.json            # pendiente: no se creó (ver Notes)
+├── module1-asset-details-no-term.json  # pendiente
+├── module1-space-details.json            # pendiente
 ├── api-reservation-space-201.json
 ├── api-reservation-asset-201.json
 ├── api-reservation-409-res-001.json         # y -002, -003, -004 y -004-mantenimiento
@@ -798,12 +794,12 @@ src/test/resources/contracts/
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Escribir `src/main/resources/db/migration/V3__denial_and_outbox.sql` con las tablas `denial` y `outbox_message` y el índice parcial de pendientes del plan general; verificar que la restricción `reservation_no_overlap` y el `CHECK` de titular según origen ya están en `V1`
-- [ ] T006 [P] Crear `infrastructure/config/KafkaConfig.java`: productor con `acks=all` y `enable.idempotence=true`, serialización JSON y los nombres de los topics desde las propiedades
+- [ ] T005 Escribir `src/main/resources/db/migration/V2__denial_and_outbox.sql` con las tablas `denial` y `outbox_message` y el índice parcial de pendientes del plan general; verificar que la restricción `reservation_no_overlap` y el `CHECK` de titular según origen ya están en `V1`
+- [ ] T006 [P] Configurar el productor de Kafka en `application.properties` (`spring.kafka.producer.acks=all`, `enable.idempotence=true`, tiempos de espera cortos para que un broker caído no cuelgue al publicador) y los nombres de los topics en `ReservationProperties`. No hizo falta una clase `KafkaConfig`: la autoconfiguración de Spring Boot alcanza, y el payload ya va serializado como texto
 - [ ] T007 [P] Crear el puerto `BusinessCalendar` en `domain/port/out/` y su implementación en `infrastructure/config`, que excluye sábados, domingos y los festivos de las propiedades
 - [ ] T008 [P] Extender `TimeSlot` con el tope de duración de FR-009, que lanza `DurationExceededException` con el tope aplicado, y mapear esa excepción a `400` con `code: DURATION_EXCEEDED`, `limitMinutes` y `requestedMinutes` ([Contratos §1](#1-post-apireservations))
 - [ ] T009 [P] Crear `DenialCode` y `ReservationDeniedException` en `domain/model/error/`, y traducirlas a `409` con `ProblemDetail` en `GlobalErrorHandler` con las extensiones que fija [Contratos §1](#1-post-apireservations): el `code` y los campos de cada mensaje (SC-003)
-- [ ] T010 Extender `InventoryPort` y sus adaptadores (real, falso) con `details(resourceId)` según [Contratos §4](#4-módulo-1--ficha-de-un-recurso): devuelve `ResourceDetails` con la categoría y el **plazo máximo de préstamo** de los activos como `Integer` —`0` es uso en sitio y ausente es ficha incompleta— y traduce la falta del campo a `503` con `code: INCOMPLETE_RESOURCE_DETAILS` (FR-012, P-16)
+- [ ] T010 Extender `InventoryPort` y sus adaptadores (real, falso) con `details(resourceId)` según [Contratos §4](#4-módulo-1--ficha-de-un-recurso): devuelve el mismo `Resource` del catálogo, que ya trae la categoría y el **plazo máximo de préstamo** de los activos como `Integer` —`0` es uso en sitio y ausente es ficha incompleta— y traduce la falta del campo a `503` con `code: INCOMPLETE_RESOURCE_DETAILS` (FR-012, P-16)
 - [ ] T011 Completar `CheckAvailabilityUseCase` con la consulta de **un solo recurso** y el "hasta cuándo está comprometido" de UC8 FR-012, que el plan de UC1 dejó pendiente
 - [ ] T012 [P] Crear `Reservation`, `ReservationStatus`, `ReservationOrigin`, `Loan` y `LoanPeriod` en `domain/model/reservation/`, con las transiciones de estado y sin nada de Spring ni JPA
 
@@ -839,7 +835,7 @@ src/test/resources/contracts/
 - [ ] T027 [US1] Implementar `ReserveResourcesUseCase` con los pasos 0 a 4 de la tabla de decisiones: validación de forma, ficha del recurso, sanción, cupo, disponibilidad, confirmación y los dos `<<include>>` (depende de T021 a T026)
 - [ ] T028 [US1] Implementar el registro de denegaciones en el caso de uso y en `DenialPersistenceAdapter`, con su propia transacción (FR-005)
 - [ ] T029 [P] [US1] Implementar `ReservationPersistenceAdapter` con la transacción de confirmación: bloqueo de la fila del titular, conteo del cupo, recomprobación de la ocupación (incluidos los préstamos abiertos sin devolver) e inserción de `reservation`, `loan` y el evento; traducir la violación de `reservation_no_overlap` a `ResourceTaken`
-- [ ] T030 [P] [US1] Crear las entidades y repositorios JPA que faltan (`LoanJpa`, `DenialJpa`, `OutboxMessageJpa`) y sus mappers dominio ↔ JPA
+- [ ] T030 [P] [US1] Escribir la persistencia de la reserva, el préstamo, la denegación y la *outbox* con `JdbcClient` (ver plan general, Reglas de dependencia: JPA quedó solo para `app_user`)
 - [ ] T031 [P] [US1] Implementar `OutboxNotifierAdapter`, que serializa `ReservationRecordEvent` según [Contratos §6](#6-evento-hacia-el-módulo-3--module2reservationrecordv1) —envoltorio completo, `holder` o `academic` según el origen, `loan` solo en activos— y lo inserta en `outbox_message` con ese mismo JSON como `payload`
 - [ ] T032 [P] [US1] Implementar `OutboxPublisher` con `@Scheduled`: lee los `PENDING` con `FOR UPDATE SKIP LOCKED`, publica con la clave `reservation_id`, marca `SENT`, y en el fallo sube `intentos` con espera creciente hasta `FAILED`
 - [ ] T033 [US1] Registrar los beans y las transacciones de UC2 en `UseCasesConfig` (depende de T024 a T032)
@@ -899,6 +895,7 @@ src/test/resources/contracts/
 
 ## Notes
 
+- **Lo que se hizo distinto al implementar**: la ficha de un recurso es el mismo `Resource` del catálogo y no un `ResourceDetails` aparte; `GET /api/loans/expected-due-date` vive en `ReservationController`, sin un `LoanController` para un solo endpoint; no hay `KafkaConfig`, porque el productor se configura con propiedades; la persistencia va con `JdbcClient`; y la migración es la `V2`. **Quedó pendiente** la prueba del adaptador REST para `details()` contra WireMock, con los tres *fixtures* `module1-*-details.json` de Contratos §8: hoy solo lo prueban el adaptador falso y las pruebas de integración
 - **La renovación del préstamo ya no existe.** La revisión general de specs (PR #8) eliminó FR-016 y FR-017 de UC2 y el atributo de renovación de `PeriodoDePrestamo`. Este plan tenía una fase y una sección de contratos para ella, y se quitaron: ya no hay `RenewLoanUseCase`, ni `POST /api/loans/{id}/renewal`, ni los campos `renewed` y `renewable`, ni el evento `ReservationRecordUpdated`. Queda anotado aquí porque el historial del repositorio sí los tuvo
 - La numeración `T0XX` es propia de este plan y empieza de nuevo; no continúa la del plan de UC1
 - [P] tasks = different files, no dependencies

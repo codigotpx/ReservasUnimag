@@ -94,6 +94,21 @@ erDiagram
         varchar     voided_reason
     }
 
+    cancellation_report {
+        uuid        reservation_id          PK  "FK; un reporte por reserva"
+        uuid        event_id                    "unico; el eventId de la cancelacion en la outbox"
+        varchar     cancellation_origin         "HOLDER | ACADEMIC_PRIORITY | RESOURCE_UNAVAILABLE | SCHEDULE_WITHDRAWN"
+        boolean     attributable_to_person      "true solo si cancela el titular"
+        int         notice_minutes              "solo si cancela el titular"
+        varchar     delivery_status             "PENDING | SENT | FAILED"
+        int         attempts
+    }
+
+    reservation_closure {
+        uuid        reservation_id          PK  "FK; una reserva se cierra una sola vez"
+        varchar     closure_type                "CANCELLATION | ABSENCE"
+    }
+
     check_out {
         uuid        reservation_id          PK  "FK; un check-out por reserva"
         varchar     kind                        "ASSET_RETURN | SPACE_REVIEW"
@@ -172,6 +187,8 @@ erDiagram
     reservation            ||--o| loan          : "detalla si es ACTIVO"
     reservation            ||--o| academic_block : "detalla si es ACADEMICO"
     reservation            ||--o| absence          : "recibe (UC9)"
+    reservation            ||--o| cancellation_report : "se reporta cancelada (UC11)"
+    reservation            ||--o| reservation_closure : "se cierra (UC4 o UC9)"
     reservation            ||--o| check_out         : "recibe (UC12)"
     reservation            ||--o{ status_change     : "deja historial (UC7)"
     reservation            ||--o| reservation_record : "se reporta (UC10)"
@@ -196,6 +213,8 @@ erDiagram
 | `reservation` → `academic_block` | 1 a 0..1 | Solo las de origen `ACADEMICO`. Mismo patrón: PK compartida con `reservation`. |
 | `semester_schedule` → `academic_block` | 1 a 0..* | Una carga semestral genera muchos bloqueos; un bloqueo extraordinario no viene de ninguna carga, de ahí que `semester_schedule_id` admita nulo. |
 | `reservation` → `absence` / `check_out` | 1 a 0..1 | Un solo reporte por reserva. En las dos el `reservation_id` es la clave primaria (planes de UC9 y UC12, Contratos §3 y §5). |
+| `reservation` → `cancellation_report` | 1 a 0..1 | La constancia de la cancelación reportada al Módulo 3 (UC11 FR-010). La PK es la `reservation_id`, así que no puede haber dos reportes de la misma cancelación, y se une a la *outbox* por `event_id`, sin FK, porque la *outbox* se purga y el historial se queda. |
+| `reservation` → `reservation_closure` | 1 a 0..1 | El candado que impide que una reserva quede a la vez cancelada (UC4) y ausente (UC9): quien llega segundo choca con la clave primaria (UC11 FR-011, SC-006). |
 | `reservation` → `status_change` | 1 a 0..* | Cada cambio de ocupación deja una fila: confirmación, inicio de uso, cancelación, ausencia y check-out (UC7 FR-009). |
 | `reservation` → `outbox_message` | 1 a 0..* | Una reserva produce la ficha (UC10) y, si se cancela, el reporte de cancelación (UC11); el inicio de uso añade el aviso al Módulo 1 (UC7). |
 | `reservation` → `reservation_record` | 1 a 0..1 | La constancia de la ficha enviada al Módulo 3 (UC10 FR-006). La PK es la `reservation_id`, así que no puede haber dos fichas de la misma reserva (FR-005). Se une a la *outbox* por `event_id`, sin FK, porque la *outbox* se purga y el historial se queda. |

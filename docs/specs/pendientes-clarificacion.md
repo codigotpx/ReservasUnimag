@@ -333,8 +333,9 @@ Otras decisiones que el Módulo 3 debe conocer:
 
 | Archivo | Punto | Qué cambiar |
 |---|---|---|
-| `docs/plan/plan-uc9-recibir-reporte-no-asistencia.md` | Contratos §2 | Sumar los tres rechazos nuevos a la tabla de `rejection`. |
 | `docs/plan/contratos-integracion.md` | Lo que publicamos | Cambiar el estado del acuse de "por acordar" a "acordado" cuando respondan. |
+
+**Ya aplicado** en `plan-uc9-recibir-reporte-no-asistencia.md` (2026-10-29): los rechazos nuevos, la anulación sin acuse, los reintentos sin tope y `ack-mode=record`.
 
 ---
 
@@ -362,8 +363,9 @@ Decisiones tomadas al implementar que el plan no tenía:
 
 | Archivo | Punto | Qué cambiar |
 |---|---|---|
-| `docs/plan/plan-uc12-recibir-check-out.md` | Decisiones de diseño | La tabla de rechazos (cinco) y la definición de pendiente de revisión. |
 | `docs/plan/contratos-integracion.md` | Lo que publicamos | El estado del acuse de check-out cuando respondan. |
+
+**Ya aplicado** en `plan-uc12-recibir-check-out.md` (2026-10-29): los cinco rechazos, la definición de pendiente de revisión y la Phase 4 marcada como sin implementar.
 
 ---
 
@@ -394,7 +396,8 @@ Decisiones tomadas al implementar que el plan no fijaba o que cambian lo que dec
 |---|---|---|
 | `spec-modulo2.md` | Diccionario de errores | Añadir `USO-001` y `USO-002`. |
 | `docs/plan/contratos-integracion.md` | Lo que publicamos | El estado de `module2.resource.status.v1` cuando responda el Módulo 1. |
-| `docs/plan/plan-uc7-actualizar-estado-recursos.md` | Contratos §3 | El `404` en lugar del `403`. |
+
+**Ya aplicado** (2026-10-29): el `404` en `plan-uc7-actualizar-estado-recursos.md`, y los efectos de la llegada en los planes de UC4 (`reason: USE_STARTED`) y UC9 (`USE_ALREADY_STARTED`).
 
 ---
 
@@ -421,9 +424,9 @@ Sigue abierto lo que el plan ya decía: el calendario real de festivos de la uni
 
 | Archivo | Punto | Qué cambiar |
 |---|---|---|
-| `docs/plan/plan-uc11-reportar-cancelacion-reserva.md` | Contratos §1 | Añadir la columna de `SCHEDULE_WITHDRAWN` a la tabla de las formas del evento. |
-| `docs/plan/plan-uc3-importar-horarios-semestrales.md` | Contratos §1 | El nombre de la parte del multipart. |
 | `application.properties` | `reservations.holidays` | El calendario real de la universidad. |
+
+**Ya aplicado** (2026-10-29): la columna de `SCHEDULE_WITHDRAWN` en `plan-uc11-reportar-cancelacion-reserva.md`, y en `plan-uc3-importar-horarios-semestrales.md` todas las decisiones de arriba, con el multipart `file` y la consulta al Módulo 1 por ficha.
 
 ---
 
