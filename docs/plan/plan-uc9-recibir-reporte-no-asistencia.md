@@ -15,7 +15,7 @@ Lo que no hace es igual de importante: **el Módulo 2 no declara ausencias por s
 
 1. Un `@KafkaListener` sobre `module3.reservation.no-show.v1` traduce el evento a la petición del puerto de entrada. Es un adaptador de entrada más, al mismo nivel que un controlador REST, y el caso de uso no sabe que detrás hay un broker.
 2. La *inbox* del plan general hace el trabajo de FR-007 y SC-002: el `eventId` se inserta en `inbox_message` en la misma transacción, y un evento repetido se descarta sin volver a aplicarlo.
-3. **Cinco razones para no registrar la ausencia**, y cada una tiene su desenlace: reporte anticipado (FR-011), reserva cancelada por el titular (FR-005), cancelada por prioridad académica (FR-006), cancelada por mantenimiento (SC-003) y ausencia ya registrada (FR-007).
+3. **Varias razones para no registrar la ausencia**, y cada una tiene su desenlace: reporte anticipado (FR-011), reserva cancelada por el titular (FR-005), cancelada por prioridad académica (FR-006), cancelada por mantenimiento (SC-003) y ausencia ya registrada (FR-007). Al implementar se sumaron cuatro: el activo ya recogido, la llegada ya registrada (UC7), la reserva ya cerrada y el bloqueo académico.
 4. Registrar la ausencia **libera el recurso** (FR-004): un espacio queda disponible el resto de su franja y un activo vuelve a la oferta desde ese mismo instante, sin esperar al vencimiento del préstamo (edge case **Activo que nadie recoge**).
 5. Un reporte que llega cuando la franja ya terminó **se registra igual** (FR-008, SC-005): la constancia alimenta el cumplimiento aunque no quede nada que liberar.
 6. El Módulo 3 puede **anular** un reporte que mandó por error (FR-012), y la anulación deshace la constancia pero no le devuelve el recurso a nadie.
@@ -69,8 +69,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
 │   │   │   ├── ReceiveNoShowPort.java
 │   │   │   └── VoidNoShowPort.java             # FR-012
 │   │   └── out/
-│   │       ├── AbsenceRepositoryPort.java
-│   │       └── ReservationClosurePort.java     # (de UC11) el candado del cierre
+│   │       └── AbsenceRepositoryPort.java      # registra la ausencia y su cierre en reservation_closure
 │   └── usecase/
 │       └── receivenoshow/
 │           ├── ReceiveNoShowUseCase.java
@@ -81,12 +80,10 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   ├── in/messaging/
     │   │   ├── NoShowListener.java             # @KafkaListener del topic del Módulo 3
     │   │   ├── InboxGuard.java                 # la idempotencia, compartida con UC12
-    │   │   └── event/NoShowReportedEvent.java
+    │   │   └── NoShowMessage.java              # lee los dos tipos del topic: reporte y anulación
     │   └── out/
     │       ├── persistence/
-    │       │   ├── entity/AbsenceJpa.java
-    │       │   ├── repository/AbsenceJpaRepository.java
-    │       │   └── AbsencePersistenceAdapter.java
+    │       │   └── AbsencePersistenceAdapter.java   # con JdbcClient; el cierre choca con ReservationAlreadyClosedException
     │       └── messaging/
     │           └── event/NoShowAckEvent.java  # el acuse de FR-002
     └── config/
@@ -94,7 +91,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
         └── UseCasesConfig.java                 # (existe) + los beans de UC9
 
 src/main/resources/db/migration/
-└── V6__absence.sql
+└── V4__absence_and_inbox.sql
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/model/compliance/NoShowPolicyTest.java
@@ -114,7 +111,7 @@ frontend/src/features/reservations/
 
 ### Decisiones de diseño de este caso de uso
 
-**Las cinco razones para no registrar, y qué hace cada una.** Es la tabla que gobierna el caso de uso, porque un consumidor de Kafka no puede simplemente "devolver un error":
+**Las razones para no registrar, y qué hace cada una.** Es la tabla que gobierna el caso de uso, porque un consumidor de Kafka no puede simplemente "devolver un error":
 
 | Situación | FR | Qué hace el sistema | Dónde acaba el evento |
 |---|---|---|---|
@@ -122,6 +119,9 @@ frontend/src/features/reservations/
 | Reserva `CANCELADA` por el titular | FR-005 | No registra nada | Acuse de rechazo |
 | Reserva `CANCELADA_POR_PRIORIDAD_ACADEMICA` | FR-006 | No registra nada | Acuse de rechazo |
 | Reserva `CANCELADA_POR_RECURSO_NO_DISPONIBLE` | SC-003 | No registra nada | Acuse de rechazo |
+| El activo ya se recogió, o la persona ya registró su llegada (UC7) | — | No registra nada: la persona sí se presentó | Acuse de rechazo |
+| La reserva ya está cerrada, por ejemplo por una ausencia que luego se anuló | — | No registra nada | Acuse de rechazo |
+| La reserva es un bloqueo académico | — | No registra nada: no hay titular | Acuse de rechazo |
 | El `reservationId` no existe, o el JSON no se puede leer | — | Nada | **DLT** (plan general) |
 
 **Decisión: un rechazo de negocio no va al DLT.** El plan general manda al *dead letter topic* los errores no recuperables, y un reporte anticipado lo parece. Pero no es un evento roto: es un evento bien formado que el Módulo 3 mandó demasiado pronto y que puede volver a mandar diez minutos después. Enviarlo al DLT lo escondería en una cola que nadie consume. En cambio se le responde, y el evento se da por procesado.
@@ -283,6 +283,12 @@ El acuse de FR-002 y FR-011. Un evento por cada reporte recibido, aceptado o no.
 | `TOO_EARLY` | Antes de `verifiedAt >= reference + 10min`. Lleva `acceptedFrom`. | FR-011 |
 | `RESERVATION_CANCELLED` | La reserva está en cualquiera de los tres estados de cancelación. Lleva `reservationStatus`. | FR-005, FR-006, SC-003 |
 | `ALREADY_RETURNED` | El activo ya tenía check-out: no se puede estar ausente de algo que se usó. | — (decisión de este plan) |
+| `ALREADY_PICKED_UP` | El activo ya se recogió: la persona sí se presentó. | — (añadido al implementar, P-22) |
+| `USE_ALREADY_STARTED` | La persona registró su llegada al espacio (UC7). | — (añadido con UC7, P-24) |
+| `RESERVATION_FINISHED` | La reserva ya estaba cerrada, por ejemplo por una ausencia que luego se anuló. | — (añadido al implementar, P-22) |
+| `ACADEMIC_BLOCK` | La reserva es una clase, sin titular al que anotarle la ausencia. | — (añadido al implementar, P-22) |
+
+La **anulación** (`NoShowReportVoided`) no tiene acuse: el plan no lo pedía, y si la anulan dos veces la segunda no hace nada. Está en P-22 como pregunta para el Módulo 3.
 
 Un reporte **repetido** (FR-007) no se rechaza: responde `accepted: true` con el `absenceRegisteredAt` de la primera vez y `duplicate: true`. El estado que el Módulo 3 buscaba ya existe, así que decirle "no" sería engañoso.
 
@@ -344,13 +350,14 @@ El `message` no promete ni niega una sanción, porque el Módulo 2 no la decide 
 ```properties
 spring.kafka.consumer.group-id=module2-reservations
 spring.kafka.consumer.enable-auto-commit=false
-spring.kafka.listener.ack-mode=manual
+spring.kafka.consumer.auto-offset-reset=earliest
+spring.kafka.listener.ack-mode=record
+spring.kafka.listener.concurrency=3
 reservations.kafka.topic.no-show=module3.reservation.no-show.v1
 reservations.kafka.topic.no-show-ack=module2.reservation.no-show-ack.v1
-reservations.kafka.consumer.concurrency=3
-reservations.kafka.consumer.retry.max-attempts=5
-reservations.kafka.consumer.retry.initial-interval=1s
 ```
+
+Los reintentos no se configuran por propiedades: `KafkaConsumerConfig` los fija con espera creciente desde 1 s y **sin tope**, porque lo único que se reintenta es lo recuperable —la base caída, un bloqueo—, y mandar al DLT tras cinco intentos, como se proponía al principio, perdería reportes válidos. Lo que no mejora reintentando va directo al DLT. Con `ack-mode=record` el *offset* se confirma cuando el *listener* termina, que es después del *commit*.
 
 La concurrencia se iguala al número de particiones del topic, como dice el plan general, para no perder el orden por reserva. El *offset* se confirma **después** del *commit* de la transacción: confirmarlo antes perdería el evento si la transacción falla, y hacerlo después solo puede repetirlo, de lo que ya se encarga la *inbox*.
 
@@ -379,12 +386,12 @@ src/test/resources/contracts/
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T003 Escribir `V6__absence.sql` con la tabla de [Contratos §3](#3-la-tabla-absence): `reservation_id` como clave primaria, `source_event_id` único, los campos de anulación y el índice por `reported_at`
-- [ ] T004 [P] Crear `KafkaConsumerConfig` con el contenedor de *listeners*, `AckMode.MANUAL`, el `DefaultErrorHandler` con espera creciente para los errores recuperables y el envío al DLT `module2.dlt.<topic>` para los que no lo son, con la causa en las cabeceras
+- [ ] T003 Escribir `V4__absence_and_inbox.sql` con la tabla de [Contratos §3](#3-la-tabla-absence): `reservation_id` como clave primaria, `source_event_id` único, los campos de anulación y el índice por `reported_at`
+- [ ] T004 [P] Crear `KafkaConsumerConfig` con el `DefaultErrorHandler`: espera creciente **sin tope** para los errores recuperables —una base caída no debe mandar al DLT un reporte válido— y el envío al DLT `module2.dlt.<topic>` para los que no lo son, con la causa en las cabeceras
 - [ ] T005 [P] Crear `InboxGuard` en `infrastructure/adapter/in/messaging/`: inserta el `eventId` en `inbox_message` dentro de la transacción del caso de uso y distingue "nuevo" de "ya procesado". **Se diseña para compartirlo con UC12**
 - [ ] T006 [P] Crear `Absence`, `NoShowPolicy` —con el borde inclusivo de los 10 minutos y el instante de referencia según la categoría— y `NoShowRejection` con sus tres motivos, en `domain/model/compliance/`
 - [ ] T007 [P] Definir `ReceiveNoShowPort` y `VoidNoShowPort` en `domain/port/in/`, y `AbsenceRepositoryPort` en `domain/port/out/`
-- [ ] T008 [P] Crear la entidad JPA, el repositorio y `AbsencePersistenceAdapter`, con el `INSERT` que falla por clave repetida y la actualización de la anulación
+- [ ] T008 [P] Crear `AbsencePersistenceAdapter` con `JdbcClient`, con el `INSERT` que falla por clave repetida y la actualización de la anulación
 
 **Checkpoint**: el consumidor y la constancia existen
 
@@ -408,7 +415,7 @@ src/test/resources/contracts/
 
 ### Implementation for User Story 1
 
-- [ ] T016 [US1] Implementar `ReceiveNoShowUseCase` con la tabla de las cinco razones: política del plazo, cierre en `reservation_closure`, `INSERT` de la ausencia, paso de la reserva a `FINALIZADA`, y el acuse por `Module3NotifierPort` (depende de T005 a T008)
+- [ ] T016 [US1] Implementar `ReceiveNoShowUseCase` con la tabla de las razones: política del plazo, cierre en `reservation_closure`, `INSERT` de la ausencia, paso de la reserva a `FINALIZADA`, y el acuse por `Module3NotifierPort` (depende de T005 a T008)
 - [ ] T017 [US1] Implementar `VoidNoShowUseCase` (depende de T016)
 - [ ] T018 [US1] Implementar `NoShowListener` con los dos tipos de evento del topic, apoyado en `InboxGuard`, y `NoShowAckEvent` en la *outbox* (depende de T016, T017)
 - [ ] T019 [US1] Registrar los beans y las transacciones de UC9 en `UseCasesConfig`, añadir el campo `absence` a `GET /api/reservations/mine` según [Contratos §4](#4-get-apireservationsmine--el-campo-nuevo), y actualizar [modelo-datos-der.md](./modelo-datos-der.md) con la clave primaria nueva de `absence`

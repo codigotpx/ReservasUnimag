@@ -68,7 +68,9 @@ src/main/java/edu/unimagdalena/reservasunimag/
 │   │   │   ├── OperationalStatus.java                # DISPONIBLE, EN_USO, EN_MANTENIMIENTO (Módulo 1)
 │   │   │   ├── DisplayedStatus.java                  # los cinco estados con su prioridad
 │   │   │   ├── ResourceFilter.java                 # tipo, categoría, aforo mínimo
-│   │   │   └── ResourceWithStatus.java               # recurso + estado + seleccionable + motivo
+│   │   │   ├── ResourceWithStatus.java               # recurso + estado + seleccionable + motivo
+│   │   │   ├── SearchResourcesQuery.java           # comando: filtros + franja + página + usuario
+│   │   │   └── SearchResourcesResult.java          # página + aviso de sanción + sugerencia
 │   │   ├── reservation/
 │   │   │   ├── TimeSlot.java                  # valida ventana, mismo día y zona horaria
 │   │   │   ├── Occupancy.java                      # lo que ocupa un recurso en el tiempo
@@ -96,8 +98,6 @@ src/main/java/edu/unimagdalena/reservasunimag/
 │   └── usecase/
 │       ├── searchresources/
 │       │   ├── SearchResourcesUseCase.java
-│       │   ├── SearchResourcesQuery.java               # comando: filtros + franja + página + usuario
-│       │   ├── SearchResourcesResult.java      # página + aviso de sanción + sugerencia
 │       │   └── NextFreeSlotFinder.java        # escenario 7
 │       ├── checkavailability/
 │       │   └── CheckAvailabilityUseCase.java
@@ -108,16 +108,15 @@ src/main/java/edu/unimagdalena/reservasunimag/
     ├── adapter/
     │   ├── in/web/
     │   │   ├── resource/
-    │   │   │   ├── ResourceController.java          # GET /api/resources
-    │   │   │   ├── SearchResourcesParams.java
+    │   │   │   ├── ResourceController.java          # GET /api/resources, los filtros como @RequestParam
     │   │   │   └── SearchResourcesResponse.java
     │   │   └── error/
     │   │       └── GlobalErrorHandler.java     # excepciones → ProblemDetail
     │   └── out/
     │       ├── persistence/
-    │       │   ├── entity/                         # ReservationJpa, LoanJpa, AcademicBlockJpa, UserJpa
-    │       │   ├── repository/OccupancyJpaRepository.java
-    │       │   └── OccupancyPersistenceAdapter.java
+    │       │   ├── entity/UserJpaEntity.java           # JPA solo para app_user
+    │       │   ├── repository/UserJpaRepository.java
+    │       │   └── OccupancyPersistenceAdapter.java  # consulta nativa con JdbcClient, sin entidades
     │       ├── module1/
     │       │   ├── InventoryRestAdapter.java
     │       │   ├── InventoryFakeAdapter.java      # perfil local, mientras el Módulo 1 no esté
@@ -138,8 +137,9 @@ src/main/resources/
 ├── application.properties
 ├── application-local.properties                    # perfil local: adaptadores falsos
 └── db/migration/
-    ├── V1__initial_schema.sql
-    └── V2__local_data.sql                         # solo perfil local (usuarios de prueba)
+    └── V1__initial_schema.sql
+src/main/resources/db/local/
+└── R__local_users.sql                             # solo perfil local: usuarios de prueba, repetible
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── ArchitectureTest.java
@@ -613,7 +613,7 @@ La diferencia con el Módulo 1 es deliberada: sin catálogo no hay nada que most
 
 ### 4. Login mínimo (T013)
 
-No es el spec de registro e inicio de sesión, que sigue pendiente. Es lo mínimo para que UC1 se pueda probar y demostrar con usuarios sembrados por `V2__local_data.sql`.
+No es el spec de registro e inicio de sesión, que sigue pendiente. Es lo mínimo para que UC1 se pueda probar y demostrar con usuarios sembrados por `db/local/R__local_users.sql`, que solo entra con el perfil local.
 
 **`POST /api/auth/login`**
 
@@ -775,7 +775,7 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - [ ] T010 [P] Crear `domain/model/common/Page.java` y `PageRequest.java`, con tamaño por defecto de 20 tomado de `ReservationProperties`
 - [ ] T011 Crear `infrastructure/adapter/in/web/error/GlobalErrorHandler.java`, que traduce `InvalidTimeSlotException` a 400 y `ExternalServiceUnavailableException` a 503 como `ProblemDetail`
 - [ ] T012 Configurar `infrastructure/config/SecurityConfig.java`: validación del JWT desde la cookie `httpOnly`, roles `ESTUDIANTE`, `MONITOR` (hereda de `ESTUDIANTE`, FR-005) y `DIRECCION_PROGRAMA`; y un resolvedor que entrega `CurrentUser` a los controladores
-- [ ] T013 Crear `V2__local_data.sql`, que solo se aplica con el perfil local, con un usuario por rol, y el login mínimo (`POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`) según [Contratos §4](#4-login-mínimo-t013), para poder probar la consulta. El autorregistro queda para su propio spec
+- [ ] T013 Crear `db/local/R__local_users.sql`, que solo se aplica con el perfil local (`spring.flyway.locations` lo suma), con un usuario por rol, y el login mínimo (`POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`) según [Contratos §4](#4-login-mínimo-t013), para poder probar la consulta. El autorregistro queda para su propio spec
 - [ ] T014 [P] Crear `infrastructure/config/HttpClientsConfig.java` con un `RestClient` por módulo externo, cada uno con su URL base y su timeout
 - [ ] T015 [P] Crear `frontend/src/lib/api/client.ts`, que envía la cookie de sesión y convierte los `ProblemDetail` en errores tipados, y el layout del grupo `(app)`, que redirige al login si no hay sesión
 
@@ -810,12 +810,12 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - [ ] T029 [US1] Implementar `CheckSanctionsUseCase` en modo lectura: obtiene el reporte de una sola persona y traduce la falta de respuesta a "no comprobado" (UC6 FR-001, FR-004, FR-006, FR-007)
 - [ ] T030 [US1] Implementar `NextFreeSlotFinder` según la decisión de diseño (depende de T028)
 - [ ] T031 [US1] Implementar `SearchResourcesUseCase`: catálogo del Módulo 1, filtro de aforo, orden estable, estado de todo el conjunto, paginación, mensaje cuando no hay seleccionables, sugerencia y aviso de sanción (depende de T028 a T030)
-- [ ] T032 [P] [US1] Implementar `OccupancyPersistenceAdapter`, con las entidades JPA de lectura y la consulta nativa de ocupaciones en `OccupancyJpaRepository`
+- [ ] T032 [P] [US1] Implementar `OccupancyPersistenceAdapter`, con la consulta nativa de ocupaciones sobre `JdbcClient`, sin entidades: UC1 no modifica nada
 - [ ] T033 [P] [US1] Implementar `InventoryRestAdapter` y sus DTO contra [Contratos §2](#2-módulo-1--inventoryport) (el contrato que pide P-16): recorre todas las páginas del Módulo 1 hasta `max-pages`, aplica el mapeo hacia el dominio y convierte timeouts y errores en `ExternalServiceUnavailableException`
 - [ ] T034 [P] [US1] Implementar `ComplianceRestAdapter` y sus DTO según [Contratos §3](#3-módulo-3--complianceport), con el `404` leído como reporte vacío
 - [ ] T035 [P] [US1] Implementar `InventoryFakeAdapter` y `ComplianceFakeAdapter` para el perfil local, con un catálogo de ejemplo que cubra espacios y activos de varios tipos
 - [ ] T036 [US1] Registrar los casos de uso como beans, con `@Transactional(readOnly = true)`, en `infrastructure/config/UseCasesConfig.java` (depende de T028 a T035)
-- [ ] T037 [US1] Implementar `ResourceController` (`GET /api/resources`) exactamente como lo fija [Contratos §1](#1-get-apiresources--frontend--módulo-2): `SearchResourcesParams` validados, `SearchResourcesResponse` que omite los campos que no aplican, `Cache-Control: no-store`, y la documentación OpenAPI con los mismos ejemplos de la sección
+- [ ] T037 [US1] Implementar `ResourceController` (`GET /api/resources`) exactamente como lo fija [Contratos §1](#1-get-apiresources--frontend--módulo-2): los filtros como `@RequestParam` validados, `SearchResourcesResponse` que omite los campos que no aplican, `Cache-Control: no-store`, y la documentación OpenAPI con los mismos ejemplos de la sección
 - [ ] T038 [P] [US1] Frontend: copiar los tipos de [Contratos §5](#5-tipos-del-frontend) a `frontend/src/features/resources/types.ts` y escribir la llamada en `api.ts`
 - [ ] T039 [US1] Frontend: `ResourceFilters.tsx` (fecha, franja limitada a 06:00–22:00, tipo y aforo mínimo solo para espacios), `ResourceList.tsx` (estado de cada recurso y selección solo de los `DISPONIBLE`), `Pagination.tsx` ("20 de 250", anterior y siguiente) y `SanctionNotice.tsx`
 - [ ] T040 [US1] Frontend: `frontend/src/app/(app)/resources/page.tsx`, que arma la pantalla y muestra los estados vacío, "no hay disponibles" con la sugerencia, y "el inventario no está disponible en este momento" (FR-008)

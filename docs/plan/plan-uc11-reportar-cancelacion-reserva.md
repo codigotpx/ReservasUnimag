@@ -62,6 +62,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
 │   ├── model/
 │   │   └── reservation/
 │   │       ├── CancellationReport.java         # nuevo: la constancia de FR-010
+│   │       └── Delivery.java                   # el resultado del envío; nació aquí y UC10 lo sacó a su propio archivo
 │   │       └── DeliveryStatus.java             # nuevo: PENDING, SENT, FAILED
 │   ├── port/
 │   │   ├── in/
@@ -79,8 +80,6 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │   └── CancellationReportController.java   # GET de auditoría
     │   └── out/
     │       ├── persistence/
-    │       │   ├── entity/CancellationReportJpa.java
-    │       │   ├── repository/CancellationReportJpaRepository.java
     │       │   └── CancellationReportPersistenceAdapter.java
     │       └── messaging/
     │           ├── OutboxPublisher.java            # (existe) + marcar el reporte
@@ -89,7 +88,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
         └── UseCasesConfig.java                     # (existe) + el bean de UC11
 
 src/main/resources/db/migration/
-└── V5__cancellation_report.sql                     # la tabla y las dos restricciones
+└── V3__cancellation_report.sql                     # la tabla y las dos restricciones
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/usecase/reportcancellation/ReportCancellationUseCaseTest.java
@@ -155,20 +154,22 @@ Se aplican las **convenciones comunes** de [UC1 § Contratos](./plan-uc1-consult
 
 ### 1. El evento `ReservationCancelled`
 
-**No se redefine aquí.** El contrato está en [UC3 § Contratos §7](./plan-uc3-importar-horarios-semestrales.md#7-evento-de-cancelación--module2reservationcancellationv1) y lo completó [UC4 § Contratos §3](./plan-uc4-cancelar-reserva.md#3-evento-hacia-el-módulo-3). Lo que fija este plan es la **tabla de las tres formas**, que es lo que UC11 FR-003 exige distinguir y lo que un lector del Módulo 3 necesita en un solo sitio:
+**No se redefine aquí.** El contrato está en [UC3 § Contratos §7](./plan-uc3-importar-horarios-semestrales.md#7-evento-de-cancelación--module2reservationcancellationv1) y lo completó [UC4 § Contratos §3](./plan-uc4-cancelar-reserva.md#3-evento-hacia-el-módulo-3). Lo que fija este plan es la **tabla de las formas**, que es lo que UC11 FR-003 exige distinguir y lo que un lector del Módulo 3 necesita en un solo sitio:
 
-| Campo | `HOLDER` | `ACADEMIC_PRIORITY` | `RESOURCE_UNAVAILABLE` |
-|---|---|---|---|
-| `status` | `CANCELADA` | `CANCELADA_POR_PRIORIDAD_ACADEMICA` | `CANCELADA_POR_RECURSO_NO_DISPONIBLE` |
-| `attributableToPerson` | `true` | `false` | `false` |
-| `noticeMinutes` | el valor real | **se omite** | **se omite** |
-| `reason` | `Cancelada por el titular.` | nombra la clase que desplazó | el motivo del mantenimiento |
-| `holder` | siempre | siempre, aunque no sea culpa suya | siempre |
-| `releasedTime` | la franja o el periodo completo | igual | igual |
+| Campo | `HOLDER` | `ACADEMIC_PRIORITY` | `RESOURCE_UNAVAILABLE` | `SCHEDULE_WITHDRAWN` |
+|---|---|---|---|---|
+| `status` | `CANCELADA` | `CANCELADA_POR_PRIORIDAD_ACADEMICA` | `CANCELADA_POR_RECURSO_NO_DISPONIBLE` | `CANCELADA` |
+| `attributableToPerson` | `true` | `false` | `false` | `false` |
+| `noticeMinutes` | el valor real | **se omite** | **se omite** | **se omite** |
+| `reason` | `Cancelada por el titular.` | nombra la clase que desplazó | el motivo del mantenimiento | `La clase IS-402 grupo 1 salió del horario 2026-2.` |
+| `holder` | siempre | siempre, aunque no sea culpa suya | siempre | **se omite**: es un bloqueo académico |
+| `releasedTime` | la franja o el periodo completo | igual | igual | la sesión retirada |
 
-Las tres llevan `eventId`, `cancelledAt` y `resource`. Ninguna lleva consecuencia, sanción ni puntuación: eso lo decide el Módulo 3 (FR-005).
+`SCHEDULE_WITHDRAWN` lo añadió UC3 al implementar (P-25): es una clase que salió del horario en una recarga. Solo afecta bloqueos académicos, así que nunca tiene titular. Comparte el estado `CANCELADA` con `HOLDER`, y el Módulo 3 los distingue por `cancellationOrigin` y por `attributableToPerson`.
 
-> Si `Cancelar reserva` añade un cuarto origen —por ejemplo el de la sanción retroactiva que `spec-modulo2.md` deja abierto—, tiene que aparecer en esta tabla. Es la nota de trazabilidad del spec.
+Todas llevan `eventId`, `cancelledAt` y `resource`. Ninguna lleva consecuencia, sanción ni puntuación: eso lo decide el Módulo 3 (FR-005).
+
+> Si `Cancelar reserva` añade otro origen —por ejemplo el de la sanción retroactiva que `spec-modulo2.md` deja abierto—, tiene que aparecer en esta tabla. Es la nota de trazabilidad del spec.
 
 ---
 
@@ -257,7 +258,7 @@ GET /api/cancellation-reports?origin=ACADEMIC_PRIORITY&delivery=FAILED&from=2026
 |---|---|---|
 | reservation_id | uuid PK, FK | Una cancelación por reserva: la PK es lo que garantiza FR-007 y SC-003 |
 | event_id | uuid, único | El `outbox_message.id`; une el historial con la entrega |
-| cancellation_origin | varchar | `HOLDER`, `ACADEMIC_PRIORITY`, `RESOURCE_UNAVAILABLE` |
+| cancellation_origin | varchar | `HOLDER`, `ACADEMIC_PRIORITY`, `RESOURCE_UNAVAILABLE` y, desde UC3, `SCHEDULE_WITHDRAWN` (la `V7` amplía el `CHECK`) |
 | reservation_status | varchar | El estado final de la reserva |
 | reason | varchar | |
 | attributable_to_person | boolean | |
@@ -311,7 +312,7 @@ Con este último quedan los tres orígenes como *fixture*: el del titular lo cre
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T002 Escribir `V5__cancellation_report.sql` con la tabla de [Contratos §4](#4-la-tabla-cancellation_report), sus dos índices, y la tabla `reservation_closure` con su clave primaria y su `CHECK` de tipo
+- [ ] T002 Escribir `V3__cancellation_report.sql` con la tabla de [Contratos §4](#4-la-tabla-cancellation_report), sus dos índices, y la tabla `reservation_closure` con su clave primaria y su `CHECK` de tipo
 - [ ] T003 [P] Crear `CancellationReport` y `DeliveryStatus` en `domain/model/reservation/`, con los invariantes del spec: `notice_minutes` solo con origen `HOLDER`, y `attributable_to_person` en `false` para los otros dos
 - [ ] T004 [P] Definir `ReportCancellationPort` en `domain/port/in/` y `CancellationReportRepositoryPort` en `domain/port/out/`, incluido el registro del cierre en `reservation_closure`
 - [ ] T005 [P] Crear la entidad JPA, el repositorio Spring Data y `CancellationReportPersistenceAdapter`, con el `INSERT` que falla por clave primaria repetida y la actualización del resultado del envío

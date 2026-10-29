@@ -62,11 +62,10 @@ src/main/java/edu/unimagdalena/reservasunimag/
 │   ├── model/
 │   │   ├── reservation/
 │   │   │   ├── CancellationOrigin.java         # nuevo: HOLDER, ACADEMIC_PRIORITY,
-│   │   │   │                                   #        RESOURCE_UNAVAILABLE
+│   │   │   │                                   #        RESOURCE_UNAVAILABLE, SCHEDULE_WITHDRAWN (UC3)
 │   │   │   ├── CancellationPolicy.java         # nuevo: la regla de los 10 minutos
 │   │   │   ├── Cancellation.java               # nuevo: origen, motivo, antelación, instante
-│   │   │   ├── Reservation.java                # (existe) + transiciones de cancelación
-│   │   │   └── CancellationReason.java         # (existe, de UC3)
+│   │   │   └── Reservation.java                # (existe) + transiciones de cancelación
 │   │   └── error/
 │   │       ├── DenialCode.java                 # (existe) + CAN-001 y CAN-002
 │   │       └── CancellationDeniedException.java
@@ -247,6 +246,15 @@ La respuesta de un activo trae además el periodo que se liberó en forma de pr�
 
 `referenceAt` es el instante contra el que se midió: el inicio de la franja o la hora de recogida. Así la persona entiende por qué se le negó sin tener que adivinar qué se comparó.
 
+Al implementar aparecieron dos casos más del mismo `409 CAN-001`, que se distinguen por su `reason`:
+
+| `reason` | Cuándo | Campo extra |
+|---|---|---|
+| `USE_STARTED` | La persona ya registró su llegada (UC7): la reserva está en uso | `useStartedAt` |
+| `RESERVATION_FINISHED` | La reserva ya terminó | — |
+
+La cancelación por mantenimiento se salta las reservas con la llegada registrada, igual que un activo en manos de alguien (P-24).
+
 `409` — el activo ya se recogió (FR-008)
 
 ```json
@@ -388,7 +396,7 @@ export interface CancellationResponse {
 
 export interface CancellationError extends ApiError {
   code?: "CAN-001";
-  reason?: "ASSET_ALREADY_PICKED_UP";
+  reason?: "ASSET_ALREADY_PICKED_UP" | "USE_STARTED" | "RESERVATION_FINISHED";
   minNoticeMinutes?: number;
   referenceAt?: string;
   pickedUpAt?: string;
@@ -441,7 +449,7 @@ El de UC3, `event-reservation-cancelled.json`, se renombra a `event-reservation-
 
 **Goal**: El titular cancela una reserva que no va a usar y el recurso vuelve a estar disponible en esa franja; si llega tarde, se le explica el plazo. Las cancelaciones que no son suyas no lo penalizan.
 
-**Independent Test**: Con el perfil local, crear una reserva, cancelarla y comprobar en la consulta de UC1 que la franja vuelve a aparecer `DISPONIBLE` y que el cupo bajó; intentar cancelar una que empieza en 5 minutos y comprobar el `CAN-002`; cancelar dos veces y comprobar que el cupo solo se libera una vez.
+**Independent Test**: Con el perfil local, crear una reserva, cancelarla y comprobar en la consulta de UC1 que la franja vuelve a aparecer `DISPONIBLE` y que el cupo bajó; intentar cancelar una que empieza en 5 minutos y comprobar el `CAN-001`; cancelar dos veces y comprobar que el cupo solo se libera una vez.
 
 ### Tests for User Story 1
 
