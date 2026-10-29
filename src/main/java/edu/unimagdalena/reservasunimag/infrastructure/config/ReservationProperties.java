@@ -66,9 +66,11 @@ public record ReservationProperties(
     /**
      * El publicador que lleva {@code outbox_message} a Kafka (plan general, Mensajería). {@code alertAfter} es cuánto
      * puede esperar un evento pendiente antes de advertirlo en el log, por debajo de los 30 minutos de UC11 SC-005.
+     * {@code publishOnCommit} despierta al publicador al confirmar cada transacción que encoló algo (UC10 SC-002);
+     * apagado, solo publica el reloj.
      */
     public record Outbox(boolean enabled, @NotNull Duration interval, @Min(1) int batch, @Min(1) int maxAttempts,
-                         @NotNull Duration alertAfter) {
+                         @NotNull Duration alertAfter, boolean publishOnCommit) {
     }
 
     /**

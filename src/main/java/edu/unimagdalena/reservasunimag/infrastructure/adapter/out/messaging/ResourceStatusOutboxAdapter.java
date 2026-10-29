@@ -3,6 +3,7 @@ package edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.UseStart;
 import edu.unimagdalena.reservasunimag.domain.port.out.InventoryStatusNotifierPort;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.ResourceUseStartedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -22,10 +23,12 @@ class ResourceStatusOutboxAdapter implements InventoryStatusNotifierPort {
 
     private final JdbcClient jdbc;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher events;
 
-    ResourceStatusOutboxAdapter(JdbcClient jdbc, ObjectMapper objectMapper) {
+    ResourceStatusOutboxAdapter(JdbcClient jdbc, ObjectMapper objectMapper, ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.objectMapper = objectMapper;
+        this.events = events;
     }
 
     @Override
@@ -33,13 +36,14 @@ class ResourceStatusOutboxAdapter implements InventoryStatusNotifierPort {
         UUID eventId = UUID.randomUUID();
         jdbc.sql("""
                         INSERT INTO outbox_message (id, type, reservation_id, payload, created_at, next_attempt_at)
-                        VALUES (:id, :type, :reservationId, CAST(:payload AS jsonb), :now, :now)""")
+                        VALUES (:id, :type, :reservationId, CAST(:payload AS jsonb), :now, LEAST(:now, now()))""")
                 .param("id", eventId)
                 .param("type", RESOURCE_USE_STARTED)
                 .param("reservationId", useStart.reservation().id())
                 .param("payload", objectMapper.writeValueAsString(ResourceUseStartedEvent.from(eventId, useStart)))
                 .param("now", useStart.startedAt().atOffset(ZoneOffset.UTC))
                 .update();
+        events.publishEvent(new OutboxMessageEnqueued(eventId));
         return eventId;
     }
 }

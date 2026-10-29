@@ -6,6 +6,7 @@ import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationOrig
 import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReport;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReportFilter;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReportPage;
+import edu.unimagdalena.reservasunimag.domain.model.reservation.Delivery;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.DeliveryStatus;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationHolder;
 import edu.unimagdalena.reservasunimag.domain.model.reservation.TimeSlot;
@@ -80,7 +81,7 @@ class CancellationReportControllerTest {
                 .claim("role", role.name()));
     }
 
-    private static CancellationReport report(CancellationReport.Delivery delivery) {
+    private static CancellationReport report(Delivery delivery) {
         return new CancellationReport(RESERVATION, EVENT, CancellationOrigin.HOLDER, CancellationReport.HOLDER_REASON,
                 1486, at(2026, 8, 31, 9, 14, 22), "ESP-0107", "Sala de Estudio 3", ResourceCategory.ESPACIO, HOLDER,
                 at(2026, 9, 1, 10, 0, 0), at(2026, 9, 1, 12, 0, 0), delivery);
@@ -88,7 +89,7 @@ class CancellationReportControllerTest {
 
     @Test
     void aSentReportCarriesItsDeliveryWithAnExplicitNullError() throws Exception {
-        when(queryReports.find(any(), eq(RESERVATION))).thenReturn(report(new CancellationReport.Delivery(
+        when(queryReports.find(any(), eq(RESERVATION))).thenReturn(report(new Delivery(
                 DeliveryStatus.SENT, 2, at(2026, 8, 31, 9, 14, 27), at(2026, 8, 31, 9, 14, 58), null, null)));
 
         mockMvc.perform(get("/api/reservations/" + RESERVATION + "/cancellation-report")
@@ -100,7 +101,7 @@ class CancellationReportControllerTest {
 
     @Test
     void aPendingReportSaysWhenItWillBeRetriedAndWhy() throws Exception {
-        when(queryReports.find(any(), eq(RESERVATION))).thenReturn(report(new CancellationReport.Delivery(
+        when(queryReports.find(any(), eq(RESERVATION))).thenReturn(report(new Delivery(
                 DeliveryStatus.PENDING, 3, at(2026, 8, 31, 9, 14, 27), null, at(2026, 8, 31, 9, 16, 27),
                 "Connection refused")));
 
@@ -126,7 +127,7 @@ class CancellationReportControllerTest {
                 UUID.fromString("f2b8c4d1-6e39-4a70-95c8-3d1e7a0f2b56"), CancellationOrigin.ACADEMIC_PRIORITY,
                 "Clase IS-510.", null, at(2026, 9, 10, 15, 47, 35), "ESP-0301", "Auditorio Menor",
                 ResourceCategory.ESPACIO, HOLDER, at(2026, 9, 10, 14, 0, 0), at(2026, 9, 10, 16, 0, 0),
-                new CancellationReport.Delivery(DeliveryStatus.FAILED, 10, at(2026, 9, 10, 15, 47, 40), null, null,
+                new Delivery(DeliveryStatus.FAILED, 10, at(2026, 9, 10, 15, 47, 40), null, null,
                         "Connection refused"));
         when(queryReports.list(any(), any())).thenReturn(new CancellationReportPage(
                 new Page<>(List.of(academic), 1, 20, 1), new CancellationReportPage.Summary(1, 0, 0, 1)));

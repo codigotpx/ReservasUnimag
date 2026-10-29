@@ -11,6 +11,7 @@ import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.even
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.ReservationRecordEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -35,18 +36,22 @@ class OutboxNotifierAdapter implements Module3NotifierPort {
 
     private final JdbcClient jdbc;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher events;
 
-    OutboxNotifierAdapter(JdbcClient jdbc, ObjectMapper objectMapper) {
+    OutboxNotifierAdapter(JdbcClient jdbc, ObjectMapper objectMapper, ApplicationEventPublisher events) {
         this.jdbc = jdbc;
         this.objectMapper = objectMapper;
+        this.events = events;
     }
 
     @Override
     public void reservationCreated(ReservationRecord record) {
-        // El id de la fila es el eventId: identifica el hecho, no el intento de envío.
-        UUID eventId = UUID.randomUUID();
-        insert(eventId, RESERVATION_RECORD, record.reservation().id(),
-                objectMapper.writeValueAsString(ReservationRecordEvent.from(eventId, record)), record.occurredAt());
+        // El id de la fila es el eventId de la ficha: identifica el hecho, no el intento de envío (UC10 FR-005).
+        insert(record.eventId(), RESERVATION_RECORD, record.reservation().id(),
+                objectMapper.writeValueAsString(ReservationRecordEvent.from(record)), record.occurredAt());
+        // Sin datos personales más allá del identificador (plan de UC10, T017).
+        log.info("Ficha de la reserva {} encolada: origen {}, sancionable {}, evento {}", record.reservation().id(),
+                record.reservation().origin(), record.sanctionable(), record.eventId());
     }
 
     @Override
@@ -86,12 +91,13 @@ class OutboxNotifierAdapter implements Module3NotifierPort {
     private void insert(UUID eventId, String type, UUID reservationId, String payload, Instant now) {
         jdbc.sql("""
                         INSERT INTO outbox_message (id, type, reservation_id, payload, created_at, next_attempt_at)
-                        VALUES (:id, :type, :reservationId, CAST(:payload AS jsonb), :now, :now)""")
+                        VALUES (:id, :type, :reservationId, CAST(:payload AS jsonb), :now, LEAST(:now, now()))""")
                 .param("id", eventId)
                 .param("type", type)
                 .param("reservationId", reservationId)
                 .param("payload", payload)
                 .param("now", now.atOffset(ZoneOffset.UTC))
                 .update();
+        events.publishEvent(new OutboxMessageEnqueued(eventId));
     }
 }

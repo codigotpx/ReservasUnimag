@@ -149,6 +149,16 @@ erDiagram
         timestamptz processed_at
     }
 
+    reservation_record {
+        uuid        reservation_id          PK  "FK; una ficha por reserva"
+        uuid        event_id                    "unico; el eventId de la ficha en la outbox"
+        varchar     origin                      "ESTUDIANTIL | ACADEMICO"
+        boolean     sanctionable                "false en las academicas"
+        uuid        holder_user_id          FK  "nulo en las academicas"
+        varchar     delivery_status             "PENDING | SENT | FAILED"
+        int         attempts
+    }
+
     resource_module1 {
         varchar     id                      PK  "NO es tabla nuestra: vive en el Modulo 1"
         varchar     category                    "ESPACIO | ACTIVO"
@@ -164,6 +174,7 @@ erDiagram
     reservation            ||--o| absence          : "recibe (UC9)"
     reservation            ||--o| check_out         : "recibe (UC12)"
     reservation            ||--o{ status_change     : "deja historial (UC7)"
+    reservation            ||--o| reservation_record : "se reporta (UC10)"
     reservation            ||--o{ outbox_message  : "origina (UC10, UC11, UC7)"
     reservation            |o--o{ inbox_message  : "referida por"
 
@@ -187,6 +198,7 @@ erDiagram
 | `reservation` → `absence` / `check_out` | 1 a 0..1 | Un solo reporte por reserva. En las dos el `reservation_id` es la clave primaria (planes de UC9 y UC12, Contratos §3 y §5). |
 | `reservation` → `status_change` | 1 a 0..* | Cada cambio de ocupación deja una fila: confirmación, inicio de uso, cancelación, ausencia y check-out (UC7 FR-009). |
 | `reservation` → `outbox_message` | 1 a 0..* | Una reserva produce la ficha (UC10) y, si se cancela, el reporte de cancelación (UC11); el inicio de uso añade el aviso al Módulo 1 (UC7). |
+| `reservation` → `reservation_record` | 1 a 0..1 | La constancia de la ficha enviada al Módulo 3 (UC10 FR-006). La PK es la `reservation_id`, así que no puede haber dos fichas de la misma reserva (FR-005). Se une a la *outbox* por `event_id`, sin FK, porque la *outbox* se purga y el historial se queda. |
 | `status_change` → `outbox_message` | 0..1 a 0..1 | Solo el cambio con motivo `USE_STARTED` tiene aviso, y `outbox_message_id` permite ir del historial a la entrega y al revés. |
 | `reservation` → `inbox_message` | 0..1 a 0..* | Varios eventos del Módulo 3 pueden referirse a la misma reserva, y `reservation_id` queda nulo si el evento se rechazó porque la reserva no existe. |
 | `resource_module1` → `reservation` / `denial` | conceptual | No hay clave foránea: el recurso vive en el Módulo 1 y nosotros guardamos solo su `resource_id` y su categoría. La integridad se valida contra el `InventoryPort`, no contra la base. |

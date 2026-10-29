@@ -45,6 +45,7 @@ import static org.mockito.Mockito.when;
 
 /** El aviso de inicio de uso contra un Kafka de verdad, y que nada más sale hacia el Módulo 1 (UC7 T014). */
 @SpringBootTest(properties = {"reservations.outbox.enabled=true", "reservations.outbox.interval=1h",
+        "reservations.outbox.publish-on-commit=false",
         "reservations.academic.use-start-enabled=false",
         "reservations.kafka.topic.resource-status=module2.resource.status.it"})
 @ActiveProfiles("local")
@@ -147,7 +148,7 @@ class UseStartedNotificationIT {
                 properties.maxSpaceDuration(), properties.minCancellationNotice(), properties.noShowGrace(),
                 properties.loanLossThreshold(), properties.holidays(), properties.resourceTypes(),
                 properties.module1(), properties.module3(), properties.jwt(), properties.kafka(),
-                new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, 1, Duration.ofMinutes(25)),
+                new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, 1, Duration.ofMinutes(25), false),
                 properties.upload());
 
         new OutboxPublisher(jdbc, broken, transactionManager, props).publishPending();

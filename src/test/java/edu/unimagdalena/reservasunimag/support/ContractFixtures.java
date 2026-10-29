@@ -38,7 +38,7 @@ public final class ContractFixtures {
                         "module2.reservation.cancellation.v1", "module3.reservation.no-show.v1",
                         "module2.reservation.no-show-ack.v1", "module3.reservation.check-out.v1",
                         "module2.reservation.check-out-ack.v1", "module2.resource.status.v1")),
-                new ReservationProperties.Outbox(false, Duration.ofSeconds(5), 50, 10, Duration.ofMinutes(25)),
+                new ReservationProperties.Outbox(false, Duration.ofSeconds(5), 50, 10, Duration.ofMinutes(25), false),
                 new ReservationProperties.Upload(Duration.ofMinutes(30)));
     }
 }

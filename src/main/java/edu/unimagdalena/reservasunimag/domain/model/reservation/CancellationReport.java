@@ -61,18 +61,4 @@ public record CancellationReport(
         return new CancellationReport(reservationId, eventId, origin, reason, noticeMinutes, cancelledAt, resourceId,
                 name, category, holder, releasedStart, releasedEnd, delivery);
     }
-
-    /**
-     * El resultado de los envíos. {@code nextAttemptAt} solo existe mientras está {@code PENDING} y quede un intento
-     * programado; {@code lastError} es {@code null} si el último intento no falló.
-     */
-    public record Delivery(DeliveryStatus status, int attempts, Instant firstAttemptAt, Instant deliveredAt,
-                           Instant nextAttemptAt, String lastError) {
-
-        public static final Delivery PENDING = new Delivery(DeliveryStatus.PENDING, 0, null, null, null, null);
-
-        public Delivery {
-            Objects.requireNonNull(status, "status");
-        }
-    }
 }

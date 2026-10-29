@@ -44,6 +44,7 @@ import static org.mockito.Mockito.when;
 
 /** UC11 contra un Kafka de verdad: el reporte llega, no se pierde con el broker caído y su historial lo cuenta. */
 @SpringBootTest(properties = {"reservations.outbox.enabled=true", "reservations.outbox.interval=1h",
+        "reservations.outbox.publish-on-commit=false",
         "reservations.kafka.topic.cancellation=module2.reservation.cancellation.it"})
 @ActiveProfiles("local")
 @Import({TestcontainersConfiguration.class, KafkaTestcontainersConfiguration.class})
@@ -91,7 +92,7 @@ class CancellationDeliveryIT {
                 properties.maxSpaceDuration(), properties.minCancellationNotice(), properties.noShowGrace(),
                 properties.loanLossThreshold(), properties.holidays(), properties.resourceTypes(),
                 properties.module1(), properties.module3(), properties.jwt(), properties.kafka(),
-                new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, maxAttempts, Duration.ofMinutes(25)),
+                new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, maxAttempts, Duration.ofMinutes(25), false),
                 properties.upload());
         return new OutboxPublisher(jdbc, broken, transactionManager, props);
     }

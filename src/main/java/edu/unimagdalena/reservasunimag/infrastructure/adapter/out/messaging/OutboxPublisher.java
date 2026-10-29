@@ -1,6 +1,7 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging;
 
 import edu.unimagdalena.reservasunimag.infrastructure.config.ReservationProperties;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -9,6 +10,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
@@ -18,7 +21,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Lleva {@code outbox_message} a Kafka después del commit. Lee los pendientes con {@code FOR UPDATE SKIP LOCKED}, así
@@ -26,6 +32,11 @@ import java.util.concurrent.TimeUnit;
  * reserva caiga en la misma partición y en orden; y ante un fallo sube {@code attempts} y espera cada vez más, hasta
  * quedar {@code FAILED} al agotar {@code max-attempts}. La entrega es <em>at-least-once</em>: si cae entre el
  * {@code send} y el {@code UPDATE}, el evento se republica y el {@code eventId} permite descartar la copia.
+ * <p>
+ * Además del turno del reloj, se despierta en cuanto confirma una transacción que dejó algo en la outbox, para que la
+ * ficha salga en menos de 5 segundos (UC10 SC-002). El reloj se queda como red de seguridad: es lo que sigue
+ * entregando lo que el disparo no alcanzó y lo que reintenta. Los dos turnos no corren a la vez, para no publicar
+ * fuera de orden los eventos de una misma reserva.
  */
 @Component
 @ConditionalOnProperty(name = "reservations.outbox.enabled", havingValue = "true", matchIfMissing = true)
@@ -45,6 +56,11 @@ public class OutboxPublisher {
     private final KafkaTemplate<String, String> kafka;
     private final TransactionTemplate transaction;
     private final ReservationProperties properties;
+    /** El hilo del disparo tras el commit: la reserva no espera a Kafka para responder. */
+    private final ExecutorService wakeUps = Executors.newSingleThreadExecutor(
+            Thread.ofPlatform().name("outbox-wake-up").daemon().factory());
+    /** Hay un turno pedido que todavía no empezó; los commits que llegan mientras tanto caben en él. */
+    private final AtomicBoolean wakeUpQueued = new AtomicBoolean();
 
     OutboxPublisher(JdbcClient jdbc, KafkaTemplate<String, String> kafka,
                     PlatformTransactionManager transactionManager, ReservationProperties properties) {
@@ -52,6 +68,30 @@ public class OutboxPublisher {
         this.kafka = kafka;
         this.transaction = new TransactionTemplate(transactionManager);
         this.properties = properties;
+    }
+
+    /**
+     * Un mensaje quedó en la outbox y su transacción confirmó. Una carga de horario deja miles en un solo commit: se
+     * piden en un solo turno, no en miles.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onEnqueued(OutboxMessageEnqueued enqueued) {
+        if (!properties.outbox().publishOnCommit() || !wakeUpQueued.compareAndSet(false, true)) {
+            return;
+        }
+        wakeUps.execute(() -> {
+            wakeUpQueued.set(false);
+            try {
+                publishPending();
+            } catch (RuntimeException failure) {
+                log.error("Outbox: el turno tras el commit no pudo procesar el lote: {}", failure.getMessage());
+            }
+        });
+    }
+
+    @PreDestroy
+    void stopWakeUps() {
+        wakeUps.shutdownNow();
     }
 
     @Scheduled(fixedDelayString = "${reservations.outbox.interval}")
@@ -66,7 +106,7 @@ public class OutboxPublisher {
     }
 
     /** Un turno del publicador; devuelve cuántos mensajes salieron. */
-    public int publishPending() {
+    public synchronized int publishPending() {
         Integer sent = transaction.execute(status -> {
             int published = 0;
             Set<UUID> blockedReservations = new HashSet<>();
@@ -147,6 +187,14 @@ public class OutboxPublisher {
                         WHERE event_id = :id""")
                 .param("id", message.id())
                 .update();
+        // Y el de UC10, con la misma cuenta (FR-006).
+        jdbc.sql("""
+                        UPDATE reservation_record
+                        SET delivery_status = 'SENT', delivered_at = now(), attempts = attempts + 1,
+                            first_attempt_at = COALESCE(first_attempt_at, now()), last_error = NULL
+                        WHERE event_id = :id""")
+                .param("id", message.id())
+                .update();
         log.info("Outbox: evento {} publicado", message.id());
     }
 
@@ -165,16 +213,19 @@ public class OutboxPublisher {
                 .param("error", error.length() > 500 ? error.substring(0, 500) : error)
                 .param("id", message.id())
                 .update();
-        jdbc.sql("""
-                        UPDATE cancellation_report
-                        SET delivery_status = :status, attempts = :attempts,
-                            first_attempt_at = COALESCE(first_attempt_at, now()), last_error = :error
-                        WHERE event_id = :id""")
-                .param("status", exhausted ? "FAILED" : "PENDING")
-                .param("attempts", attempts)
-                .param("error", error.length() > 500 ? error.substring(0, 500) : error)
-                .param("id", message.id())
-                .update();
+        // Los dos historiales hacia el Módulo 3 llevan la misma cuenta (UC10 FR-006, UC11 FR-010).
+        for (String history : List.of("cancellation_report", "reservation_record")) {
+            jdbc.sql("""
+                            UPDATE %s
+                            SET delivery_status = :status, attempts = :attempts,
+                                first_attempt_at = COALESCE(first_attempt_at, now()), last_error = :error
+                            WHERE event_id = :id""".formatted(history))
+                    .param("status", exhausted ? "FAILED" : "PENDING")
+                    .param("attempts", attempts)
+                    .param("error", error.length() > 500 ? error.substring(0, 500) : error)
+                    .param("id", message.id())
+                    .update();
+        }
         if (exhausted) {
             jdbc.sql("UPDATE status_change SET notified_status = 'FAILED' WHERE outbox_message_id = :id")
                     .param("id", message.id())
