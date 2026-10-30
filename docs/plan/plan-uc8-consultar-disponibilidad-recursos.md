@@ -45,29 +45,38 @@ src/main/java/edu/unimagdalena/reservasunimag/
 │   ├── model/
 │   │   ├── resource/
 │   │   │   ├── DisplayedStatus.java            # (existe, UC1) la tabla de prioridad
+│   │   │   ├── Availability.java               # (existe, UC2) + el préstamo vencido y su motivo
+│   │   │   ├── ResourceWithStatus.java         # (existe, UC1) ahora lleva un Availability
 │   │   │   └── AvailabilityAnswer.java         # nuevo: la entidad RespuestaDeDisponibilidad
 │   │   └── reservation/
-│   │       └── Occupancy.java                  # (existe, UC1)
+│   │       └── Occupancy.java                  # (existe, UC1) + dueAt, hasta cuándo está comprometido
 │   ├── port/
-│   │   ├── in/CheckAvailabilityPort.java       # (existe, UC1 por lote + UC2 individual)
+│   │   ├── in/CheckAvailabilityPort.java       # (existe) + check(resourceId, slot)
 │   │   └── out/OccupancyRepositoryPort.java    # (existe, UC1)
 │   └── usecase/checkavailability/
-│       └── CheckAvailabilityUseCase.java       # (existe) sin cambios de lógica
+│       └── CheckAvailabilityUseCase.java       # (existe) una sola regla para las tres operaciones
 │
-└── infrastructure/adapter/in/web/resource/
-    ├── AvailabilityController.java             # nuevo: GET /api/resources/{id}/availability
-    └── AvailabilityResponse.java               # nuevo
+└── infrastructure/adapter/
+    ├── in/web/resource/
+    │   ├── AvailabilityController.java         # nuevo: GET /api/resources/{id}/availability
+    │   ├── AvailabilityResponse.java           # nuevo
+    │   └── SearchResourcesResponse.java        # (existe, UC1) + occupiedUntil
+    ├── in/web/error/GlobalErrorHandler.java    # (existe) el detail propio del 503 de §1
+    └── out/persistence/OccupancyPersistenceAdapter.java   # (existe) el vencimiento del préstamo entregado
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/usecase/checkavailability/
 │   ├── CheckAvailabilityUseCaseTest.java       # (existe, UC1) + los escenarios que faltaban
 │   └── AvailabilityBoundaryTest.java           # nuevo: los bordes de los rangos
+├── domain/usecase/reserveresources/
+│   └── ReserveResourcesUseCaseTest.java        # (existe) + la ficha se pide una sola vez (T010b)
+├── support/InMemoryInventory.java              # nuevo: Módulo 1 en memoria que cuenta las fichas
 └── infrastructure/adapter/
     ├── in/web/resource/AvailabilityControllerTest.java
-    └── out/persistence/AvailabilityConsistencyIT.java   # nuevo: UC1 y UC2 coinciden
+    └── in/web/resource/AvailabilityConsistencyIT.java   # nuevo: la lista y la pregunta coinciden
 ```
 
-**Structure Decision**: solo se añaden un controlador y pruebas. `AvailabilityAnswer` existía implícito dentro de `ResourceWithStatus` de UC1; se extrae porque el endpoint nuevo responde por un recurso y no por una lista, y porque es la entidad que el spec nombra.
+**Structure Decision**: se añaden un controlador, una operación al puerto y pruebas. `AvailabilityAnswer` es la entidad que el spec nombra: el recurso, la franja, un `Availability` (estado, motivo y "hasta cuándo") y el instante de la respuesta. La lista de UC1 sigue devolviendo `ResourceWithStatus`, porque necesita la ficha entera para pintarse, pero ahora lleva el mismo `Availability` que la pregunta individual, calculado por la misma regla privada del caso de uso. Eso es lo que hace que no haya dos definiciones de "disponible".
 
 ### Decisiones de diseño de este caso de uso
 
@@ -98,7 +107,7 @@ No queda ningún FR sin implementar. Lo que queda son garantías sin probar y un
 | La consulta individual, incluido el endpoint de §1 | La **ficha**, `GET /api/v1/resources/{id}` ([UC2 §4](./plan-uc2-reservar-recursos.md#4-módulo-1--ficha-de-un-recurso)) | Es una sola llamada que trae el estado, el nombre y la categoría, que es todo lo que la respuesta necesita. Un lote de un elemento daría el estado y obligaría a otra llamada para el nombre |
 | La carga de horarios de UC3 y la tarea de inicio de uso de UC7 | El **lote**, `POST /api/v1/resources/operational-status` ([UC1 §2.2](./plan-uc1-consultar-recursos.md#22-estado-operativo-por-lote--post-apiv1resourcesoperational-status)) | Son los dos que preguntan por muchos recursos de una vez y no necesitan la ficha completa |
 
-Y la consecuencia que importa: **dentro de una misma petición de reserva, la ficha se pide una sola vez.** UC2 ya la pide en el paso 0 de su tabla de decisiones —de ahí saca la categoría y el plazo de préstamo—, así que el paso 3 recibe ese estado ya resuelto y **no vuelve a salir a la red**. La operación individual del puerto acepta el estado operativo cuando quien llama ya lo tiene, y lo pide ella misma cuando no. No es solo ahorrar una llamada: si se preguntara dos veces en la misma petición, el estado podría cambiar entre una y otra y la respuesta quedaría incoherente consigo misma —un `RES-004` por mantenimiento cuyo `detectedStatus` dijera `DISPONIBLE`—.
+Y la consecuencia que importa: **dentro de una misma petición de reserva, la ficha se pide una sola vez.** UC2 ya la pide en el paso 0 de su tabla de decisiones —de ahí saca la categoría y el plazo de préstamo—, así que el paso 3 recibe ese estado ya resuelto y **no vuelve a salir a la red**. El puerto lo resuelve con dos operaciones en vez de un parámetro opcional: `checkOne(resource, from, to)` recibe la ficha que quien llama ya tiene, y `check(resourceId, slot)` la pide ella misma. No es solo ahorrar una llamada: si se preguntara dos veces en la misma petición, el estado podría cambiar entre una y otra y la respuesta quedaría incoherente consigo misma —un `RES-004` por mantenimiento cuyo `detectedStatus` dijera `DISPONIBLE`—.
 
 El endpoint público de §1 no viene de UC2, así que ahí sí pide la ficha él mismo.
 
@@ -123,6 +132,10 @@ En SQL es el operador `&&` sobre `tstzrange(..., '[)')`, que es exactamente esta
 - Volver a mirar un recurso del que la lista ya dio su estado hace un par de minutos.
 
 No sustituye la revalidación de UC2 dentro de la transacción: esa sigue siendo la que decide (FR-006, edge case **La respuesta envejece enseguida**). Este endpoint es una cortesía para la interfaz, y su respuesta lo dice.
+
+**El "hasta cuándo" de un préstamo entregado.** Al implementar apareció un hueco de UC2: un préstamo entregado y sin devolver se leía sin fin, para que ocupara aunque venciera, y con eso se perdía su vencimiento. El escenario 5 respondía `EN_USO` sin fecha. `Occupancy` guarda ahora dos cosas distintas: `endsAt`, hasta cuándo ocupa (sin fin en un préstamo entregado), y `dueAt`, hasta cuándo está comprometido según lo apartado (su vencimiento). El cruce usa la primera y `occupiedUntil` la segunda. Si `dueAt` ya pasó, el préstamo está vencido: se omite la fecha y el motivo cambia a "El recurso está en uso y su plazo de préstamo ya venció."
+
+**FR-009 sin transacción de solo lectura.** El plan pedía `@Transactional(readOnly = true)` en el bean. El caso de uso solo depende de puertos de lectura (`InventoryPort` y `OccupancyRepositoryPort`), así que no tiene con qué escribir, y la consulta de ocupaciones es una sola sentencia. No se añade transacción.
 
 **Lo que este plan no hace: una caché.** Sería la optimización obvia —el mismo recurso se consulta muchas veces en una sesión— y está prohibida por FR-006: "sin reutilizar respuestas anteriores". La prueba de T008 lo fija, para que nadie añada un `@Cacheable` de buena fe.
 
@@ -197,7 +210,7 @@ Cookie: sesion=<jwt>
 
 Lleva `Cache-Control: no-store`, como la lista de UC1.
 
-**Decisión: `occupiedUntil` de un préstamo abierto y vencido se omite.** Un préstamo entregado y sin devolver ocupa *sin fin* (UC2 FR-015), así que no hay una fecha honesta que poner: el vencimiento ya pasó y el recurso sigue fuera. En ese caso el campo se omite y el `reason` lo explica —"está en uso y su plazo ya venció"—. Poner el vencimiento pasado invitaría a que alguien reservara justo después.
+**Decisión: `occupiedUntil` de un préstamo abierto y vencido se omite.** Un préstamo entregado y sin devolver ocupa *sin fin* (UC2 FR-015), así que no hay una fecha honesta que poner: el vencimiento ya pasó y el recurso sigue fuera. En ese caso el campo se omite y el `reason` lo explica: "El recurso está en uso y su plazo de préstamo ya venció." Poner el vencimiento pasado invitaría a que alguien reservara justo después.
 
 **Errores**
 
@@ -219,7 +232,7 @@ Lleva `Cache-Control: no-store`, como la lista de UC1.
 }
 ```
 
-El `detail` dice explícitamente que **no se puede confirmar que esté libre**, en vez de un "intenta más tarde" genérico: es lo que el edge case **El inventario no responde** pide que nadie malinterprete.
+El `detail` dice explícitamente que **no se puede confirmar que esté libre**, en vez de un "intenta más tarde" genérico: es lo que el edge case **El inventario no responde** pide que nadie malinterprete. El manejador global de errores elige este `detail` cuando la ruta es la de `/availability`; la lista de UC1 conserva el suyo.
 
 ---
 
@@ -263,9 +276,9 @@ src/test/resources/contracts/
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T001 Extraer `AvailabilityAnswer` en `domain/model/resource/` desde lo que hoy devuelve `CheckAvailabilityUseCase`, sin cambiar la lógica, y hacer que las dos operaciones del puerto lo usen
-- [ ] T002 [P] Revisar que `CheckAvailabilityUseCase` sigue sin escribir nada: `@Transactional(readOnly = true)` en su bean y ninguna llamada a un puerto de escritura (FR-009)
-- [ ] T002b Dejar que la operación individual del puerto reciba el estado operativo ya conocido y lo pida por la **ficha** solo si no lo trae, y enganchar el paso 3 de UC2 al estado que su paso 0 ya obtuvo (la decisión de la llamada única)
+- [x] T001 Crear `AvailabilityAnswer` en `domain/model/resource/` y hacer que todas las operaciones del puerto resuelvan el estado y el "hasta cuándo" con la misma regla. La lista sigue devolviendo `ResourceWithStatus`, que ahora lleva el mismo `Availability`
+- [x] T002 [P] Revisar que `CheckAvailabilityUseCase` sigue sin escribir nada: solo depende de puertos de lectura, así que no lleva transacción (FR-009)
+- [x] T002b Separar en el puerto `checkOne(resource, …)`, que usa la ficha que quien llama ya tiene (el paso 3 de UC2 ya lo hacía), y `check(resourceId, slot)`, que la pide al Módulo 1 (la decisión de la llamada única)
 
 **Checkpoint**: la respuesta tiene una forma única
 
@@ -279,20 +292,20 @@ src/test/resources/contracts/
 
 ### Tests for User Story 1
 
-- [ ] T003 [P] [US1] Completar `CheckAvailabilityUseCaseTest.java` con los seis escenarios del spec, incluido el 3 —reservado por otra persona, comprobando que **ninguna** parte de la respuesta nombra al titular (FR-005)— y el 5, con su `occupiedUntil` (FR-012)
-- [ ] T004 [P] [US1] Prueba `AvailabilityBoundaryTest.java` con la tabla de bordes: 08:00–10:00 contra 10:00–12:00 **no** se cruzan; contra 09:30–10:30 y contra 09:59–10:30 **sí**; un préstamo abierto cruza cualquier franja posterior a su inicio; y el criterio es el mismo en la versión individual y en la de lote
-- [ ] T005 [P] [US1] Prueba de FR-004 y SC-002: **ninguna** respuesta negativa sale sin `reason`, recorriendo los cuatro estados que bloquean
-- [ ] T006 [P] [US1] Prueba de FR-007 y SC-003: con el Módulo 1 caído, la versión individual responde `503` y la de lote lanza la excepción; en ningún caso aparece un `available: true`. Y un recurso en `notFound` se omite del lote en vez de darse por libre
-- [ ] T007 [P] [US1] Prueba de FR-012 y su borde: un espacio ocupado devuelve el fin de la franja que lo ocupa; un activo prestado, el vencimiento; un préstamo **vencido y sin devolver** omite el campo y lo explica en el `reason`; y un `EN_MANTENIMIENTO` lo omite porque el Módulo 1 no da fecha
-- [ ] T008 [P] [US1] Prueba de FR-006: dos consultas seguidas sobre el mismo recurso, con una reserva creada entre ambas, devuelven respuestas **distintas**; y la respuesta HTTP lleva `Cache-Control: no-store`. Es la prueba que impide añadir una caché
-- [ ] T009 [P] [US1] Prueba `AvailabilityControllerTest.java` contra los *fixtures*: los tres `200`, el `400` de la franja nocturna con su `code`, el `401`, el `404` del recurso inexistente y el `503` con su `detail`
-- [ ] T010 [P] [US1] Prueba `AvailabilityConsistencyIT.java` con Testcontainers, la prueba transversal de SC-003 y SC-004: para un conjunto de recursos con los cinco estados, **la respuesta de la lista de UC1 y la del endpoint individual coinciden recurso por recurso**; y un recurso que esta consulta reportó ocupado no puede reservarse con éxito en UC2
-- [ ] T010b [P] [US1] Prueba de la llamada única con WireMock: una reserva confirmada pide la ficha del recurso **una sola vez** —el paso 3 no genera una segunda llamada—, y el endpoint de §1, que no viene de UC2, sí la pide él mismo
+- [x] T003 [P] [US1] Completar `CheckAvailabilityUseCaseTest.java` con los seis escenarios del spec, incluido el 3 —reservado por otra persona, comprobando que **ninguna** parte de la respuesta nombra al titular (FR-005)— y el 5, con su `occupiedUntil` (FR-012)
+- [x] T004 [P] [US1] Prueba `AvailabilityBoundaryTest.java` con la tabla de bordes: 08:00–10:00 contra 10:00–12:00 **no** se cruzan; contra 09:30–10:30 y contra 09:59–10:30 **sí**; un préstamo abierto cruza cualquier franja posterior a su inicio; y el criterio es el mismo en la versión individual y en la de lote
+- [x] T005 [P] [US1] Prueba de FR-004 y SC-002: **ninguna** respuesta negativa sale sin `reason`, recorriendo los cuatro estados que bloquean
+- [x] T006 [P] [US1] Prueba de FR-007 y SC-003: con el Módulo 1 caído, la versión individual responde `503` y la de lote lanza la excepción; en ningún caso aparece un `available: true`. Y un recurso en `notFound` se omite del lote en vez de darse por libre
+- [x] T007 [P] [US1] Prueba de FR-012 y su borde: un espacio ocupado devuelve el fin de la franja que lo ocupa; un activo prestado, el vencimiento; un préstamo **vencido y sin devolver** omite el campo y lo explica en el `reason`; y un `EN_MANTENIMIENTO` lo omite porque el Módulo 1 no da fecha
+- [x] T008 [P] [US1] Prueba de FR-006: dos consultas seguidas sobre el mismo recurso, con una reserva creada entre ambas, devuelven respuestas **distintas**; y la respuesta HTTP lleva `Cache-Control: no-store`. Es la prueba que impide añadir una caché
+- [x] T009 [P] [US1] Prueba `AvailabilityControllerTest.java` contra los *fixtures*: los tres `200`, el `400` de la franja nocturna con su `code`, el `401`, el `404` del recurso inexistente y el `503` con su `detail`
+- [x] T010 [P] [US1] Prueba `AvailabilityConsistencyIT.java` con Testcontainers y el perfil local, por HTTP, la prueba transversal de SC-003 y SC-004: para un conjunto de recursos con los cinco estados, **la respuesta de la lista de UC1 y la del endpoint individual coinciden recurso por recurso**; y un recurso que esta consulta reportó ocupado no puede reservarse con éxito en UC2
+- [x] T010b [P] [US1] Prueba de la llamada única, contando las fichas pedidas al puerto en vez de con WireMock: una reserva confirmada pide la ficha del recurso **una sola vez** —el paso 3 no genera una segunda llamada—, y el endpoint de §1, que no viene de UC2, sí la pide él mismo
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implementar `AvailabilityController` y `AvailabilityResponse` según [Contratos §1](#1-get-apiresourcesresourceidavailability), con `Cache-Control: no-store` y documentado con OpenAPI (depende de T001)
-- [ ] T012 [US1] Añadir el campo `occupiedUntil` a la respuesta de la lista de UC1, que lo tenía **reservado sin enviar** desde su plan, ahora que UC2 ya lo calcula
+- [x] T011 [US1] Implementar `AvailabilityController` y `AvailabilityResponse` según [Contratos §1](#1-get-apiresourcesresourceidavailability), con `Cache-Control: no-store` y documentado con OpenAPI (depende de T001)
+- [x] T012 [US1] Añadir el campo `occupiedUntil` a la respuesta de la lista de UC1, que lo tenía **reservado sin enviar** desde su plan, ahora que UC2 ya lo calcula
 - [ ] T013 [P] [US1] Frontend: usar el endpoint en la pantalla de confirmación de UC2 para revalidar antes de que la persona pulse el botón, dejando claro que la decisión final la toma el backend
 
 **Checkpoint**: UC8 queda cerrado y con una sola definición de "disponible" probada
@@ -302,8 +315,8 @@ src/test/resources/contracts/
 ## Phase 4: Polish & Cross-Cutting Concerns
 
 - [ ] T014 [P] Verificar SC-001 midiendo la consulta individual con el Módulo 1 simulado a su latencia prometida, y comprobar que el cruce contra nuestra base no añade tiempo apreciable
-- [ ] T015 [P] Registrar en logs cada consulta con su resultado y su duración, sin el titular de ninguna reserva
-- [ ] T016 Llevar a `pendientes-clarificacion.md` la redacción del último edge case del spec, que pide responder "no disponible" a una franja fuera de la ventana cuando lo correcto es un `400`
+- [x] T015 [P] Registrar en logs cada consulta del endpoint con su resultado y su duración, sin el titular de ninguna reserva. Va en el controlador: el dominio no escribe logs
+- [x] T016 Llevar a `pendientes-clarificacion.md` la redacción del último edge case del spec, que pide responder "no disponible" a una franja fuera de la ventana cuando lo correcto es un `400`
 
 ---
 
@@ -342,3 +355,4 @@ src/test/resources/contracts/
 - **Este plan es de cierre, no de construcción.** Los doce FR ya estaban implementados por UC1 y UC2; lo que aporta es la trazabilidad, las pruebas transversales que ningún plan individual podía escribir, el borde enunciado en un sitio y el endpoint que faltaba
 - **Decisiones de los contratos que el spec no fija**: una franja fuera de la ventana operativa es `400` y no "no disponible", porque el problema está en la pregunta y no en el recurso; `occupiedUntil` se omite en un préstamo vencido y sin devolver, porque no hay fecha honesta; y el endpoint individual es una cortesía para la interfaz que **no** sustituye la revalidación de UC2 dentro de la transacción
 - **Decisión explícita de no hacer**: ninguna caché, por FR-006. La prueba de T008 lo fija
+- **Lo que cambió al implementar** (2026-10-30, ver P-28): `Occupancy.dueAt` para que un préstamo entregado diga su vencimiento; un motivo propio para el préstamo vencido; sin `@Transactional(readOnly = true)`; dos operaciones en el puerto en vez de un parámetro opcional; la lista conserva `ResourceWithStatus`; la prueba de coherencia va por HTTP y la de la llamada única cuenta fichas en vez de usar WireMock. Quedan sin hacer T013, porque el frontend no está en este repositorio, y T014

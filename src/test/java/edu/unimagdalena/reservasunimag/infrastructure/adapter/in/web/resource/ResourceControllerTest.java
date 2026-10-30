@@ -170,6 +170,22 @@ class ResourceControllerTest {
     }
 
     @Test
+    void anOccupiedResourceInTheListSaysUntilWhen() throws Exception {
+        var until = java.time.ZonedDateTime.of(2026, 9, 1, 12, 0, 0, 0, TimeSlot.ZONE).toInstant();
+        var page = new Page<>(List.of(new ResourceWithStatus(LAB,
+                new edu.unimagdalena.reservasunimag.domain.model.resource.Availability(
+                        DisplayedStatus.BLOQUEO_ACADEMICO, until)),
+                withStatus(STUDY_ROOM, DisplayedStatus.DISPONIBLE)), 1, 20, 2);
+        when(searchResources.search(any())).thenReturn(new SearchResourcesResult(SLOT,
+                new ResourceFilter(null, null, null), page, true, false, QUERIED_AT, null, null, null));
+
+        mockMvc.perform(get(QUERY).with(session(Role.ESTUDIANTE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resources[0].occupiedUntil").value("2026-09-01T12:00:00-05:00"))
+                .andExpect(jsonPath("$.resources[1].occupiedUntil").doesNotExist());
+    }
+
+    @Test
     void noOptionalFieldEverTravelsAsNull() throws Exception {
         var page = new Page<>(List.of(withStatus(MICROSCOPE, DisplayedStatus.DISPONIBLE),
                 withStatus(STUDY_ROOM, DisplayedStatus.DISPONIBLE)), 1, 20, 2);

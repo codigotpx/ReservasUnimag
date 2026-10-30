@@ -75,6 +75,7 @@ class ReserveResourcesUseCaseTest {
     // --- puertos falsos, con el estado que cada prueba necesita ---
     private final Map<String, Resource> catalog = new HashMap<>();
     private boolean inventoryDown;
+    private int detailCalls;
     private final List<Sanction> sanctionsOfStudent = new ArrayList<>();
     private boolean complianceDown;
     private int complianceCalls;
@@ -93,6 +94,7 @@ class ReserveResourcesUseCaseTest {
 
         @Override
         public Optional<Resource> details(String resourceId) {
+            detailCalls++;
             if (inventoryDown) {
                 throw new ExternalServiceUnavailableException(ExternalModule.MODULO_1, "caído", null);
             }
@@ -227,7 +229,7 @@ class ReserveResourcesUseCaseTest {
     private final ReserveResourcesUseCase useCase = new ReserveResourcesUseCase(
             inventory,
             new CheckSanctionsUseCase(compliance, new InMemorySanctionChecks(), CLOCK),
-            new CheckAvailabilityUseCase(occupancies, CLOCK),
+            new CheckAvailabilityUseCase(inventory, occupancies, CLOCK),
             reservations,
             denials::add,
             new FixedUsers(),
@@ -282,6 +284,16 @@ class ReserveResourcesUseCaseTest {
     }
 
     // ------------------------------------------------------------------------------------------------ éxito
+
+    @Test
+    void aConfirmedReservationAsksModule1ForTheFichaOnlyOnce() {
+        // UC8: la disponibilidad usa el estado de la ficha que el paso 0 ya trajo, y no vuelve a salir a la red.
+        catalog.put("ESP-1", space("ESP-1", "Sala de Estudio 3", 8));
+
+        useCase.reserve(spaceRequest("ESP-1", 10, 12));
+
+        assertThat(detailCalls).isEqualTo(1);
+    }
 
     @Test
     void reservesASpaceAndLeavesTheReservationTheFichaAndTheQuota() {

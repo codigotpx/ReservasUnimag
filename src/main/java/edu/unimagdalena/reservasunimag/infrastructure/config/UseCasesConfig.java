@@ -98,8 +98,9 @@ class UseCasesConfig {
     }
 
     @Bean
-    CheckAvailabilityPort checkAvailabilityPort(OccupancyRepositoryPort occupancies, Clock clock) {
-        return new CheckAvailabilityUseCase(occupancies, clock);
+    CheckAvailabilityPort checkAvailabilityPort(InventoryPort inventory, OccupancyRepositoryPort occupancies,
+                                                Clock clock) {
+        return new CheckAvailabilityUseCase(inventory, occupancies, clock);
     }
 
     @Bean

@@ -63,7 +63,7 @@ class OccupancyPersistenceAdapter implements OccupancyRepositoryPort {
         }
         boolean outstanding = row.getObject("picked_up_at") != null && row.getObject("returned_at") == null;
         return outstanding
-                ? new Occupancy(resourceId, OccupancyType.LOAN_PICKED_UP, startsAt, null)
+                ? new Occupancy(resourceId, OccupancyType.LOAN_PICKED_UP, startsAt, null, instant(row, "ends_at"))
                 : new Occupancy(resourceId, OccupancyType.LOAN_HELD, startsAt, instant(row, "ends_at"));
     }
 

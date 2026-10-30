@@ -349,7 +349,7 @@ El orden del ejemplo no es casual: es por `name` y, ante nombres iguales, por `i
 | `RESERVADO` | `El recurso ya está reservado en la franja consultada.` |
 | `DISPONIBLE` | se omite |
 
-**Reservado para UC8 FR-012.** Un recurso ocupado debería decir también *hasta cuándo* lo está. UC1 no lo envía todavía: el campo se llama `occupiedUntil` (instante, opcional, a nivel de recurso) y lo agrega el plan de UC8. Queda nombrado aquí para que el frontend no lo invente con otro nombre.
+**`occupiedUntil` (UC8 FR-012).** Un recurso ocupado dice también *hasta cuándo* lo está: `occupiedUntil` (instante, opcional, a nivel de recurso), con la misma regla que `GET /api/resources/{id}/availability` de [UC8 §1](./plan-uc8-consultar-disponibilidad-recursos.md#1-get-apiresourcesresourceidavailability). Se omite si el recurso está libre, si el estado lo fija solo el Módulo 1 (`EN_MANTENIMIENTO`, o `EN_USO` sin una ocupación nuestra) y si es un préstamo vencido y sin devolver, cuyo `reason` es entonces "El recurso está en uso y su plazo de préstamo ya venció." Lo agregó UC8; los ejemplos de abajo no lo muestran porque sus recursos no lo llevan.
 
 **`200 OK`** — escenario 7: ningún laboratorio seleccionable
 
@@ -680,7 +680,7 @@ export interface ResourceWithStatus {
   status: DisplayedStatus;
   selectable: boolean;
   reason?: string;
-  occupiedUntil?: string;               // lo agrega el plan de UC8 (FR-012)
+  occupiedUntil?: string;               // UC8 FR-012
 }
 
 export interface SanctionNotice {

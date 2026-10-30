@@ -20,6 +20,7 @@ import edu.unimagdalena.reservasunimag.domain.model.error.UploadNotApplicableExc
 import edu.unimagdalena.reservasunimag.domain.model.error.UploadNotYoursException;
 import edu.unimagdalena.reservasunimag.domain.model.error.UseStartRejectedException;
 import edu.unimagdalena.reservasunimag.infrastructure.time.IsoTimes;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -74,11 +75,16 @@ class GlobalErrorHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(ExternalServiceUnavailableException.class)
-    ProblemDetail externalServiceUnavailable(ExternalServiceUnavailableException exception) {
+    ProblemDetail externalServiceUnavailable(ExternalServiceUnavailableException exception,
+                                             HttpServletRequest request) {
         ProblemDetail problem = switch (exception.module()) {
+            // En la pregunta de UC8 se dice sin rodeos que no hay respuesta, para que nadie lo lea como "libre".
             case MODULO_1 -> problem(HttpStatus.SERVICE_UNAVAILABLE, "inventory-unavailable",
-                    "Inventario no disponible",
-                    "La información de recursos no está disponible en este momento. Intenta de nuevo en unos minutos.");
+                    "Inventario no disponible", request.getRequestURI().endsWith("/availability")
+                            ? "No se pudo comprobar la disponibilidad en este momento. No se puede confirmar que el "
+                                    + "recurso esté libre."
+                            : "La información de recursos no está disponible en este momento. Intenta de nuevo en "
+                                    + "unos minutos.");
             // Solo llega aquí al reservar: en la consulta (UC1) la caída del Módulo 3 es un aviso, no un error.
             case MODULO_3 -> problem(HttpStatus.SERVICE_UNAVAILABLE, "sanctions-not-verifiable",
                     "No se pudo comprobar tu situación",
