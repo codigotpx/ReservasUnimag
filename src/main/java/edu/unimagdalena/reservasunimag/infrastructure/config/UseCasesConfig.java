@@ -22,6 +22,7 @@ import edu.unimagdalena.reservasunimag.domain.port.in.ReportCancellationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReportReservationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.ReserveResourcesPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CheckSanctionsPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.QuerySanctionChecksPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.GetProfilePort;
 import edu.unimagdalena.reservasunimag.domain.port.in.SearchResourcesPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.SignInPort;
@@ -34,6 +35,7 @@ import edu.unimagdalena.reservasunimag.domain.port.out.CancellationReportReposit
 import edu.unimagdalena.reservasunimag.domain.port.out.ReservationRecordRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.CheckOutRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.CompliancePort;
+import edu.unimagdalena.reservasunimag.domain.port.out.SanctionCheckRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.DenialRepositoryPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.Module3NotifierPort;
 import edu.unimagdalena.reservasunimag.domain.port.out.ReservationRepositoryPort;
@@ -53,6 +55,7 @@ import edu.unimagdalena.reservasunimag.domain.usecase.cancelreservation.CancelRe
 import edu.unimagdalena.reservasunimag.domain.usecase.cancelreservation.ReservationCanceller;
 import edu.unimagdalena.reservasunimag.domain.usecase.checkavailability.CheckAvailabilityUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.checksanctions.CheckSanctionsUseCase;
+import edu.unimagdalena.reservasunimag.domain.usecase.checksanctions.QuerySanctionChecksUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.importschedule.ApplyScheduleUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.importschedule.QueryScheduleUploadsUseCase;
 import edu.unimagdalena.reservasunimag.domain.usecase.importschedule.RegisterExtraordinaryNeedUseCase;
@@ -100,8 +103,13 @@ class UseCasesConfig {
     }
 
     @Bean
-    CheckSanctionsPort checkSanctionsPort(CompliancePort compliance) {
-        return new CheckSanctionsUseCase(compliance);
+    CheckSanctionsPort checkSanctionsPort(CompliancePort compliance, SanctionCheckRepositoryPort checks, Clock clock) {
+        return new CheckSanctionsUseCase(compliance, checks, clock);
+    }
+
+    @Bean
+    QuerySanctionChecksPort querySanctionChecksPort(SanctionCheckRepositoryPort checks) {
+        return new QuerySanctionChecksUseCase(checks);
     }
 
     @Bean

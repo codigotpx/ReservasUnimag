@@ -1,5 +1,7 @@
 package edu.unimagdalena.reservasunimag.domain.usecase.reserveresources;
 
+import edu.unimagdalena.reservasunimag.support.InMemorySanctionChecks;
+import edu.unimagdalena.reservasunimag.domain.model.compliance.SanctionScope;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.ComplianceReport;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.Sanction;
 import edu.unimagdalena.reservasunimag.domain.model.error.DenialCode;
@@ -224,7 +226,7 @@ class ReserveResourcesUseCaseTest {
 
     private final ReserveResourcesUseCase useCase = new ReserveResourcesUseCase(
             inventory,
-            new CheckSanctionsUseCase(compliance),
+            new CheckSanctionsUseCase(compliance, new InMemorySanctionChecks(), CLOCK),
             new CheckAvailabilityUseCase(occupancies, CLOCK),
             reservations,
             denials::add,
@@ -398,7 +400,7 @@ class ReserveResourcesUseCaseTest {
     void anActiveSanctionIsRes003WithReasonAndEndDate() {
         catalog.put("ESP-1", space("ESP-1", "Sala", 8));
         sanctionsOfStudent.add(new Sanction("Dos ausencias no justificadas en el semestre", DAY,
-                LocalDate.of(2026, 9, 15), "RESERVAS"));
+                LocalDate.of(2026, 9, 15), SanctionScope.TODO));
 
         ReservationDeniedException denial = denied(() -> useCase.reserve(spaceRequest("ESP-1", 10, 11)));
 
@@ -411,7 +413,7 @@ class ReserveResourcesUseCaseTest {
     @Test
     void aSanctionWithoutAnEndDateDoesNotMentionOne() {
         catalog.put("ESP-1", space("ESP-1", "Sala", 8));
-        sanctionsOfStudent.add(new Sanction("Pérdida de un activo", DAY, null, "RESERVAS"));
+        sanctionsOfStudent.add(new Sanction("Pérdida de un activo", DAY, null, SanctionScope.TODO));
 
         ReservationDeniedException denial = denied(() -> useCase.reserve(spaceRequest("ESP-1", 10, 11)));
 
@@ -472,9 +474,43 @@ class ReserveResourcesUseCaseTest {
     }
 
     @Test
+    void aSanctionOnSpacesStillLetsTheHolderBorrowAnAsset() {
+        catalog.put("ESP-1", space("ESP-1", "Sala", 8));
+        catalog.put("ACT-1", asset("ACT-1", "Libro", 7));
+        sanctionsOfStudent.add(new Sanction("No asistencia", DAY, LocalDate.of(2026, 9, 8), SanctionScope.ESPACIOS));
+
+        assertThat(denied(() -> useCase.reserve(spaceRequest("ESP-1", 10, 11))).code()).isEqualTo(DenialCode.RES_003);
+        assertThat(useCase.reserve(ReservationRequest.forAsset(STUDENT, "ACT-1", DAY, LocalTime.of(14, 30)))
+                .reservation().resourceId()).isEqualTo("ACT-1");
+    }
+
+    @Test
+    void aSanctionOnAssetsDeniesAnAssetButNotASpace() {
+        catalog.put("ESP-1", space("ESP-1", "Sala", 8));
+        catalog.put("ACT-1", asset("ACT-1", "Libro", 7));
+        sanctionsOfStudent.add(new Sanction("Devolución tardía", DAY, LocalDate.of(2026, 9, 8), SanctionScope.ACTIVOS));
+
+        assertThat(denied(() -> useCase.reserve(ReservationRequest.forAsset(STUDENT, "ACT-1", DAY,
+                LocalTime.of(14, 30)))).code()).isEqualTo(DenialCode.RES_003);
+        assertThat(useCase.reserve(spaceRequest("ESP-1", 10, 11)).reservation().resourceId()).isEqualTo("ESP-1");
+    }
+
+    @Test
+    void aSanctionThatAlreadyEndedDoesNotDenyAndOneEndingTodayStillDoes() {
+        catalog.put("ESP-1", space("ESP-1", "Sala", 8));
+        sanctionsOfStudent.add(new Sanction("Vencida", LocalDate.of(2026, 8, 1), DAY.minusDays(1), SanctionScope.TODO));
+
+        assertThat(useCase.reserve(spaceRequest("ESP-1", 10, 11)).reservation().resourceId()).isEqualTo("ESP-1");
+
+        sanctionsOfStudent.add(new Sanction("Termina hoy", LocalDate.of(2026, 8, 1), DAY, SanctionScope.TODO));
+        assertThat(denied(() -> useCase.reserve(spaceRequest("ESP-1", 14, 15))).code())
+                .isEqualTo(DenialCode.RES_003);
+    }
+
+    @Test
     void withSeveralCausesAtOnceOnlyTheFirstInOrderOfRulesComesBack() {
         catalog.put("ESP-1", space("ESP-1", "Sala", 8));
-        sanctionsOfStudent.add(new Sanction("x", DAY, LocalDate.of(2026, 9, 15), "RESERVAS"));
+        sanctionsOfStudent.add(new Sanction("x", DAY, LocalDate.of(2026, 9, 15), SanctionScope.TODO));
         store("A", ResourceCategory.ESPACIO, 12, 13, null);
         store("B", ResourceCategory.ESPACIO, 14, 15, null);
         store("C", ResourceCategory.ESPACIO, 16, 17, null);

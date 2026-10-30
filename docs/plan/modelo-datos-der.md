@@ -174,6 +174,15 @@ erDiagram
         int         attempts
     }
 
+    sanction_check {
+        uuid        id                      PK
+        varchar     person_code                 "sin FK; por quien se pregunto"
+        varchar     asked_by                    "SEARCH_RESOURCES | RESERVE_RESOURCES"
+        varchar     outcome                     "CLEAR | SANCTIONED | NO_HISTORY | NOT_VERIFIED"
+        varchar     answered_scope              "lo que contesto el Modulo 3; no es una sancion nuestra"
+        timestamptz asked_at
+    }
+
     resource_module1 {
         varchar     id                      PK  "NO es tabla nuestra: vive en el Modulo 1"
         varchar     category                    "ESPACIO | ACTIVO"
@@ -220,6 +229,7 @@ erDiagram
 | `reservation` → `reservation_record` | 1 a 0..1 | La constancia de la ficha enviada al Módulo 3 (UC10 FR-006). La PK es la `reservation_id`, así que no puede haber dos fichas de la misma reserva (FR-005). Se une a la *outbox* por `event_id`, sin FK, porque la *outbox* se purga y el historial se queda. |
 | `status_change` → `outbox_message` | 0..1 a 0..1 | Solo el cambio con motivo `USE_STARTED` tiene aviso, y `outbox_message_id` permite ir del historial a la entrega y al revés. |
 | `reservation` → `inbox_message` | 0..1 a 0..* | Varios eventos del Módulo 3 pueden referirse a la misma reserva, y `reservation_id` queda nulo si el evento se rechazó porque la reserva no existe. |
+| `sanction_check` | sin relaciones | El registro de cada consulta al Módulo 3 (UC6 FR-009). Va por `person_code` y no por `user_id`, sin FK: es lo que se le preguntó al Módulo 3, y se guarda en su propia transacción para sobrevivir al rollback de una reserva denegada. No es una tabla de sanciones (FR-005). |
 | `resource_module1` → `reservation` / `denial` | conceptual | No hay clave foránea: el recurso vive en el Módulo 1 y nosotros guardamos solo su `resource_id` y su categoría. La integridad se valida contra el `InventoryPort`, no contra la base. |
 
 ## Restricciones que el diagrama no puede dibujar

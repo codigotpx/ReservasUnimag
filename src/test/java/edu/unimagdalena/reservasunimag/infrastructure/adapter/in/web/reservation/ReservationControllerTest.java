@@ -1,5 +1,6 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.reservation;
 
+import edu.unimagdalena.reservasunimag.domain.model.compliance.SanctionScope;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.Sanction;
 import edu.unimagdalena.reservasunimag.domain.model.error.DurationExceededException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ExternalServiceUnavailableException;
@@ -234,7 +235,7 @@ class ReservationControllerTest {
     void res003ComesWithTheReasonAndTheEndDate() throws Exception {
         expectDenial(ReservationDeniedException.activeSanction(new Sanction(
                 "Dos ausencias no justificadas en el semestre", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 15),
-                "RESERVAS")), "api-reservation-409-res-003.json");
+                SanctionScope.TODO)), "api-reservation-409-res-003.json");
     }
 
     @Test
@@ -253,7 +254,7 @@ class ReservationControllerTest {
         List<ReservationDeniedException> all = List.of(
                 ReservationDeniedException.academicConflict("R", null),
                 ReservationDeniedException.quotaExhausted(3, 3, null),
-                ReservationDeniedException.activeSanction(new Sanction(null, null, null, null)),
+                ReservationDeniedException.activeSanction(new Sanction(null, null, null, SanctionScope.TODO)),
                 ReservationDeniedException.resourceTaken("R"),
                 ReservationDeniedException.underMaintenance("R"));
         for (ReservationDeniedException denial : all) {
