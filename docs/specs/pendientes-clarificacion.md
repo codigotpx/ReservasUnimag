@@ -2,7 +2,7 @@
 
 Lista de decisiones que faltan por definir. Cada entrada dice **qué hay que preguntar** y **exactamente dónde se aplica** una vez se tenga la respuesta, para no volver a rastrear los archivos.
 
-**Última revisión**: 2026-10-26
+**Última revisión**: 2026-10-30
 
 ---
 
@@ -116,23 +116,6 @@ Hoy el spec está escrito con la opción conservadora: no se confirma la reserva
 |---|---|---|
 | `spec-modulo2-uc6-consultar-sanciones.md` | Escenario **El Módulo 3 no responde** y **FR-006** | Fijar la política y quitar el `[NEEDS CLARIFICATION]`. |
 | `spec-modulo2-uc2-reservar-recursos.md` | **FR-002** | Debe decir qué pasa cuando la sanción no se pudo comprobar. |
-
----
-
-## P-11 — ¿Las sanciones distinguen entre espacios y activos?
-
-**Estado**: abierto.
-
-La matriz de [gestionunimag.md](../gestionunimag.md) dice que la no asistencia produce *"bloqueo de reserva de espacios por 1 semana"*. Habla de espacios, no de activos. Si el alcance es real, una persona con esa sanción debería poder seguir pidiendo prestado un microscopio, y hoy la denegación `RES-003` no distingue: bloquea todo.
-
-**Qué preguntar**: ¿cada sanción tiene un alcance (espacios, activos o ambos), o una sanción bloquea cualquier reserva?
-
-**Dónde aplicarlo**:
-
-| Archivo | Punto | Qué cambiar |
-|---|---|---|
-| `spec-modulo2-uc6-consultar-sanciones.md` | Edge case **Sanciones que no aplican** y entidad **Sanción** | Confirmar si el alcance viene en el reporte del Módulo 3. |
-| `spec-modulo2-uc2-reservar-recursos.md` | **FR-002** y escenario de `RES-003` | Si hay alcance, la denegación solo aplica al tipo de recurso sancionado. |
 
 ---
 
@@ -450,7 +433,32 @@ Lo que el plan ya decía sigue pendiente: que el Módulo 3 descarte por `eventId
 
 ---
 
+## P-27 — El registro de las consultas de sanciones: decisiones de implementación de UC6 que el plan no tenía
+
+**Estado**: abierto. Detectado al implementar UC6 (2026-10-30).
+
+Lo que cambió respecto al plan, y por qué:
+
+- **La migración es `V9`**, no `V10`, y la persistencia va con `JdbcClient`, no con JPA, como el resto del módulo.
+- **El alcance filtra al confirmar** (P-11, resuelto). Al consultar cuenta cualquier alcance, y el aviso dice sobre qué es la sanción.
+- **El registro guarda también la categoría que se quería reservar** (`resource_category`). Sin ella no se puede explicar por qué alguien con una sanción de espacios pudo pedir un activo.
+- **`answered` también va con `CLEAR`**, con los conteos de ausencias y devoluciones tardías: el Módulo 3 contestó, y alguien al día puede tener ausencias que todavía no dieron sanción. Los datos de la sanción siguen yendo solo con `SANCTIONED`.
+- **El `askedBy` no lo pasa quien llama**: sale del método. `checkSanctions` es el de Consultar recursos y `activeSanction` el de Reservar recursos, así que no se puede registrar uno equivocado.
+- **Una respuesta del Módulo 3 con otro `person.code` se descarta** y cuenta como "no se pudo comprobar" (FR-007, SC-005).
+- **El adaptador acepta `start` y `end`** además de `startsOn` y `endsOn`, porque el borrador de UC1 usaba esos nombres. El contrato acordado son los segundos, y así quedó corregido UC1 §3.1.
+- **El detalle de la falla es la causa de fondo** ("Connection refused", "Read timed out"), no el mensaje genérico del adaptador.
+- **El perfil local no suma casos al Módulo 3 falso**: solo siembra tres usuarios. Los casos nuevos se prueban con WireMock.
+- **El timeout del Módulo 3 baja de 3 s a 1500 ms**, por debajo de los 2 s de SC-002.
+
+Lo que sigue pendiente con el Módulo 3: que mande `scope` y qué hace con una sanción sin `endsOn` (ver `contratos-integracion.md`).
+
+**Ya aplicado** en `docs/plan/plan-uc6-consultar-sanciones.md` (Project Structure, decisiones, Contratos §1 a §3 y las tareas T002, T004, T006, T015, T016 y T022), en UC1 §3.1, en UC2 §5, en `contratos-integracion.md`, en `plan-arquitectura.md` y en `modelo-datos-der.md`.
+
+---
+
 ## Resueltos
+
+- **P-11 — Las sanciones sí distinguen entre espacios y activos** — lo dice el edge case **Sanciones que no aplican a lo que se está pidiendo** de UC6, y el equipo lo aplicó en el plan de UC6 al revisar los planes. Cada sanción trae un alcance (`ESPACIOS`, `ACTIVOS` o `TODO`); al confirmar, `RES-003` solo se aplica si el alcance cubre la categoría del recurso que se pide, y un alcance que falta o no se conoce bloquea todo. Implementado con UC6; ver **P-27**. Aplicado en los planes de UC1, UC2 y UC6 y en `contratos-integracion.md`. *(2026-10-30)*
 
 - **El Módulo 2 le sigue comunicando el `EN_USO` al Módulo 1** — se cierra el primer punto de **P-20** y con él la marca de clarificación de UC7. El Módulo 3 le reporta directamente al Módulo 1 los cambios físicos que constata en el sitio, pero el inicio de uso es un hecho de la reserva y es nuestro: cuando la persona llega y empieza a usar lo que apartó, el Módulo 2 se lo comunica al Módulo 1 para que pase el recurso a `EN_USO`. El regreso a `DISPONIBLE` y la entrada a `EN_MANTENIMIENTO` no salen de aquí. La flecha `Actualizar estado de los recursos` → Módulo 1 del diagrama se queda, con ese único contenido. Se reescribió UC7 entero: contexto, actores, tabla de estados con su dueño, user story, los seis escenarios, los edge cases, FR-001 a FR-005 y FR-007 a FR-011, el nuevo FR-012 que prohíbe enviarle cualquier otro estado, las entidades y SC-001, SC-003 y SC-004. Lo que falta ahora es solo acordar el medio y los datos del aviso con el equipo del Módulo 1. *(2026-10-05)*
 

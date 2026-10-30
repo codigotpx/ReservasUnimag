@@ -40,43 +40,53 @@ UC1 y UC2 ya lo implementaron entre los dos. Lo que este plan añade es **lo que
 src/main/java/edu/unimagdalena/reservasunimag/
 ├── domain/
 │   ├── model/compliance/
-│   │   ├── ComplianceReport.java            # (existe, UC1)
-│   │   ├── Sanction.java                    # (existe, UC1) + vigencia y alcance
+│   │   ├── ComplianceReport.java            # (existe, UC1) + noHistory y farthestInForce(hoy, categoría)
+│   │   ├── Sanction.java                    # (existe, UC1) + vigencia, alcance y endDateMissing
+│   │   ├── SanctionNotice.java              # (existe, UC1) + el mensaje dice el alcance
 │   │   ├── SanctionScope.java               # nuevo: ESPACIOS, ACTIVOS, TODO
-│   │   └── SanctionCheck.java               # nuevo: el registro de FR-009
+│   │   ├── SanctionCheck.java               # nuevo: el registro de FR-009, con Answered
+│   │   ├── SanctionCheckPurpose.java        # nuevo: SEARCH_RESOURCES, RESERVE_RESOURCES
+│   │   ├── SanctionCheckOutcome.java        # nuevo: CLEAR, SANCTIONED, NO_HISTORY, NOT_VERIFIED
+│   │   ├── SanctionCheckFilter.java         # nuevo: filtros de la auditoría, con el rango obligatorio
+│   │   └── SanctionCheckPage.java           # nuevo: página + summary
 │   ├── port/
-│   │   ├── in/CheckSanctionsPort.java       # (existe, UC1)
+│   │   ├── in/
+│   │   │   ├── CheckSanctionsPort.java      # (existe, UC1) activeSanction recibe la categoría
+│   │   │   └── QuerySanctionChecksPort.java # nuevo: la auditoría
 │   │   └── out/
 │   │       ├── CompliancePort.java          # (existe, UC1)
 │   │       └── SanctionCheckRepositoryPort.java
 │   └── usecase/checksanctions/
-│       └── CheckSanctionsUseCase.java       # (existe, UC1) se completa aquí
+│       ├── CheckSanctionsUseCase.java       # (existe, UC1) se completa aquí
+│       └── QuerySanctionChecksUseCase.java
 │
 └── infrastructure/
     ├── adapter/
     │   ├── in/web/compliance/
-    │   │   └── SanctionCheckController.java     # GET de auditoría, no de consulta
+    │   │   ├── SanctionCheckController.java     # GET de auditoría, no de consulta
+    │   │   └── SanctionChecksResponse.java
     │   └── out/
     │       ├── persistence/
-    │       │   ├── entity/SanctionCheckJpa.java
-    │       │   ├── repository/SanctionCheckJpaRepository.java
-    │       │   └── SanctionCheckPersistenceAdapter.java
+    │       │   └── SanctionCheckPersistenceAdapter.java   # JdbcClient, transacción propia
     │       └── module3/
-    │           ├── ComplianceRestAdapter.java   # (existe, UC1) + alcance y sanción sin fin
-    │           └── ComplianceFakeAdapter.java   # (existe, UC1)
+    │           ├── ComplianceRestAdapter.java   # (existe, UC1) + alcance, sanción sin fin y person.code
+    │           ├── ComplianceFakeAdapter.java   # (existe, UC1)
+    │           └── dto/ComplianceReportDto.java # (existe, UC1) startsOn/endsOn, con alias start/end
     └── config/
         └── UseCasesConfig.java
 
 src/main/resources/db/migration/
-└── V10__sanction_check.sql
+└── V9__sanction_check.sql
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/model/compliance/SanctionValidityTest.java
 ├── domain/usecase/checksanctions/CheckSanctionsUseCaseTest.java
+├── domain/usecase/reserveresources/ReserveResourcesUseCaseTest.java   # (existe, UC2) + el alcance
+├── support/InMemorySanctionChecks.java
 └── infrastructure/adapter/
     ├── in/web/compliance/SanctionCheckControllerTest.java
     ├── out/module3/ComplianceRestAdapterTest.java      # (existe, UC1) + los casos nuevos
-    └── out/persistence/SanctionCheckIT.java
+    └── out/persistence/SanctionCheckIT.java            # + la prueba de rutas de FR-002 y la de FR-005
 ```
 
 **Structure Decision**: aparece `adapter/in/web/compliance`, y conviene aclarar por qué no contradice FR-002: lo que se expone **no es la consulta de sanciones** sino el historial de las consultas que el sistema ya hizo, y solo para Dirección de Programa. Nadie puede preguntarle a este endpoint si una persona está sancionada; solo puede ver qué se preguntó y qué contestó el Módulo 3.
@@ -128,7 +138,11 @@ Se compara por **fecha** y no por instante, porque el Módulo 3 nos manda fechas
 
 **Una sanción sin fecha de fin se trata como vigente** (edge case **Respuesta del Módulo 3 incompleta**). No se inventa la fecha, no se descarta la sanción y no se falla: se considera vigente, se registra que faltó el dato y el mensaje que ve la persona omite el "hasta" en vez de poner un texto vacío. Las tres alternativas eran peores: inventar una fecha es mentir, descartarla deja reservar a alguien sancionado y fallar convierte un dato incompleto del otro módulo en una caída del nuestro.
 
-**El alcance se lee y filtra** (edge case **Sanciones que no aplican a lo que se está pidiendo**). El spec dice que hay castigos que solo bloquean espacios y otros solo activos. El campo `scope` se lee del reporte y se guarda en el registro, y se aplica discriminando si la sanción se le aplica a un activo o a un espacio.
+**El alcance se lee y filtra** (edge case **Sanciones que no aplican a lo que se está pidiendo**). El spec dice que hay castigos que solo bloquean espacios y otros solo activos. El campo `scope` se lee del reporte y se guarda en el registro, y se aplica discriminando si la sanción se le aplica a un activo o a un espacio:
+
+- **Al confirmar (UC2)** solo cuentan las sanciones cuyo alcance cubre la categoría del recurso que se pide. Por eso el registro guarda también `resource_category`: explica por qué alguien con una sanción de espacios pudo pedir un microscopio.
+- **Al consultar (UC1)** cuenta cualquier alcance, porque la lista mezcla espacios y activos; el aviso dice sobre qué es la sanción ("no podrás reservar espacios").
+- **Un alcance que falta o que no conocemos se trata como `TODO`**: ante la duda, no se deja reservar (FR-006).
 
 **Dos usos, dos políticas ante una caída.** Es la decisión más visible de UC6 y está repartida entre dos planes, así que aquí se junta:
 
@@ -174,10 +188,13 @@ Lo que este plan añade al contrato son los **dos campos que el spec prevé y qu
 |---|---|
 | `startsOn` | Entra en la comparación de vigencia. Si falta, se asume que empezó (una sanción que llega en la lista de vigentes, lo está). |
 | `endsOn` | **Si falta, la sanción se trata como vigente** y se registra `end_date_missing: true`. |
-| `scope` | `ESPACIOS`, `ACTIVOS` o `TODO`. Se lee y se registra; **hoy no filtra** (P-11). Un valor desconocido se trata como `TODO`. |
+| `scope` | `ESPACIOS`, `ACTIVOS` o `TODO`. Se lee, se registra y **filtra** al confirmar (P-11, resuelto). Un valor que falta o que no conocemos se trata como `TODO`. |
 | `absenceCount`, `lateReturns` | Se registran para la auditoría. Ni UC1 ni UC2 los muestran. |
+| `person.code` | Tiene que ser el que pedimos. Si no lo es, la respuesta se descarta y la consulta queda `NOT_VERIFIED` (FR-007, SC-005). |
 
-De las vigentes se toma la de `endsOn` más lejano para el mensaje; si alguna no tiene `endsOn`, esa manda.
+De las vigentes hoy que bloquean lo que se pide se toma la de `endsOn` más lejano para el mensaje; si alguna no tiene `endsOn`, esa manda. Una sanción que el Módulo 3 todavía manda en la lista pero ya venció no cuenta.
+
+Por compatibilidad, el adaptador lee también `start` y `end`, que es como el borrador de [UC1 §3.1](./plan-uc1-consultar-recursos.md#31-reporte-de-cumplimiento--get-apiv1compliancepeoplecode) nombraba las fechas antes de que se acordaran `startsOn` y `endsOn`.
 
 ---
 
@@ -190,21 +207,25 @@ Lo que pide FR-009.
 | id | uuid PK | |
 | person_code | varchar | El código institucional por el que se preguntó |
 | asked_by | varchar | `SEARCH_RESOURCES` (UC1) o `RESERVE_RESOURCES` (UC2): para qué se preguntó |
+| resource_category | varchar, nulo | `ESPACIO` o `ACTIVO`, lo que se quería reservar; solo con `RESERVE_RESOURCES` |
 | asked_at | timestamptz | |
 | outcome | varchar | `CLEAR`, `SANCTIONED`, `NO_HISTORY`, `NOT_VERIFIED` |
-| answered_sanction_reason | varchar, nulo | **Lo que el Módulo 3 contestó**, no lo que creemos |
+| answered_sanction_reason | varchar, nulo | **Lo que el Módulo 3 contestó**, no lo que creemos: la sanción que decidió |
 | answered_ends_on | date, nulo | |
 | answered_scope | varchar, nulo | |
 | end_date_missing | boolean | El edge case de la respuesta incompleta |
-| answered_absence_count | int, nulo | |
-| answered_late_returns | int, nulo | |
+| answered_absence_count | int, nulo | Siempre que hubo reporte (`CLEAR` o `SANCTIONED`) |
+| answered_late_returns | int, nulo | Ídem |
 | duration_ms | int | Para vigilar SC-002 |
 | failure_detail | varchar, nulo | Solo con `NOT_VERIFIED` |
 
 ```sql
 CREATE INDEX sanction_check_person ON sanction_check (person_code, asked_at);
 CREATE INDEX sanction_check_outcome ON sanction_check (outcome, asked_at);
+CREATE INDEX sanction_check_asked_at ON sanction_check (asked_at);
 ```
+
+Tres restricciones guardan la forma de cada fila: la categoría va si y solo si se preguntó para reservar, la sanción contestada va si y solo si el `outcome` es `SANCTIONED`, y el detalle de la falla solo con `NOT_VERIFIED`.
 
 Los cuatro `outcome` son exhaustivos y cubren los cuatro escenarios del spec: `CLEAR` (escenario 1), `SANCTIONED` (escenario 2), `NO_HISTORY` (escenario 4) y `NOT_VERIFIED` (el edge case del Módulo 3 caído). El escenario 3 —la sanción que ya venció— es `CLEAR`, porque para nosotros una sanción vencida no es una sanción.
 
@@ -227,6 +248,7 @@ GET /api/sanction-checks?personCode=2019114045&outcome=SANCTIONED&from=2026-09-0
       "id": "e4a9c712-8b35-4d06-91fe-2c7d0b8a3f54",
       "personCode": "2019114045",
       "askedBy": "RESERVE_RESOURCES",
+      "resourceCategory": "ESPACIO",
       "askedAt": "2026-09-03T09:14:22-05:00",
       "outcome": "SANCTIONED",
       "answered": {
@@ -240,27 +262,36 @@ GET /api/sanction-checks?personCode=2019114045&outcome=SANCTIONED&from=2026-09-0
       "durationMs": 312
     },
     {
+      "id": "3b6d1f80-52c4-4e7a-9d18-a0f4c2e7b915",
+      "personCode": "2019114045",
+      "askedBy": "SEARCH_RESOURCES",
+      "askedAt": "2026-09-03T09:14:10-05:00",
+      "outcome": "CLEAR",
+      "answered": { "absenceCount": 2, "lateReturns": 1 },
+      "durationMs": 280
+    },
+    {
       "id": "a7f2e508-3c91-4b47-86da-0e5b1d9c2f68",
       "personCode": "2019114045",
       "askedBy": "SEARCH_RESOURCES",
       "askedAt": "2026-09-03T09:14:05-05:00",
       "outcome": "NOT_VERIFIED",
       "failureDetail": "Connection refused",
-      "durationMs": 2000
+      "durationMs": 1500
     }
   ],
-  "pagination": { "page": 1, "pageSize": 20, "totalPages": 1, "total": 2 },
-  "summary": { "total": 2, "clear": 0, "sanctioned": 1, "noHistory": 0, "notVerified": 1 }
+  "pagination": { "page": 1, "pageSize": 20, "totalPages": 1, "total": 3 },
+  "summary": { "total": 3, "clear": 1, "sanctioned": 1, "noHistory": 0, "notVerified": 1 }
 }
 ```
 
 `summary.notVerified` es el número que vigila SC-004: cuántas veces no pudimos comprobar. Si crece, el problema está en el Módulo 3 o en el timeout, y conviene verlo sin abrir los logs.
 
-**El objeto `answered` se omite entero** cuando el `outcome` es `CLEAR`, `NO_HISTORY` o `NOT_VERIFIED`: no hay nada que el Módulo 3 haya contestado sobre una sanción.
+**El objeto `answered` se omite entero** cuando el `outcome` es `NO_HISTORY` o `NOT_VERIFIED`: el Módulo 3 no contestó nada o no conoce a la persona. Con `CLEAR` va solo con los conteos, porque el Módulo 3 sí contestó y alguien al día puede tener ausencias que todavía no dieron sanción; los datos de la sanción (`sanctionReason`, `endsOn`, `scope`, `endDateMissing`) solo van con `SANCTIONED`.
 
-**Decisión: este endpoint no permite filtrar solo por `personCode` sin rango de fechas.** Pedir el historial completo de una persona sin acotar es, en la práctica, pedir su expediente, y este caso de uso existe para auditar denegaciones concretas. `from` y `to` son obligatorios cuando se pasa `personCode`, y el rango máximo es de un semestre. (Es una decisión de este plan; el spec no habla del endpoint porque no lo previó.)
+**Decisión: este endpoint no permite filtrar solo por `personCode` sin rango de fechas.** Pedir el historial completo de una persona sin acotar es, en la práctica, pedir su expediente, y este caso de uso existe para auditar denegaciones concretas. `from` y `to` son obligatorios cuando se pasa `personCode`, y el rango máximo es de un semestre, contado como seis meses. (Es una decisión de este plan; el spec no habla del endpoint porque no lo previó.)
 
-**Errores**: `403` si el rol no es Dirección de Programa; `400` si se pasa `personCode` sin rango o con un rango mayor de un semestre.
+**Errores**: `403` si el rol no es Dirección de Programa; `400` (`invalid-parameters`, con el campo en `errors[].field`) si se pasa `personCode` sin rango o con un rango mayor de un semestre, si `to` es anterior a `from` o si el `outcome` no existe.
 
 ---
 
@@ -286,9 +317,9 @@ Los de la persona al día, la sancionada y la sin historial ya los creó UC1.
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-- [ ] T002 Escribir `V10__sanction_check.sql` con la tabla de [Contratos §2](#2-la-tabla-sanction_check) y sus dos índices
+- [ ] T002 Escribir `V9__sanction_check.sql` con la tabla de [Contratos §2](#2-la-tabla-sanction_check) y sus dos índices
 - [ ] T003 [P] Crear `SanctionScope` y `SanctionCheck` en `domain/model/compliance/`, y extender `Sanction` con el método de vigencia del borde enunciado arriba
-- [ ] T004 [P] Definir `SanctionCheckRepositoryPort` en `domain/port/out/`, y crear la entidad JPA, el repositorio y el adaptador con su transacción propia (`REQUIRES_NEW`)
+- [ ] T004 [P] Definir `SanctionCheckRepositoryPort` en `domain/port/out/`, y crear `SanctionCheckPersistenceAdapter` con `JdbcClient` y su transacción propia (`REQUIRES_NEW`), que nunca lanza
 
 **Checkpoint**: existe dónde registrar cada consulta
 
@@ -303,7 +334,7 @@ Los de la persona al día, la sancionada y la sin historial ya los creó UC1.
 ### Tests for User Story 1
 
 - [ ] T005 [P] [US1] Pruebas en `SanctionValidityTest.java` del borde: vigente el último día (`endsOn` = hoy), no vigente al día siguiente (escenario 3), vigente sin `endsOn` (edge case **Respuesta incompleta**), y que la comparación es contra **hoy** y no contra la fecha de la reserva (edge case **La sanción vence en mitad de la franja pedida**): alguien sancionado hasta el 15 no puede reservar para el 20
-- [ ] T006 [P] [US1] Pruebas en `CheckSanctionsUseCaseTest.java`: los cuatro escenarios producen su `outcome`; de varias vigentes se toma la de fin más lejano; una sin `endsOn` manda sobre las demás; el `scope` se lee y **no** filtra todavía (P-11); y un `scope` desconocido se trata como `TODO`
+- [ ] T006 [P] [US1] Pruebas en `CheckSanctionsUseCaseTest.java`: los cuatro escenarios producen su `outcome`; de varias vigentes se toma la de fin más lejano; una sin `endsOn` manda sobre las demás; el `scope` filtra al confirmar y no al consultar; y un `scope` desconocido se trata como `TODO`
 - [ ] T007 [P] [US1] Pruebas en `ComplianceRestAdapterTest.java` con WireMock, contra los *fixtures* nuevos: la sanción sin `endsOn` deja `end_date_missing`; el `scope` se mapea; el `404` y el `200` vacío son los dos "sin sanciones" (FR-008); y un `5xx` o un timeout dan `NOT_VERIFIED` sin inventar nada
 - [ ] T008 [P] [US1] Prueba de FR-007 y SC-005: el `code` que se le manda al Módulo 3 sale **siempre** del claim del JWT y nunca de un parámetro de la petición; y una respuesta cuyo `person.code` no coincide con el que se pidió se rechaza en vez de usarse
 - [ ] T009 [P] [US1] Prueba `SanctionCheckIT.java` con Testcontainers: la consulta queda registrada con lo que contestó el Módulo 3; el registro **sobrevive** al *rollback* de la transacción de UC2 que deniega con `RES-003`; y si el `INSERT` del registro falla, la consulta **no** falla
@@ -315,8 +346,8 @@ Los de la persona al día, la sancionada y la sin historial ya los creó UC1.
 ### Implementation for User Story 1
 
 - [ ] T014 [US1] Completar `CheckSanctionsUseCase`: usa la vigencia de `Sanction`, construye el `SanctionCheck` con el `askedBy` que le pasa quien llama, y lo guarda por `SanctionCheckRepositoryPort` sin dejar que un fallo del registro tumbe la consulta (depende de T003, T004)
-- [ ] T015 [US1] Extender `ComplianceRestAdapter` con `scope` y con la sanción sin `endsOn`, y `ComplianceFakeAdapter` con los tres casos nuevos para el perfil local
-- [ ] T016 [US1] Pasar el `askedBy` desde `SearchResourcesUseCase` y `ReserveResourcesUseCase`, que son los dos únicos que pueden llamar a este caso de uso
+- [ ] T015 [US1] Extender `ComplianceRestAdapter` con `scope`, con la sanción sin `endsOn` y con el rechazo de un `person.code` ajeno. `ComplianceFakeAdapter` no suma casos: el perfil local solo siembra tres usuarios, y los casos nuevos se prueban con WireMock
+- [ ] T016 [US1] Que `ReserveResourcesUseCase` pase la categoría del recurso. El `askedBy` no lo pasa nadie: sale del método que se llama (`checkSanctions` es el de UC1 y `activeSanction` el de UC2), así que no se puede registrar uno equivocado
 - [ ] T017 [US1] Implementar `SanctionCheckController` según [Contratos §3](#3-get-apisanction-checks), con la validación del rango obligatorio
 - [ ] T018 [US1] Registrar el bean y su transacción propia en `UseCasesConfig`
 
@@ -329,7 +360,7 @@ Los de la persona al día, la sancionada y la sin historial ya los creó UC1.
 - [ ] T019 [P] Verificar SC-002 con el Módulo 3 simulado a su latencia prometida, y comprobar que el `durationMs` registrado permite detectar cuándo se pasa de 2 s
 - [ ] T020 [P] Verificar SC-001 y SC-003 de punta a punta: toda denegación por sanción indica motivo y fecha de fin, y ninguna reserva se confirma con sanción vigente
 - [ ] T021 [P] Registrar en logs cada consulta con su resultado y su duración, **sin** el motivo de la sanción, que es un dato personal: ese queda en la tabla, que exige rol para leerse
-- [ ] T022 Llevarle al Módulo 3 los dos campos de [Contratos §1](#1-la-petición-al-módulo-3) —`scope` y qué hacer con una sanción sin `endsOn`— y llevar P-11 a `pendientes-clarificacion.md`
+- [ ] T022 Llevarle al Módulo 3 los dos campos de [Contratos §1](#1-la-petición-al-módulo-3) —`scope` y qué hacer con una sanción sin `endsOn`— y cerrar P-11 en `pendientes-clarificacion.md`
 
 ---
 
@@ -369,3 +400,4 @@ Los de la persona al día, la sancionada y la sin historial ya los creó UC1.
 - **De los diez FR, nueve ya estaban implementados por UC1 y UC2.** Lo que este plan construye es FR-009, el registro de cada consulta, más el borde de la vigencia, las dos respuestas incompletas y las pruebas de que no hay pantalla ni caché
 - **Decisiones de los contratos que el spec no fija**: una sanción sin fecha de fin se trata como **vigente** y se marca el dato que faltó; la vigencia se compara contra hoy y no contra la fecha de la reserva; el registro va en su propia transacción y un fallo suyo no tumba la consulta; las columnas se llaman `answered_*` para que no se confundan con una copia de las sanciones, que FR-005 prohíbe; y el endpoint de auditoría exige un rango de fechas junto al `personCode`, porque sin él sería pedir el expediente de una persona
 - **Decisión explícita de no hacer**: ninguna caché del reporte, por el edge case de la sanción que aparece justo después de consultar
+- **Lo que cambió al implementar** (2026-10-30, ver P-27): migración `V9` y `JdbcClient` en vez de `V10` y JPA; el alcance filtra al confirmar; la columna `resource_category`; `answered` también con `CLEAR`, solo con los conteos; el `askedBy` sale del método y no de quien llama; y la respuesta con otro `person.code` se descarta

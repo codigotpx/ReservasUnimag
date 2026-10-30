@@ -1,5 +1,7 @@
 package edu.unimagdalena.reservasunimag.domain.usecase.searchresources;
 
+import edu.unimagdalena.reservasunimag.support.InMemorySanctionChecks;
+import edu.unimagdalena.reservasunimag.domain.model.compliance.SanctionScope;
 import edu.unimagdalena.reservasunimag.domain.model.common.PageRequest;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.Sanction;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.SanctionNotice;
@@ -86,7 +88,7 @@ class SearchResourcesUseCaseTest {
 
     private SearchResourcesResult search(CurrentUser user, ResourceFilter filter, PageRequest page) {
         var availability = new CheckAvailabilityUseCase(occupancies, CLOCK);
-        var useCase = new SearchResourcesUseCase(inventory, availability, new CheckSanctionsUseCase(compliance),
+        var useCase = new SearchResourcesUseCase(inventory, availability, new CheckSanctionsUseCase(compliance, new InMemorySanctionChecks(), CLOCK),
                 new NextFreeSlotFinder(occupancies, CLOCK, Duration.ofMinutes(30)), CLOCK);
         return useCase.search(new SearchResourcesQuery(user, TEN_TO_TWELVE, filter, page));
     }
@@ -216,7 +218,7 @@ class SearchResourcesUseCaseTest {
     @Test
     void studentsAndMonitorsGetTheSanctionNoticeAndTheListStillShows() {
         catalog.add(space("A", "A", 8));
-        sanction = new Sanction("Dos ausencias", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30), "RESERVAS");
+        sanction = new Sanction("Dos ausencias", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30), SanctionScope.TODO);
 
         for (CurrentUser user : List.of(STUDENT, MONITOR)) {
             var result = search(user, NO_FILTER, FIRST_PAGE);
@@ -230,7 +232,7 @@ class SearchResourcesUseCaseTest {
     @Test
     void theProgramDirectionGetsNoNoticeAndComplianceIsNotEvenAsked() {
         catalog.add(space("A", "A", 8));
-        sanction = new Sanction("Dos ausencias", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30), "RESERVAS");
+        sanction = new Sanction("Dos ausencias", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30), SanctionScope.TODO);
         complianceDown = true;
 
         assertThat(search(DIRECTOR, NO_FILTER, FIRST_PAGE).sanctionNotice()).isNull();
@@ -265,10 +267,10 @@ class SearchResourcesUseCaseTest {
     @Test
     void picksTheSanctionThatEndsLast() {
         catalog.add(space("A", "A", 8));
-        var shortOne = new Sanction("Corta", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10), "RESERVAS");
-        var longOne = new Sanction("Larga", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 10, 30), "RESERVAS");
+        var shortOne = new Sanction("Corta", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 10), SanctionScope.TODO);
+        var longOne = new Sanction("Larga", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 10, 30), SanctionScope.TODO);
         var notice = new CheckSanctionsUseCase(personCode -> new edu.unimagdalena.reservasunimag.domain.model.compliance.ComplianceReport(
-                List.of(shortOne, longOne), 0, 0, NOW)).checkSanctions(STUDENT);
+                List.of(shortOne, longOne), 0, 0, NOW), new InMemorySanctionChecks(), CLOCK).checkSanctions(STUDENT);
 
         assertThat(notice).get().extracting(SanctionNotice::reason).isEqualTo("Larga");
     }

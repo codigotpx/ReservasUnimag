@@ -114,6 +114,11 @@ UPDATE outbox_message SET status = 'PENDING', attempts = 0, next_attempt_at = no
 WHERE id = '<eventId>';
 ```
 
+Cada consulta de sanciones al Módulo 3 (UC6) también queda registrada, con lo que contestó, en
+`sanction_check`. Dirección de Programa la audita en `GET /api/sanction-checks`; con
+`outcome=NOT_VERIFIED` se ve cuántas veces no se pudo comprobar. El cliente del Módulo 3 corta a los
+1500 ms (`reservations.module3.timeout`), por debajo de los 2 s que permite UC6 SC-002.
+
 Lo que llega del Módulo 3 (la no asistencia y el check-out) se consume con una *inbox*
 (`inbox_message`) que descarta los eventos repetidos. Un evento ilegible, o que apunta a una reserva
 que no existe, va a `module2.dlt.<topic de origen>` con la causa en las cabeceras.

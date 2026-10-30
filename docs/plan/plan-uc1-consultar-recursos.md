@@ -581,9 +581,9 @@ GET /api/v1/compliance/people/2019114045 HTTP/1.1
   "activeSanctions": [
     {
       "reason": "Dos ausencias no justificadas en el semestre",
-      "start": "2026-09-01",
-      "end": "2026-09-30",
-      "scope": "RESERVAS"
+      "startsOn": "2026-09-01",
+      "endsOn": "2026-09-30",
+      "scope": "ESPACIOS"
     }
   ],
   "absenceCount": 2,
@@ -594,7 +594,7 @@ GET /api/v1/compliance/people/2019114045 HTTP/1.1
 
 Persona al día: `activeSanctions: []` con los contadores en `0`. Persona que reserva por primera vez: el Módulo 3 puede responder `200` con el reporte vacío o `404`; **las dos se leen como "sin sanciones"**, no como fallo (UC6 FR-008).
 
-El reporte se usa solo para avisar. UC1 no guarda nada de él (UC6 FR-005), no lo cachea entre consultas y toma únicamente la sanción de `end` más lejano para armar el `sanctionNotice`. `absenceCount` y `lateReturns` se reciben porque son parte del reporte, pero UC1 no los muestra.
+El reporte se usa solo para avisar. UC1 no guarda ninguna sanción (UC6 FR-005), no lo cachea entre consultas y, de las sanciones vigentes hoy, toma la de `endsOn` más lejano para armar el `sanctionNotice`, de cualquier alcance; si la sanción solo bloquea espacios o activos, el mensaje lo dice. Los campos de la sanción, su vigencia y su alcance están en [UC6 § Contratos §1](./plan-uc6-consultar-sanciones.md#1-la-petición-al-módulo-3). Lo único que se guarda es el registro de la consulta (UC6 FR-009). `absenceCount` y `lateReturns` se reciben porque son parte del reporte, pero UC1 no los muestra.
 
 **Errores**
 

@@ -459,6 +459,18 @@ El bloqueo académico es una reserva con `origin = 'ACADEMICO'`, porque cada cla
 | sent_at | timestamptz | cuándo se encoló la ficha |
 | delivery_status, attempts, first_attempt_at, delivered_at, last_error | | lo mismo que en `cancellation_report` |
 
+**`sanction_check`** (UC6): cada consulta al Módulo 3 y lo que contestó (FR-009). **No es una tabla de sanciones** (FR-005): guarda que preguntamos y qué nos dijeron, por eso las columnas de la respuesta se llaman `answered_*`. Se escribe en su propia transacción, como `denial`. El detalle está en [UC6 § Contratos §2](./plan-uc6-consultar-sanciones.md#2-la-tabla-sanction_check).
+| Columna | Tipo | Nota |
+|---|---|---|
+| id | uuid PK | |
+| person_code | varchar | el código institucional por el que se preguntó; sin FK, porque el Módulo 3 conoce personas que no tienen usuario aquí |
+| asked_by, resource_category | varchar | `SEARCH_RESOURCES` (UC1) o `RESERVE_RESOURCES` (UC2); la categoría solo con el segundo |
+| asked_at, duration_ms | timestamptz, int | |
+| outcome | varchar | `CLEAR`, `SANCTIONED`, `NO_HISTORY`, `NOT_VERIFIED` |
+| answered_sanction_reason, answered_ends_on, answered_scope, end_date_missing | | la sanción que decidió; solo con `SANCTIONED` |
+| answered_absence_count, answered_late_returns | int, nulo | siempre que hubo reporte |
+| failure_detail | varchar, nulo | solo con `NOT_VERIFIED` |
+
 **`denial`** (UC2)
 | Columna | Tipo | Nota |
 |---|---|---|

@@ -583,9 +583,9 @@ El contrato de la petición y la respuesta es exactamente el de [UC1 § Contrato
 | Sin sanciones o `404` | Nada | Sigue al paso del cupo |
 | Módulo 3 no responde | `sanctionNotice` con `NOT_VERIFIED`, respuesta `200` | **`503`**, la reserva no se confirma (UC6 FR-006, P-10) |
 
-Del reporte se toma la sanción de `end` más lejano. El campo `scope` se lee si viene, pero hoy **no se usa para filtrar**: cualquier sanción vigente bloquea cualquier reserva, de espacio o de activo (P-11 abierto). Cuando P-11 se cierre, el cambio es solo esa comparación.
+Del reporte se toman las sanciones vigentes hoy cuyo `scope` cubre la categoría del recurso que se pide (`ESPACIOS`, `ACTIVOS` o `TODO`), y de ellas la de `endsOn` más lejano. Una sanción solo de espacios no impide pedir un activo, y al revés (P-11, resuelto). La regla de vigencia está en [UC6 § Decisiones](./plan-uc6-consultar-sanciones.md#decisiones-de-diseño-de-este-caso-de-uso).
 
-Cada consulta queda en el log con su duración y su resultado, y la denegación resultante en la tabla `denial` (FR-005): entre las dos cosas se cubre la auditoría de UC6 FR-009.
+Cada consulta queda en la tabla `sanction_check` de UC6 con lo que contestó el Módulo 3, y la denegación resultante en la tabla `denial` (FR-005): entre las dos se cubre la auditoría de UC6 FR-009.
 
 ---
 

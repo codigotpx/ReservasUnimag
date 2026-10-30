@@ -1,0 +1,9 @@
+{
+  "person": { "code": "2019114045" },
+  "activeSanctions": [
+    { "reason": "Devolución tardía", "startsOn": "2026-08-28", "endsOn": "2026-09-11", "scope": "ACTIVOS" }
+  ],
+  "absenceCount": 0,
+  "lateReturns": 2,
+  "generatedAt": "2026-09-01T09:14:21-05:00"
+}

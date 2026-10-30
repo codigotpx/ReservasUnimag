@@ -12,6 +12,7 @@ public final class Database {
 
     /** Borra todo lo que escriben las reservas; deja los usuarios sembrados del perfil local. */
     public static void clean(JdbcClient jdbc) {
+        jdbc.sql("DELETE FROM sanction_check").update();
         jdbc.sql("DELETE FROM status_change").update();
         jdbc.sql("DELETE FROM check_out").update();
         jdbc.sql("DELETE FROM absence").update();

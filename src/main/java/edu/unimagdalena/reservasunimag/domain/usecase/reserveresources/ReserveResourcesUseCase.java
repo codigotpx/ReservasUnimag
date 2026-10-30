@@ -113,7 +113,7 @@ public class ReserveResourcesUseCase implements ReserveResourcesPort {
     private ReservationResult confirm(CurrentUser holder, Resource resource, Booking booking) {
         Instant now = clock.now();
 
-        sanctions.activeSanction(holder).ifPresent(sanction -> {
+        sanctions.activeSanction(holder, resource.category()).ifPresent(sanction -> {
             throw ReservationDeniedException.activeSanction(sanction);
         });
         requireQuota(reservations.quotaOf(holder.id(), now));

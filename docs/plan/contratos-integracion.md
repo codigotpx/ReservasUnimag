@@ -58,7 +58,8 @@ Lo que hay que cerrar con ellos:
 | `GET /api/v1/compliance/people/{code}` | UC1, UC2, UC6 | [UC1 §3.1](./plan-uc1-consultar-recursos.md#31-reporte-de-cumplimiento--get-apiv1compliancepeoplecode) + [UC6 §1](./plan-uc6-consultar-sanciones.md#1-la-petición-al-módulo-3) |
 
 - Se pide por **código institucional** de una sola persona, nunca por lotes ni por correo, y el `code` sale del claim del JWT.
-- Campos de cada sanción: `reason`, `startsOn`, `endsOn`, `scope` (`ESPACIOS` | `ACTIVOS` | `TODO`). Si falta `endsOn` la tratamos como **vigente**.
+- Campos de cada sanción: `reason`, `startsOn`, `endsOn`, `scope` (`ESPACIOS` | `ACTIVOS` | `TODO`). Si falta `endsOn` la tratamos como **vigente**; un `scope` que falta o no conocemos lo tratamos como `TODO`. Por compatibilidad leemos también `start` y `end`, como los nombraba el borrador de UC1.
+- `person.code` tiene que ser el que pedimos: una respuesta de otra persona se descarta y cuenta como "no se pudo comprobar".
 - Persona sin historial: `200` con el reporte vacío o `404`; las dos se leen igual, "sin sanciones".
 - **No guardamos ni cacheamos el reporte.** Se consulta en cada operación.
 - Diferencia deliberada: si no responde, **consultar** sigue (aviso `NOT_VERIFIED`) y **confirmar** se bloquea con `503`. Es la lectura conservadora de P-10 y hay que ratificarla.
@@ -120,7 +121,7 @@ Todos salen por la **outbox**: el evento se inserta en `outbox_message` en la mi
 | 2 | Que **deduplican por `eventId`** | UC10 notas | UC10 FR-005 y UC11 FR-007 no se cumplen |
 | 3 | Que **ordenan por `cancelledAt`** y no por llegada | UC11 notas | el edge case de dos cancelaciones seguidas falla |
 | 4 | Si el Módulo 3 no responde, ¿bloqueamos la reserva o la permitimos? | P-10 | hoy bloqueamos con `503` (conservador) |
-| 5 | ¿La sanción distingue espacios de activos (`scope`)? | P-11 | leemos `scope` pero no filtra: cualquier sanción bloquea cualquier reserva |
+| 5 | ~~¿La sanción distingue espacios de activos (`scope`)?~~ | P-11 | **resuelto**: sí distingue, y filtramos por `scope` al confirmar. Lo que necesitamos es que el Módulo 3 lo mande |
 | 6 | ¿Premian la cancelación a tiempo? | P-13 | `noticeMinutes` va sin precisión ni redondeo definidos |
 | 7 | ¿Van a revisar **todos** los espacios o es opcional? | UC12 notas | la lista de FR-015 crece sin límite |
 | 8 | ¿Esperan la cancelación cuando se **retira** una clase del horario? | P-19 | la emitimos por si acaso |
@@ -149,10 +150,10 @@ Lo que cada plan deja explícitamente abierto, para saber qué se puede empezar 
 | Plan | Bloquea implementar | Decisión nuestra o del profesor |
 |---|---|---|
 | [UC1](./plan-uc1-consultar-recursos.md) | P-16 (contrato y auth del Módulo 1) | P-14, P-10, P-17, P-20.3 |
-| [UC2](./plan-uc2-reservar-recursos.md) | **P-16 `loanTermBusinessDays`**, calendario de festivos | P-10, P-11, P-19, P-02, P-08, `RES-005` |
+| [UC2](./plan-uc2-reservar-recursos.md) | **P-16 `loanTermBusinessDays`**, calendario de festivos | P-10, P-19, P-02, P-08, `RES-005` |
 | [UC3](./plan-uc3-importar-horarios-semestrales.md) | formato del archivo (se asume CSV semanal), calendario de festivos | P-19 ×3, P-20.3, P-20.5, vigencia de 30 min de la carga validada |
 | [UC4](./plan-uc4-cancelar-reserva.md) | P-20.2 (mantenimiento sin disparador) | contradicción `CAN-001`/`CAN-002`, sanción retroactiva (P-03), P-13 |
-| [UC6](./plan-uc6-consultar-sanciones.md) | — | P-11, P-10, formato de la vigencia (fechas vs. instantes) |
+| [UC6](./plan-uc6-consultar-sanciones.md) | — | P-10, formato de la vigencia (fechas vs. instantes) |
 | [UC7](./plan-uc7-actualizar-estado-recursos.md) | **P-02** (por dónde entra el registro del inicio de uso; hoy, un `POST` provisional del titular) | P-20.1 (el contrato del topic), P-20.4, P-20.3, `USO-001` y `USO-002` en el diccionario |
 | [UC8](./plan-uc8-consultar-disponibilidad-recursos.md) | — | P-20.3, P-16, P-17, redacción del último edge case (`400` vs. "no disponible") |
 | [UC9](./plan-uc9-recibir-reporte-no-asistencia.md) | **topic de acuse**, particiones del topic | FR-010 (canal de aviso a la persona), edge case del recurso caído, P-01 |
