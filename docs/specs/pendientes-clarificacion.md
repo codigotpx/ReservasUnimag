@@ -454,6 +454,25 @@ Lo que sigue pendiente con el Módulo 3: que mande `scope` y qué hace con una s
 
 **Ya aplicado** en `docs/plan/plan-uc6-consultar-sanciones.md` (Project Structure, decisiones, Contratos §1 a §3 y las tareas T002, T004, T006, T015, T016 y T022), en UC1 §3.1, en UC2 §5, en `contratos-integracion.md`, en `plan-arquitectura.md` y en `modelo-datos-der.md`.
 
+## P-28 — La consulta de disponibilidad: decisiones de implementación de UC8 que el plan no tenía
+
+**Estado**: abierto. Detectado al implementar UC8 (2026-10-30).
+
+Lo que cambió respecto al plan, y por qué:
+
+- **Un préstamo entregado ya dice hasta cuándo** (escenario 5, FR-012). Se leía sin fin, para que siguiera ocupando aunque venciera, y con eso se perdía su vencimiento. Ahora la ocupación guarda las dos cosas: hasta cuándo ocupa y hasta cuándo está comprometido. También afecta a UC1 y UC2.
+- **El préstamo vencido tiene un motivo propio**: "El recurso está en uso y su plazo de préstamo ya venció.", sin `occupiedUntil`.
+- **Sin `@Transactional(readOnly = true)`**: el caso de uso solo depende de puertos de lectura, así que FR-009 se cumple sin transacción.
+- **Dos operaciones en el puerto** en vez de una con el estado opcional: `checkOne` con la ficha que ya se tiene (UC2) y `check` con el id, que pide la ficha (el endpoint).
+- **La lista sigue devolviendo `ResourceWithStatus`**, que ahora lleva el mismo `Availability` que la respuesta individual.
+- **El `detail` del `503`** lo elige el manejador global según la ruta.
+- **Las pruebas**: la de coherencia va por HTTP con el perfil local, y la de la llamada única cuenta las fichas pedidas en vez de usar WireMock.
+- **Sin hacer**: T013, porque el frontend no está en este repositorio, y T014, la medición de SC-001.
+
+**Falta corregir el spec de UC8.** Su último edge case dice que una franja fuera de 06:00–22:00, o que cruza la medianoche, "se reporta como no disponible". El plan y el código responden `400` con el código del motivo, como UC1 y UC2: el problema está en la pregunta, no en el recurso, y un "no disponible" haría que el frontend mostrara un salón como ocupado a las 23:00. Hay que decidir si se cambia esa frase del spec.
+
+**Ya aplicado** en `docs/plan/plan-uc8-consultar-disponibilidad-recursos.md` (Project Structure, decisiones, Contratos §1, tareas y notas) y en UC1 Contratos §1.
+
 ---
 
 ## Resueltos

@@ -1,0 +1,11 @@
+{
+  "resourceId": "ESP-0412",
+  "name": "Salón 201",
+  "category": "ESPACIO",
+  "timeSlot": { "date": "2026-09-01", "start": "08:00", "end": "10:00" },
+  "available": false,
+  "status": "BLOQUEO_ACADEMICO",
+  "reason": "El recurso está reservado para actividad docente en la franja consultada.",
+  "occupiedUntil": "2026-09-01T10:00:00-05:00",
+  "answeredAt": "2026-09-01T09:14:22-05:00"
+}

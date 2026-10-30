@@ -87,7 +87,7 @@ class SearchResourcesUseCaseTest {
     };
 
     private SearchResourcesResult search(CurrentUser user, ResourceFilter filter, PageRequest page) {
-        var availability = new CheckAvailabilityUseCase(occupancies, CLOCK);
+        var availability = new CheckAvailabilityUseCase(inventory, occupancies, CLOCK);
         var useCase = new SearchResourcesUseCase(inventory, availability, new CheckSanctionsUseCase(compliance, new InMemorySanctionChecks(), CLOCK),
                 new NextFreeSlotFinder(occupancies, CLOCK, Duration.ofMinutes(30)), CLOCK);
         return useCase.search(new SearchResourcesQuery(user, TEN_TO_TWELVE, filter, page));

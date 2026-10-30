@@ -89,14 +89,16 @@ record SearchResourcesResponse(
             Integer loanTermBusinessDays,
             String status,
             boolean selectable,
-            String reason) {
+            String reason,
+            String occupiedUntil) {
 
         static ResourceBody from(ResourceWithStatus item) {
             var resource = item.resource();
             return new ResourceBody(resource.id(), resource.name(), resource.category().name(), resource.type(),
                     resource.location(), resource.faculty(), resource.maxCapacity(), resource.equipment(),
                     resource.condition(), resource.loanTermBusinessDays(), item.status().name(),
-                    item.selectable(), item.reason());
+                    item.selectable(), item.reason(),
+                    item.occupiedUntil() == null ? null : offsetDateTime(item.occupiedUntil()));
         }
     }
 }

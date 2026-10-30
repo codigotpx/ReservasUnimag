@@ -186,6 +186,10 @@ una clase), y cuando la franja termina el recurso vuelve a estar libre sin que c
 Un préstamo entregado sigue ocupando hasta su check-out, aunque esté vencido. `EN_MANTENIMIENTO` lo
 dice el Módulo 1.
 
+Para preguntar por un solo recurso está `GET /api/resources/{resourceId}/availability?date=…&start=…&end=…`
+(UC8): dice si está libre y, si no, el motivo y hasta cuándo, con la misma regla que la lista. Es una ayuda para
+revalidar antes de confirmar; la decisión final la toma la reserva dentro de su transacción.
+
 Cada cambio de ocupación deja una fila en `status_change`, que se consulta con
 `GET /api/resources/{resourceId}/status-changes`. Lo único que le avisamos al Módulo 1 es el **inicio
 de uso** (`module2.resource.status.v1`): cuando la persona registra su llegada o cuando una clase

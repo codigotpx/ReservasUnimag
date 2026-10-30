@@ -133,6 +133,8 @@ class OccupancyPersistenceAdapterIT {
         assertThat(adapter.findOccupancies(List.of("ACT-1"), TEN, TWELVE)).singleElement().satisfies(occupancy -> {
             assertThat(occupancy.type()).isEqualTo(OccupancyType.LOAN_PICKED_UP);
             assertThat(occupancy.endsAt()).isNull();
+            // Sigue sabiendo cuándo vencía, para decir que ya venció (UC8 FR-012).
+            assertThat(occupancy.dueAt()).isEqualTo(Instant.parse("2026-08-25T17:00:00Z"));
         });
     }
 
