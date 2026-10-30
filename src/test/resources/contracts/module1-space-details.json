@@ -1,0 +1,11 @@
+{
+  "id": "ESP-0107",
+  "name": "Sala de Estudio 3",
+  "category": "ESPACIO",
+  "type": "SALA_DE_ESTUDIO",
+  "operationalStatus": "EN_MANTENIMIENTO",
+  "location": "Biblioteca, piso 1",
+  "faculty": "Biblioteca Central",
+  "maxCapacity": 8,
+  "equipment": ["AIRE_ACONDICIONADO"]
+}

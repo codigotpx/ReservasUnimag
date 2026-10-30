@@ -223,6 +223,110 @@ class InventoryRestAdapterTest {
         module1.verify(0, postRequestedFor(urlPathEqualTo("/api/v1/resources/operational-status")));
     }
 
+    // --- La ficha de un recurso (UC2 Contratos §4) ------------------------------------------------------------
+
+    private void stubDetails(String resourceId, String fixture) {
+        module1.stubFor(get(urlPathEqualTo("/api/v1/resources/" + resourceId))
+                .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody(read(fixture))));
+    }
+
+    @Test
+    void readsTheDetailsOfAnAssetWithItsLoanTerm() {
+        stubDetails("ACT-004512", "module1-asset-details.json");
+
+        Resource asset = adapter(10, Duration.ofSeconds(2)).details("ACT-004512").orElseThrow();
+
+        assertThat(asset.id()).isEqualTo("ACT-004512");
+        assertThat(asset.name()).isEqualTo("Libro de Cálculo I");
+        assertThat(asset.category()).isEqualTo(ResourceCategory.ACTIVO);
+        assertThat(asset.type()).isEqualTo("LIBRO");
+        assertThat(asset.location()).isEqualTo("Biblioteca, estantería C-4");
+        assertThat(asset.operationalStatus()).isEqualTo(OperationalStatus.DISPONIBLE);
+        assertThat(asset.condition()).isEqualTo("BUENO");
+        assertThat(asset.loanTermBusinessDays()).isEqualTo(7);
+        assertThat(asset.maxCapacity()).isNull();
+        module1.verify(1, getRequestedFor(urlPathEqualTo("/api/v1/resources/ACT-004512")));
+    }
+
+    @Test
+    void readsTheDetailsOfASpaceWithItsOperationalStatus() {
+        stubDetails("ESP-0107", "module1-space-details.json");
+
+        Resource space = adapter(10, Duration.ofSeconds(2)).details("ESP-0107").orElseThrow();
+
+        assertThat(space.category()).isEqualTo(ResourceCategory.ESPACIO);
+        assertThat(space.operationalStatus()).isEqualTo(OperationalStatus.EN_MANTENIMIENTO);
+        assertThat(space.faculty()).isEqualTo("Biblioteca Central");
+        assertThat(space.maxCapacity()).isEqualTo(8);
+        assertThat(space.equipment()).containsExactly("AIRE_ACONDICIONADO");
+        assertThat(space.loanTermBusinessDays()).isNull();
+    }
+
+    @Test
+    void aMissingLoanTermIsKeptMissingAndNeverDefaulted() {
+        // Ficha incompleta (P-16): la decide UC2 con INCOMPLETE_RESOURCE_DETAILS, no el adaptador con un valor nuestro.
+        stubDetails("ACT-004512", "module1-asset-details-no-term.json");
+
+        Resource asset = adapter(10, Duration.ofSeconds(2)).details("ACT-004512").orElseThrow();
+
+        assertThat(asset.loanTermBusinessDays()).isNull();
+    }
+
+    @Test
+    void aLoanTermOfZeroIsOnSiteUseAndNotMissing() {
+        module1.stubFor(get(urlPathEqualTo("/api/v1/resources/ACT-000913")).willReturn(aResponse()
+                .withHeader("Content-Type", "application/json")
+                .withBody(read("module1-asset-details.json").replace("ACT-004512", "ACT-000913")
+                        .replace("\"loanTermBusinessDays\": 7", "\"loanTermBusinessDays\": 0"))));
+
+        assertThat(adapter(10, Duration.ofSeconds(2)).details("ACT-000913").orElseThrow().loanTermBusinessDays())
+                .isZero();
+    }
+
+    @Test
+    void anUnknownResourceIsEmptyAndNotAnError() {
+        module1.stubFor(get(urlPathEqualTo("/api/v1/resources/ESP-9999")).willReturn(aResponse().withStatus(404)));
+
+        assertThat(adapter(10, Duration.ofSeconds(2)).details("ESP-9999")).isEmpty();
+    }
+
+    @Test
+    void anyOtherStatusOfTheDetailsIsUnavailable() {
+        for (int status : new int[]{400, 401, 403, 500, 503}) {
+            module1.stubFor(get(urlPathEqualTo("/api/v1/resources/ESP-0107")).willReturn(aResponse().withStatus(status)));
+
+            assertUnavailable(() -> adapter(10, Duration.ofSeconds(2)).details("ESP-0107"));
+        }
+    }
+
+    @Test
+    void brokenDetailsAreAContractErrorAndUnavailable() {
+        for (String body : new String[]{
+                "",
+                "{no es json",
+                read("module1-space-details.json").replace("\"EN_MANTENIMIENTO\"", "\"RESERVADO\""),
+                read("module1-space-details.json").replace("\"name\": \"Sala de Estudio 3\",", ""),
+                read("module1-space-details.json").replace("\"ESPACIO\"", "\"OTRA\""),
+                read("module1-space-details.json").replace("\"maxCapacity\": 8,", "")}) {
+            module1.stubFor(get(urlPathEqualTo("/api/v1/resources/ESP-0107")).willReturn(aResponse()
+                    .withHeader("Content-Type", "application/json").withBody(body)));
+
+            assertUnavailable(() -> adapter(10, Duration.ofSeconds(2)).details("ESP-0107"));
+        }
+    }
+
+    @Test
+    void aSlowOrAbsentModule1IsUnavailableForTheDetails() {
+        module1.stubFor(get(urlPathEqualTo("/api/v1/resources/ESP-0107")).willReturn(aResponse()
+                .withFixedDelay(1500).withHeader("Content-Type", "application/json")
+                .withBody(read("module1-space-details.json"))));
+        assertUnavailable(() -> adapter(10, Duration.ofMillis(300)).details("ESP-0107"));
+
+        InventoryRestAdapter adapter = adapter(10, Duration.ofSeconds(1));
+        module1.stop();
+        assertUnavailable(() -> adapter.details("ESP-0107"));
+    }
+
     private static void assertUnavailable(org.assertj.core.api.ThrowableAssert.ThrowingCallable call) {
         assertThatThrownBy(call).isInstanceOfSatisfying(ExternalServiceUnavailableException.class,
                 exception -> assertThat(exception.module()).isEqualTo(ExternalModule.MODULO_1));

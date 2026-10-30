@@ -760,9 +760,9 @@ Se suman a los que creó el plan de UC1 en la misma carpeta:
 
 ```text
 src/test/resources/contracts/
-├── module1-asset-details.json            # pendiente: no se creó (ver Notes)
-├── module1-asset-details-no-term.json  # pendiente
-├── module1-space-details.json            # pendiente
+├── module1-asset-details.json            # la ficha de Contratos §4
+├── module1-asset-details-no-term.json    # un activo sin loanTermBusinessDays
+├── module1-space-details.json            # un espacio, en mantenimiento
 ├── api-reservation-space-201.json
 ├── api-reservation-asset-201.json
 ├── api-reservation-409-res-001.json         # y -002, -003, -004 y -004-mantenimiento
@@ -895,7 +895,7 @@ src/test/resources/contracts/
 
 ## Notes
 
-- **Lo que se hizo distinto al implementar**: la ficha de un recurso es el mismo `Resource` del catálogo y no un `ResourceDetails` aparte; `GET /api/loans/expected-due-date` vive en `ReservationController`, sin un `LoanController` para un solo endpoint; no hay `KafkaConfig`, porque el productor se configura con propiedades; la persistencia va con `JdbcClient`; y la migración es la `V2`. **Quedó pendiente** la prueba del adaptador REST para `details()` contra WireMock, con los tres *fixtures* `module1-*-details.json` de Contratos §8: hoy solo lo prueban el adaptador falso y las pruebas de integración
+- **Lo que se hizo distinto al implementar**: la ficha de un recurso es el mismo `Resource` del catálogo y no un `ResourceDetails` aparte; `GET /api/loans/expected-due-date` vive en `ReservationController`, sin un `LoanController` para un solo endpoint; no hay `KafkaConfig`, porque el productor se configura con propiedades; la persistencia va con `JdbcClient`; y la migración es la `V2`. La prueba del adaptador REST para `details()` contra WireMock, que había quedado pendiente, se agregó después (2026-10-30) en `InventoryRestAdapterTest`, con los tres *fixtures* `module1-*-details.json` de Contratos §8. Cubre la tabla de Contratos §4: ficha normal de activo y de espacio, `404` como recurso inexistente, cualquier otro estado, el timeout y la conexión rechazada como Módulo 1 caído, y un cuerpo roto como contrato incumplido. Un activo sin `loanTermBusinessDays` llega al dominio con el campo vacío, nunca con un valor por defecto, y un `0` se conserva como uso en sitio. El `503` con `INCOMPLETE_RESOURCE_DETAILS` lo decide UC2, no el adaptador
 - **La renovación del préstamo ya no existe.** La revisión general de specs (PR #8) eliminó FR-016 y FR-017 de UC2 y el atributo de renovación de `PeriodoDePrestamo`. Este plan tenía una fase y una sección de contratos para ella, y se quitaron: ya no hay `RenewLoanUseCase`, ni `POST /api/loans/{id}/renewal`, ni los campos `renewed` y `renewable`, ni el evento `ReservationRecordUpdated`. Queda anotado aquí porque el historial del repositorio sí los tuvo
 - La numeración `T0XX` es propia de este plan y empieza de nuevo; no continúa la del plan de UC1
 - [P] tasks = different files, no dependencies
