@@ -99,10 +99,10 @@ class ScheduleController {
     }
 
     @GetMapping("/{uploadId}")
-    ResponseEntity<ScheduleReportResponse> find(CurrentUser currentUser, @PathVariable UUID uploadId) {
+    ResponseEntity<ScheduleUploadDetailResponse> find(CurrentUser currentUser, @PathVariable UUID uploadId) {
         requireDirection(currentUser);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(ScheduleReportResponse.from(queryUploads.find(uploadId)));
+                .body(ScheduleUploadDetailResponse.from(queryUploads.find(uploadId)));
     }
 
     @PostMapping("/extraordinary-needs")

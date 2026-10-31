@@ -1,5 +1,10 @@
 import { apiFetch } from "@/lib/api/client";
-import type { ConfirmationResponse, ValidationResponse } from "./types";
+import type {
+  ConfirmationResponse,
+  ScheduleUploadDetail,
+  ScheduleUploadsResponse,
+  ValidationResponse,
+} from "./types";
 
 /** POST /api/schedules/validations (UC3 Contratos §1): valida y guarda la carga, sin tocar ninguna reserva. */
 export function validateSchedule(input: {
@@ -22,4 +27,14 @@ export function confirmSchedule(uploadId: string): Promise<ConfirmationResponse>
   return apiFetch<ConfirmationResponse>(`/schedules/${encodeURIComponent(uploadId)}/confirmation`, {
     method: "POST",
   });
+}
+
+/** GET /api/schedules (UC3 Contratos §4): el histórico de cargas, de 20 en 20. */
+export function fetchUploads(page = 1): Promise<ScheduleUploadsResponse> {
+  return apiFetch<ScheduleUploadsResponse>(`/schedules?page=${page}`);
+}
+
+/** GET /api/schedules/{uploadId}: una carga con su reporte, para volver a mirarlo sin repetir la carga. */
+export function fetchUpload(uploadId: string): Promise<ScheduleUploadDetail> {
+  return apiFetch<ScheduleUploadDetail>(`/schedules/${encodeURIComponent(uploadId)}`);
 }

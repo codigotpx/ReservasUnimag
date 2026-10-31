@@ -3,15 +3,15 @@
 import { BookOpen, CalendarDays, CircleAlert, GraduationCap, LogOut, PieChart, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { signOut } from "@/features/auth/api";
 import { useProfile } from "@/features/auth/session";
 import { ROLE_LABELS } from "@/features/auth/types";
 
 /** null = todavía sin pantalla: se muestra, pero no lleva a ningún lado. */
-const NAV: { href: string | null; label: string; icon: LucideIcon }[] = [
-  { href: "/schedules", label: "Carga académica", icon: BookOpen },
-  { href: null, label: "Horarios importados", icon: CalendarDays },
+const NAV: { href: string | null; label: string; icon: LucideIcon; also?: string[] }[] = [
+  { href: "/schedules", label: "Carga académica", icon: BookOpen, also: ["/schedules/format"] },
+  { href: "/schedules/history", label: "Horarios importados", icon: CalendarDays },
   { href: null, label: "Ocupación", icon: PieChart },
   { href: null, label: "Actividades extraordinarias", icon: CircleAlert },
 ];
@@ -21,9 +21,7 @@ const NAV: { href: string | null; label: string; icon: LucideIcon }[] = [
  * escritorio y, en pantallas chicas, una barra arriba con lo mismo.
  */
 export function AdminShell({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
   const router = useRouter();
-  const active = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   async function handleSignOut() {
     try {
@@ -45,32 +43,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <p className="text-xs text-[#4da3ff]">Módulo Administrativo</p>
           </div>
         </div>
-        <nav aria-label="Administración" className="flex gap-1 overflow-x-auto px-2 pb-3 lg:mt-4 lg:flex-col lg:px-0">
-          {NAV.map(({ href, label, icon: Icon }) =>
-            href ? (
-              <Link
-                key={label}
-                href={href}
-                aria-current={active(href) ? "page" : undefined}
-                className={`flex shrink-0 items-center gap-3 border-l-4 px-5 py-3 text-sm font-semibold transition ${
-                  active(href) ? "border-[#1e88ff] bg-[#004a87]/60" : "border-transparent text-white/70 hover:bg-white/5"
-                }`}
-              >
-                <Icon className="size-5" />
-                {label}
-              </Link>
-            ) : (
-              <span
-                key={label}
-                title="Todavía no está disponible"
-                className="flex shrink-0 cursor-not-allowed items-center gap-3 border-l-4 border-transparent px-5 py-3 text-sm text-white/35"
-              >
-                <Icon className="size-5" />
-                {label}
-              </span>
-            ),
-          )}
-        </nav>
+        {/* La ruta actual solo se conoce en el navegador; mientras tanto el menú sale sin nada resaltado. */}
+        <Suspense fallback={<AdminNav pathname={null} />}>
+          <CurrentAdminNav />
+        </Suspense>
         <button
           type="button"
           onClick={handleSignOut}
@@ -84,6 +60,47 @@ export function AdminShell({ children }: { children: ReactNode }) {
         {children}
       </div>
     </div>
+  );
+}
+
+function CurrentAdminNav() {
+  return <AdminNav pathname={usePathname()} />;
+}
+
+function AdminNav({ pathname }: { pathname: string | null }) {
+  // /schedules/history también empieza por /schedules: cada opción dice qué rutas le pertenecen.
+  const active = (href: string, also: string[] = []) =>
+    pathname !== null &&
+    (href === "/schedules"
+      ? [href, ...also].includes(pathname)
+      : pathname === href || pathname.startsWith(`${href}/`));
+  return (
+    <nav aria-label="Administración" className="flex gap-1 overflow-x-auto px-2 pb-3 lg:mt-4 lg:flex-col lg:px-0">
+      {NAV.map(({ href, label, icon: Icon, also }) =>
+        href ? (
+          <Link
+            key={label}
+            href={href}
+            aria-current={active(href, also) ? "page" : undefined}
+            className={`flex shrink-0 items-center gap-3 border-l-4 px-5 py-3 text-sm font-semibold transition ${
+              active(href, also) ? "border-[#1e88ff] bg-[#004a87]/60" : "border-transparent text-white/70 hover:bg-white/5"
+            }`}
+          >
+            <Icon className="size-5" />
+            {label}
+          </Link>
+        ) : (
+          <span
+            key={label}
+            title="Todavía no está disponible"
+            className="flex shrink-0 cursor-not-allowed items-center gap-3 border-l-4 border-transparent px-5 py-3 text-sm text-white/35"
+          >
+            <Icon className="size-5" />
+            {label}
+          </span>
+        ),
+      )}
+    </nav>
   );
 }
 

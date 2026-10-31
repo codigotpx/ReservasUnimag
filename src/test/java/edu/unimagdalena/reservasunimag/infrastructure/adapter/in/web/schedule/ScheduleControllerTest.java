@@ -2,6 +2,8 @@ package edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.schedule;
 
 import edu.unimagdalena.reservasunimag.domain.model.academicblock.AcademicData;
 import edu.unimagdalena.reservasunimag.domain.model.academicblock.ExtraordinaryNeedResult;
+import edu.unimagdalena.reservasunimag.domain.model.common.Page;
+import edu.unimagdalena.reservasunimag.domain.model.common.PageRequest;
 import edu.unimagdalena.reservasunimag.domain.model.error.AcademicConflictException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ExternalServiceUnavailableException;
 import edu.unimagdalena.reservasunimag.domain.model.error.ExternalServiceUnavailableException.ExternalModule;
@@ -56,6 +58,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -208,6 +211,36 @@ class ScheduleControllerTest {
         mockMvc.perform(post("/api/schedules/" + UPLOAD + "/confirmation").with(session(Role.DIRECCION_PROGRAMA)))
                 .andExpect(status().isOk())
                 .andExpect(content().json(read("api-schedule-confirmation.json"), JsonCompareMode.STRICT));
+    }
+
+    private ScheduleUpload appliedUpload(List<ValidatedRow> rows) {
+        return new ScheduleUpload(UPLOAD, "2026-2", LocalDate.of(2026, 8, 10), LocalDate.of(2026, 12, 5),
+                "horario-2026-2.csv", DIRECTOR, "Dirección de Programa", UploadStatus.APPLIED, at(10, 2, 15, 40, 11),
+                at(10, 2, 16, 10, 11), at(10, 2, 15, 47, 35), new UploadSummary(312, 300, 12, 0, 4680, 96, 0, 3),
+                UploadImpact.NONE, new ApplyResult(4680, 192, 0, 3, 3), rows);
+    }
+
+    @Test
+    void theHistoryListsEachUploadWithWhoAndWhatItDid() throws Exception {
+        when(queryUploads.list(new PageRequest(1, 20))).thenReturn(new Page<>(List.of(appliedUpload(List.of())), 1,
+                20, 1));
+
+        mockMvc.perform(get("/api/schedules").with(session(Role.DIRECCION_PROGRAMA)))
+                .andExpect(status().isOk())
+                .andExpect(content().json(read("api-schedule-uploads.json"), JsonCompareMode.STRICT));
+    }
+
+    @Test
+    void anUploadOfTheHistoryIsTheListItemPlusItsReport() throws Exception {
+        when(queryUploads.find(UPLOAD)).thenReturn(appliedUpload(List.of(
+                row(2, "ESP-0412", "Laboratorio de Redes", "Redes de Computadores", "IS-402", "1", "LUNES",
+                        "08:00", "10:00", RowVerdict.OK, 16, null, null, null, List.of()))));
+
+        mockMvc.perform(get("/api/schedules/" + UPLOAD).with(session(Role.DIRECCION_PROGRAMA)))
+                .andExpect(status().isOk())
+                .andExpect(content().json(read("api-schedule-upload-detail.json"), JsonCompareMode.STRICT));
+        mockMvc.perform(get("/api/schedules/" + UPLOAD).with(session(Role.ESTUDIANTE)))
+                .andExpect(status().isForbidden());
     }
 
     @Test

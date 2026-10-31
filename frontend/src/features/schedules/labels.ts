@@ -1,4 +1,4 @@
-import { BLOCKING_VERDICTS, type DayOfWeek, type Verdict } from "./types";
+import { BLOCKING_VERDICTS, type DayOfWeek, type UploadStatus, type Verdict } from "./types";
 
 /** Etiqueta y colores de cada dictamen, como en el diseño (admin-importar-horarios). */
 export const VERDICTS: Record<Verdict, { label: string; className: string }> = {
@@ -37,4 +37,20 @@ export function termOptions(now = new Date()): { options: string[]; current: str
   const year = now.getFullYear();
   const current = `${year}-${now.getMonth() < 6 ? 1 : 2}`;
   return { options: [`${year - 1}-2`, `${year}-1`, `${year}-2`, `${year + 1}-1`], current };
+}
+
+/**
+ * El estado de una carga del histórico. Una VALIDATED cuyo plazo ya pasó se muestra como vencida; el listado no trae
+ * el plazo, así que ahí queda como "Sin aplicar".
+ */
+export function uploadStatus(status: UploadStatus, expiresAt: string | undefined, now: number): {
+  label: string;
+  className: string;
+} {
+  if (status === "APPLIED") return { label: "Aplicada", className: "bg-green-600/10 text-green-700" };
+  if (status === "REJECTED") return { label: "Rechazada", className: "bg-red-600/10 text-red-700" };
+  if (status === "EXPIRED" || (expiresAt !== undefined && Date.parse(expiresAt) <= now)) {
+    return { label: "Vencida sin aplicar", className: "bg-slate-400/15 text-slate-600" };
+  }
+  return { label: "Sin aplicar", className: "bg-amber-500/15 text-amber-700" };
 }
