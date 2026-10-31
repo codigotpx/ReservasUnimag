@@ -25,7 +25,9 @@ frontend/
     │   ├── (app)/resources/           UC1, UC8 y reservar (UC2); la usa también Dirección
     │   ├── (app)/profile/             datos de la sesión y cerrar sesión
     │   ├── (app)/my-reservations/     vigentes, historial y cancelar (UC4)
-    │   └── (direction)/schedules/     importar horarios (UC3) y format/, la guía del CSV
+    │   ├── (direction)/schedules/     importar horarios (UC3), format/, history/ y extraordinary/
+    │   ├── (direction)/pending-reviews/ pendientes de check-out (UC12)
+    │   └── (direction)/occupancy/     ocupación semanal de un espacio (P-29)
     ├── components/                    componentes visuales reutilizables
     ├── features/                      lógica por funcionalidad: resources, reservations,
     │                                  schedules, auth (hooks, formularios, tipos, api.ts)

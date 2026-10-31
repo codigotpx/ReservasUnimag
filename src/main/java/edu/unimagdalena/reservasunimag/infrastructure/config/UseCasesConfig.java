@@ -6,6 +6,9 @@ import edu.unimagdalena.reservasunimag.domain.port.in.ApplySchedulePort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CancelForMaintenancePort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CancelReservationPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.CheckAvailabilityPort;
+import edu.unimagdalena.reservasunimag.domain.port.in.ViewResourceOccupancyPort;
+import edu.unimagdalena.reservasunimag.domain.port.out.ScheduledUseRepositoryPort;
+import edu.unimagdalena.reservasunimag.domain.usecase.resourceoccupancy.ViewResourceOccupancyUseCase;
 import edu.unimagdalena.reservasunimag.domain.port.in.ListMyReservationsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryCancellationReportsPort;
 import edu.unimagdalena.reservasunimag.domain.port.in.QueryReservationRecordsPort;
@@ -95,6 +98,11 @@ class UseCasesConfig {
     @Bean
     GetProfilePort getProfilePort(UserRepositoryPort users) {
         return new GetProfileUseCase(users);
+    }
+
+    @Bean
+    ViewResourceOccupancyPort viewResourceOccupancyPort(InventoryPort inventory, ScheduledUseRepositoryPort uses) {
+        return new ViewResourceOccupancyUseCase(inventory, uses);
     }
 
     @Bean

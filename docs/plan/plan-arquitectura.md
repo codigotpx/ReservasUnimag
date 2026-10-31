@@ -281,7 +281,10 @@ frontend/
     │   ├── (app)/resources/             UC1, UC8 y reservar (UC2); también la usa Dirección
     │   ├── (app)/profile/               datos de la sesión y cerrar sesión
     │   ├── (app)/my-reservations/       vigentes, historial y cancelar (UC4)
-    │   └── (direction)/schedules/       importar horarios (UC3) y format/, la guía del CSV; con su propio layout de escritorio
+    │   ├── (direction)/schedules/       importar horarios (UC3), format/ (la guía del CSV), history/ y extraordinary/;
+    │   │                                con su propio layout de escritorio
+    │   ├── (direction)/pending-reviews/ préstamos sin devolver y espacios sin revisar (UC12)
+    │   └── (direction)/occupancy/       la semana de un espacio (P-29)
     ├── components/                      componentes visuales reutilizables
     ├── features/                        lógica por funcionalidad: recursos, reservas,
     │                                    horarios, auth (hooks, formularios, tipos)
@@ -528,3 +531,4 @@ Los parámetros del negocio (cupo de 3, ventana de 06:00 a 22:00, 10 minutos de 
 | UC9, UC12 | Qué hacemos con un evento que no encaja con el estado de la reserva, por ejemplo un check-out de una reserva ya finalizada: hoy va al DLT |
 | Registro | Spec de registro e inicio de sesión: dominio de correo permitido, datos obligatorios y cómo se asignan los roles `MONITOR` y `DIRECCION_PROGRAMA`, que no pueden salir del autorregistro |
 | Escala | Usuarios concurrentes y volumen de recursos esperados |
+| P-29 | La pantalla de ocupación de espacios de Dirección de Programa (`GET /api/resources/{id}/occupancy`): no sale de ningún caso de uso y sus decisiones están por confirmar |

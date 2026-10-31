@@ -475,6 +475,18 @@ Lo que cambió respecto al plan, y por qué:
 
 ---
 
+## P-29 — La pantalla de ocupación de espacios: no está en ningún caso de uso
+
+**Estado**: abierto. Implementada a pedido del equipo a partir del diseño `admin-ocupacion` de Figma (2026-10-31).
+
+Dirección de Programa tiene en el menú "Ocupación": la semana de un espacio con sus clases, actividades extraordinarias y reservas. Ningún spec la pide y ningún plan la tenía, así que se hizo con estas decisiones, que conviene confirmar:
+
+- **Endpoint propio de solo lectura**, `GET /api/resources/{resourceId}/occupancy?from=&to=`, solo para `DIRECCION_PROGRAMA`, con un rango de hasta 31 días. No cambia nada ni reemplaza a UC8: la disponibilidad de una franja sigue siendo `GET /api/resources/{id}/availability`.
+- **Las reservas estudiantiles salen sin titular** (UC8 FR-005), aunque quien mira es Dirección. Las clases y las actividades extraordinarias dicen la asignatura y el programa.
+- **El mantenimiento sale como aviso, no como bloques**: el Módulo 1 dice el estado de ahora, sin franjas, así que no se puede dibujar "mantenimiento de 6 a 8" como en el diseño.
+- **Solo espacios**: un préstamo de activo cruza días y no cabe en una grilla por horas.
+- **La frase "en tiempo real" del diseño no se usó**: es una foto de lo confirmado al abrirla, no se actualiza sola.
+
 ## Resueltos
 
 - **P-11 — Las sanciones sí distinguen entre espacios y activos** — lo dice el edge case **Sanciones que no aplican a lo que se está pidiendo** de UC6, y el equipo lo aplicó en el plan de UC6 al revisar los planes. Cada sanción trae un alcance (`ESPACIOS`, `ACTIVOS` o `TODO`); al confirmar, `RES-003` solo se aplica si el alcance cubre la categoría del recurso que se pide, y un alcance que falta o no se conoce bloquea todo. Implementado con UC6; ver **P-27**. Aplicado en los planes de UC1, UC2 y UC6 y en `contratos-integracion.md`. *(2026-10-30)*

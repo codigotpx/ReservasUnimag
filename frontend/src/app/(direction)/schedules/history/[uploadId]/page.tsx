@@ -4,7 +4,7 @@ import { ClientOnly } from "@/components/client-only";
 import { UploadDetailRoute } from "@/features/schedules/components/upload-detail-route";
 
 export const metadata: Metadata = {
-  title: "Carga de horario · Reservas Unimagdalena",
+  title: "Carga de horario | Reservas Unimagdalena",
 };
 
 export default function UploadDetailPage() {

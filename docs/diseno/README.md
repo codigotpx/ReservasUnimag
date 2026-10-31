@@ -29,3 +29,9 @@ Los assets que sí usa la aplicación (íconos, logos, imágenes, tipografías) 
 | `admin-importar-horarios.png` | `/schedules` | Dirección: carga válida que desplaza reservas |
 | `admin-importar-horarios-rechazada.png` | `/schedules` | Dirección: carga con filas rechazadas |
 | `admin-formato-archivo.png` | `/schedules/format` | Dirección: cómo debe ser el CSV |
+| `admin-horarios-importados.png` | `/schedules/history` | Dirección: histórico de cargas (captura de la app) |
+| `admin-horarios-importados-detalle.png` | `/schedules/history/{id}` | Dirección: detalle de una carga (captura de la app) |
+| `admin-actividades-extraordinarias.png` | `/schedules/extraordinary` | Dirección: actividad extraordinaria con su impacto (captura de la app) |
+| `admin-ocupacion-app.png` | `/occupancy` | Dirección: ocupación semanal de un espacio (captura de la app; el diseño original es el frame `admin-ocupacion`) |
+| `admin-pendientes-devoluciones.png` | `/pending-reviews` | Dirección: préstamos sin devolver (captura de la app) |
+| `admin-pendientes-espacios.png` | `/pending-reviews` | Dirección: espacios sin revisar (captura de la app) |

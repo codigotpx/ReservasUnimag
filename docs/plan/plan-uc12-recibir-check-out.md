@@ -443,8 +443,8 @@ src/test/resources/contracts/
 - [ ] T018 [US1] Implementar `CheckOutListener` reusando `KafkaConsumerConfig` e `InboxGuard` de UC9, y `CheckOutAckEvent` (depende de T017)
 - [ ] T019 [US1] Implementar `PendingCheckOutsController` con los dos endpoints de [Contratos §3 y §4](#3-get-apiloanspending-returns), paginados y con el nombre del recurso pedido al Módulo 1
 - [ ] T020 [US1] Registrar los beans y las transacciones de UC12 en `UseCasesConfig`, y actualizar [modelo-datos-der.md](./modelo-datos-der.md) con la clave primaria y las columnas nuevas de `check_out`
-- [ ] T021 [P] [US1] Frontend: `features/checkout/types.ts` y `api.ts`, `PendingReturns.tsx` con el aviso de los que están cerca del umbral, y `PendingReviews.tsx` que deja claro que la revisión es opcional
-- [ ] T022 [US1] Frontend: `app/(direction)/pending-reviews/page.tsx` con las dos listas en pestañas
+- [x] T021 [P] [US1] Frontend: `features/checkout/types.ts` y `api.ts`, `PendingReturns.tsx` con el aviso de los que están cerca del umbral, y `PendingReviews.tsx` que deja claro que la revisión es opcional
+- [x] T022 [US1] Frontend: `app/(direction)/pending-reviews/page.tsx` con las dos listas en pestañas
 
 **Checkpoint**: el check-out cierra préstamos y registra revisiones; UC12 es demostrable
 
@@ -513,3 +513,4 @@ src/test/resources/contracts/
 - La sección **Contratos** es la única fuente del JSON de UC12
 - **Decisiones de los contratos que el spec no fija**: el `kind` lo decide la categoría del recurso y no el evento; un dictamen en un activo se **rechaza** en vez de ignorarse, para que el Módulo 3 sepa que no debe mandarlo; los acuses de check-out van por su propio topic y no por el de UC9; el acuse devuelve `dueAt` para que la mora se mida con los dos datos juntos; `slotReleased: false` va explícito en los espacios; el `CHECK` de la tabla es lo que hace imposible guardar un dictamen donde no toca; y el umbral de pérdida corre con un trabajo diario, apagable
 - **La contradicción del spec**: FR-006 dice que el sistema no cierra préstamos por su cuenta y el edge case **Devolución que nunca llega** dice que a los 7 días sí. Se resuelve leyendo FR-006 como válido hasta que ese plazo se cumple, y la Phase 4 queda aislada y desactivable
+- **Lo que cambió en el frontend (T021 y T022):** las dos listas viven en `/pending-reviews`, dentro del módulo de Dirección de Programa, como "Pendientes de check-out", con una pestaña para cada una. Los componentes están en `features/checkout/components/pending-check-outs.tsx`, no en `PendingReturns.tsx` y `PendingReviews.tsx` sueltos. La de devoluciones resalta en rojo los préstamos a menos de 48 horas de `lossThresholdAt`; la de espacios filtra por origen y dice que la revisión es opcional. No hay acciones: el check-out lo registra el Módulo 3.

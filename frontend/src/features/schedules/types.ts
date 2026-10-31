@@ -132,3 +132,39 @@ export interface ScheduleUploadDetail extends ScheduleUploadItem {
   summary: ValidationSummary;
   rows: ValidatedRow[];
 }
+
+/** UC3 Contratos §3: una necesidad extraordinaria, una sola franja. */
+export interface ExtraordinaryNeedRequest {
+  resourceId: string;
+  date: string;
+  start: string;
+  end: string;
+  course: string;
+  courseCode: string;
+  group: string;
+  program: string;
+  instructor?: string;
+  confirm?: boolean;
+}
+
+export interface ExtraordinaryNeedResponse {
+  applied: boolean;
+  verdict: Verdict;
+  resourceId?: string;
+  resourceName?: string;
+  start?: string;
+  end?: string;
+  affectedReservations?: AffectedReservation[];
+  block?: {
+    reservationId: string;
+    resourceId: string;
+    type: "REGULAR" | "EXTRAORDINARIO";
+    start: string;
+    end: string;
+    course: string;
+    program: string;
+    instructor?: string;
+  };
+  reservationsCancelled?: number;
+  eventsQueued?: number;
+}
