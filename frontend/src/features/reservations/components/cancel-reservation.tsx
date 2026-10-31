@@ -51,7 +51,7 @@ export function CancelReservation({
             type="button"
             onClick={confirm}
             disabled={submitting}
-            className="h-13 rounded-full bg-red-700 text-lg font-semibold text-white transition hover:bg-red-800 disabled:cursor-wait disabled:opacity-70"
+            className="h-13 rounded-full bg-danger text-lg font-semibold text-white transition hover:bg-danger-strong disabled:cursor-wait disabled:opacity-70"
           >
             {submitting ? "Cancelando…" : "Sí, cancelar"}
           </button>

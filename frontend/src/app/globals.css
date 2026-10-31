@@ -8,6 +8,9 @@
   --color-brand-blue: #2468d6;
   --color-brand-navy: #004a8f;
   --color-brand-night: #0b2547;
+  /* Para las acciones destructivas (cancelar). El red-600 de Tailwind 4 sale casi neón; este es el de Untitled UI. */
+  --color-danger: #d92d20;
+  --color-danger-strong: #b42318;
   --font-sans: var(--font-manrope);
   --font-display: var(--font-open-sans);
 }

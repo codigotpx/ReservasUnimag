@@ -51,7 +51,7 @@ export function ActiveReservationCard({
             <button
               type="button"
               onClick={onCancel}
-              className="h-12 w-full rounded-full border-2 border-red-700 font-semibold text-red-700 transition hover:bg-red-50"
+              className="h-12 w-full rounded-full border border-gray-200 font-semibold text-danger transition hover:border-danger/30 hover:bg-danger/5"
             >
               Cancelar
             </button>
