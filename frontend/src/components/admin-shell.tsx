@@ -177,7 +177,7 @@ function MobileMenu({ closing, onClose }: { closing: boolean; onClose: () => voi
           type="button"
           aria-label="Cerrar el menú"
           onClick={onClose}
-          className="absolute right-3 top-5 rounded-full p-2 text-gray-500 transition hover:bg-gray-100 motion-safe:animate-[spin-in_420ms_cubic-bezier(0.22,1,0.36,1)_180ms_both]"
+          className="absolute right-3 top-5 z-10 rounded-full p-2 text-gray-500 transition hover:bg-gray-100 motion-safe:animate-[spin-in_420ms_cubic-bezier(0.22,1,0.36,1)_180ms_both]"
         >
           <X className="size-5" />
         </button>
