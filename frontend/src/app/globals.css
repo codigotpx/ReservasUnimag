@@ -8,6 +8,9 @@
   --color-brand-blue: #2468d6;
   --color-brand-navy: #004a8f;
   --color-brand-night: #0b2547;
+  /* Para las acciones destructivas (cancelar). El red-600 de Tailwind 4 sale casi neón; este es el de Untitled UI. */
+  --color-danger: #d92d20;
+  --color-danger-strong: #b42318;
   --font-sans: var(--font-manrope);
   --font-display: var(--font-open-sans);
 }
@@ -25,6 +28,16 @@ body {
   label:has(> input[type="checkbox"]) {
     cursor: pointer;
   }
+
+  /*
+   * Barras de desplazamiento finas, sin flechas ni carril: solo el pulgar gris translúcido, en todo lo que se desplaza.
+   * Va con "html, html *" y no con "*": Turbopack descarta la regla de solo "*" (Tailwind y Lightning CSS la dejan).
+   */
+  html,
+  html * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(17 24 39 / 0.2) transparent;
+  }
 }
 
 @keyframes fade-in {
@@ -36,5 +49,55 @@ body {
 @keyframes sheet-up {
   from {
     transform: translateY(100%);
+  }
+}
+
+/* Al cambiar de pestaña, la pantalla nueva sube un poco mientras aparece. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* El check de éxito (SuccessCheck): el disco entra con rebote y los trazos se dibujan (pathLength=1). */
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+/* El menú del celular de Dirección entra desde la izquierda; sus opciones, una detrás de otra, y la X girando. */
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes item-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+@keyframes spin-in {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
+  }
+}
+
+/* Una barra que se llena de izquierda a derecha. */
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
   }
 }

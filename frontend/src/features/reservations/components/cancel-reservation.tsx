@@ -9,7 +9,7 @@ import { cancelReservation } from "../api";
 import type { CancellationError, CancellationResponse, Quota, Reservation } from "../types";
 
 /**
- * Confirmar la cancelación (UC4 T019). Dice qué se libera —en un activo, el periodo entero— y cuánto cupo se recupera.
+ * Confirmar la cancelación (UC4 T019). Dice qué se libera (en un activo, el periodo entero) y cuánto cupo se recupera.
  * El plazo lo decide el backend: un 409 se muestra tal cual.
  */
 export function CancelReservation({
@@ -51,7 +51,7 @@ export function CancelReservation({
             type="button"
             onClick={confirm}
             disabled={submitting}
-            className="h-13 rounded-full bg-red-700 text-lg font-semibold text-white transition hover:bg-red-800 disabled:cursor-wait disabled:opacity-70"
+            className="h-13 rounded-full text-lg font-semibold text-danger transition hover:bg-danger/5 active:bg-danger/10 disabled:cursor-wait disabled:opacity-70"
           >
             {submitting ? "Cancelando…" : "Sí, cancelar"}
           </button>
@@ -98,11 +98,11 @@ export function CancelReservation({
   );
 }
 
-/** "Hoy · 10:00 - 12:00", o para un préstamo "1 nov 10:00 → 6 nov 22:00". */
+/** "Hoy, de 10:00 a 12:00", o para un préstamo "Del 1 nov 10:00 al 6 nov 22:00". */
 function period(reservation: Reservation): string {
   const startDay = dayOf(reservation.start);
   if (reservation.loan) {
-    return `${shortDay(startDay)} ${timeOf(reservation.start)} → ${shortDay(dayOf(reservation.end))} ${timeOf(reservation.end)}`;
+    return `Del ${shortDay(startDay)} ${timeOf(reservation.start)} al ${shortDay(dayOf(reservation.end))} ${timeOf(reservation.end)}`;
   }
-  return `${shortDayLabel(startDay)} · ${timeOf(reservation.start)} - ${timeOf(reservation.end)}`;
+  return `${shortDayLabel(startDay)}, de ${timeOf(reservation.start)} a ${timeOf(reservation.end)}`;
 }

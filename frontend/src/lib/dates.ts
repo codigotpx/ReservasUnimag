@@ -46,10 +46,10 @@ export function weekdayDayMonth(date: string): string {
   return `${name.charAt(0).toUpperCase()}${name.slice(1)}, ${dayMonth(date)}`;
 }
 
-/** "Hoy · Mié, 24 de agosto", o solo "Jue, 26 de agosto" si no es hoy ni mañana. */
+/** "Hoy, miércoles 24 de agosto", o solo "Jue, 26 de agosto" si no es hoy ni mañana. */
 export function longDayLabel(date: string): string {
   const relative = relativeDay(date);
-  return relative ? `${relative} · ${weekdayDayMonth(date)}` : weekdayDayMonth(date);
+  return relative ? `${relative}, ${longWeekday.format(midday(date))} ${dayMonth(date)}` : weekdayDayMonth(date);
 }
 
 /** "Hoy", "Mañana" o "26 de agosto". */

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarX2, RefreshCw, TriangleAlert } from "lucide-react";
+import { CalendarX2, Plus, RefreshCw, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -68,27 +68,34 @@ export function MyReservationsScreen() {
 
   return (
     <>
-      <div role="tablist" aria-label="Mis reservas" className="sticky top-16 z-10 grid grid-cols-2 border-b border-gray-200 bg-white lg:top-20">
-        {(["vigentes", "historial"] as const).map((name) => (
-          <button
-            key={name}
-            type="button"
-            role="tab"
-            aria-selected={tab === name}
-            onClick={() => {
-              setNotice(null);
-              router.replace(name === "vigentes" ? "/my-reservations" : "/my-reservations?tab=historial");
-            }}
-            className={`h-14 border-b-[3px] text-base font-semibold transition ${
-              tab === name ? "border-brand-navy text-brand-navy" : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {name === "vigentes" ? "Vigentes" : "Historial"}
-          </button>
-        ))}
+      {/* En el celular las pestañas ocupan media pantalla cada una; en escritorio van a la izquierda, alineadas con el título. */}
+      <div className="sticky top-16 z-10 border-b border-gray-200 bg-white lg:top-20">
+        <div
+          role="tablist"
+          aria-label="Mis reservas"
+          className="mx-auto grid w-full grid-cols-2 lg:flex lg:max-w-6xl lg:gap-8 lg:px-10"
+        >
+          {(["vigentes", "historial"] as const).map((name) => (
+            <button
+              key={name}
+              type="button"
+              role="tab"
+              aria-selected={tab === name}
+              onClick={() => {
+                setNotice(null);
+                router.replace(name === "vigentes" ? "/my-reservations" : "/my-reservations?tab=historial");
+              }}
+              className={`-mb-px h-14 border-b-[3px] text-base font-semibold transition lg:px-1 ${
+                tab === name ? "border-brand-navy text-brand-navy" : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {name === "vigentes" ? "Vigentes" : "Historial"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-4 py-5 sm:px-6 lg:py-8">
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-5 px-4 py-5 sm:px-6 lg:max-w-6xl lg:px-10 lg:py-8">
         {notice && (
           <p role="status" className="rounded-2xl bg-green-50 px-4 py-3 text-sm font-medium text-green-800">
             {notice}
@@ -161,36 +168,54 @@ function Active({
 }) {
   const spaces = data.reservations.filter((reservation) => reservation.category === "ESPACIO");
   const assets = data.reservations.filter((reservation) => reservation.category === "ACTIVO");
+  // El cupo es el resumen de la pantalla: arriba y a todo el ancho; en escritorio, en una sola fila con la acción.
   return (
-    <>
-      <QuotaCard quota={data.quota} />
-      {data.reservations.length === 0 && (
-        <Empty text="No tienes reservas vigentes.">
-          <Link href="/resources" className="mt-2 rounded-full bg-brand-navy px-5 py-2.5 font-semibold text-white">
-            Buscar recursos
-          </Link>
-        </Empty>
-      )}
-      {[
-        { title: "Espacios", items: spaces },
-        { title: "Activos en préstamo", items: assets },
-      ].map(
-        ({ title, items }) =>
-          items.length > 0 && (
-            <section key={title} className="flex flex-col gap-4">
-              <h2 className="pt-2 font-semibold text-gray-500">{title}</h2>
-              {items.map((reservation) => (
-                <ActiveReservationCard
-                  key={reservation.id}
-                  reservation={reservation}
-                  now={now}
-                  onCancel={() => onCancel(reservation)}
-                />
-              ))}
-            </section>
-          ),
-      )}
-    </>
+    <div className="flex flex-col gap-5 lg:gap-8">
+      <QuotaCard
+        quota={data.quota}
+        wide
+        action={
+          data.quota.used < data.quota.max && (
+            <Link
+              href="/resources"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-brand-navy px-5 font-semibold text-white transition hover:bg-brand-navy/90"
+            >
+              <Plus className="size-5" /> Nueva reserva
+            </Link>
+          )
+        }
+      />
+      <div className="flex min-w-0 flex-col gap-5 lg:gap-8">
+        {data.reservations.length === 0 && (
+          <Empty text="No tienes reservas vigentes.">
+            <Link href="/resources" className="mt-2 rounded-full bg-brand-navy px-5 py-2.5 font-semibold text-white">
+              Buscar recursos
+            </Link>
+          </Empty>
+        )}
+        {[
+          { title: "Espacios", items: spaces },
+          { title: "Activos en préstamo", items: assets },
+        ].map(
+          ({ title, items }) =>
+            items.length > 0 && (
+              <section key={title} className="flex flex-col gap-4">
+                <h2 className="pt-2 font-semibold text-gray-500 lg:pt-0">{title}</h2>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {items.map((reservation) => (
+                    <ActiveReservationCard
+                      key={reservation.id}
+                      reservation={reservation}
+                      now={now}
+                      onCancel={() => onCancel(reservation)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ),
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -222,7 +247,7 @@ function Problem({ detail, onRetry }: { detail: string; onRetry: () => void }) {
 
 function Skeleton() {
   return (
-    <div aria-busy="true" aria-label="Cargando reservas" className="flex flex-col gap-4">
+    <div aria-busy="true" aria-label="Cargando reservas" className="grid gap-4 lg:grid-cols-2">
       {[0, 1].map((card) => (
         <div key={card} className="h-44 animate-pulse rounded-3xl border border-gray-200 bg-white" />
       ))}

@@ -62,11 +62,11 @@ function badgeOf(reservation: Reservation): { label: string; className: string; 
   }
 }
 
-/** "15 sept, 14:00 - 16:00", o de varios días "1 nov – 6 nov". */
+/** "15 sept, 14:00 - 16:00", o de varios días "Del 1 nov al 6 nov". */
 function period(reservation: Reservation): string {
   const startDay = dayOf(reservation.start);
   const endDay = dayOf(reservation.end);
   return startDay === endDay
     ? `${shortDay(startDay)}, ${timeOf(reservation.start)} - ${timeOf(reservation.end)}`
-    : `${shortDay(startDay)} – ${shortDay(endDay)}`;
+    : `Del ${shortDay(startDay)} al ${shortDay(endDay)}`;
 }

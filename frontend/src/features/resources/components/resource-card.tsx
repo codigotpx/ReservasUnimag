@@ -1,4 +1,4 @@
-import { Clock } from "lucide-react";
+import { Clock, MapPin, MonitorSpeaker, Tag, Users, type LucideIcon } from "lucide-react";
 import { dayInSentence, dayMonth, dayOf, timeOf } from "@/lib/dates";
 import { codeLabel, statusLabel } from "../labels";
 import type { DisplayedStatus, ResourceWithStatus, TimeSlot } from "../types";
@@ -41,7 +41,14 @@ export function ResourceCard({
           {statusLabel(resource.status, resource.category)}
         </span>
       </div>
-      <p className={`mt-2 truncate ${muted ? "text-gray-400" : "text-gray-500"}`}>{details(resource)}</p>
+      <ul className={`mt-2 flex flex-wrap gap-x-4 gap-y-1 ${muted ? "text-gray-400" : "text-gray-500"}`}>
+        {details(resource).map(({ icon: Icon, text }) => (
+          <li key={text} className="flex min-w-0 items-center gap-1.5">
+            <Icon className="size-4 shrink-0" />
+            <span className="truncate">{text}</span>
+          </li>
+        ))}
+      </ul>
       <p className={`mt-3 flex items-start gap-2 font-semibold ${muted ? "text-gray-400" : "text-brand-navy"}`}>
         <Clock className="mt-0.5 size-5 shrink-0" />
         <span>{footer(resource, slot)}</span>
@@ -64,17 +71,18 @@ export function ResourceCard({
   return <article className="rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">{body}</article>;
 }
 
-function details(resource: ResourceWithStatus): string {
+/** Capacidad, equipamiento y ubicación, cada uno con su ícono en lugar de separadores. */
+function details(resource: ResourceWithStatus): { icon: LucideIcon; text: string }[] {
+  const location = resource.location ? [{ icon: MapPin, text: resource.location }] : [];
   if (resource.category === "ACTIVO") {
-    return [`Placa: ${resource.id}`, resource.location].join(" · ");
+    return [{ icon: Tag, text: `Placa ${resource.id}` }, ...location];
   }
+  const equipment = (resource.equipment ?? []).map(codeLabel).join(", ");
   return [
-    resource.maxCapacity !== undefined ? `Capacidad: ${resource.maxCapacity} pers.` : undefined,
-    ...(resource.equipment ?? []).map(codeLabel),
-    resource.location,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+    ...(resource.maxCapacity !== undefined ? [{ icon: Users, text: `${resource.maxCapacity} personas` }] : []),
+    ...(equipment ? [{ icon: MonitorSpeaker, text: equipment }] : []),
+    ...location,
+  ];
 }
 
 function footer(resource: ResourceWithStatus, slot: TimeSlot): string {
