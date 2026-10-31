@@ -41,6 +41,15 @@ export interface Reservation {
   loan?: Loan; // solo activos
   createdAt?: string;
   quota?: Quota; // viene en la respuesta de creación
+  cancellable?: boolean; // GET /api/reservations/mine (UC4 Contratos §4)
+  useStartedAt?: string; // la llegada registrada (UC7)
+  absence?: Absence; // la marca de UC9 FR-010
+}
+
+/** La ausencia que reportó el Módulo 3 (UC9 Contratos §4). */
+export interface Absence {
+  registeredAt: string;
+  message: string;
 }
 
 export interface ExpectedDueDate {
@@ -72,4 +81,26 @@ export interface ReservationError extends ApiError {
   requestedMinutes?: number;
   resourceId?: string;
   dueAt?: string;
+}
+
+/** UC4 Contratos §4. */
+export type CancellationOrigin = "HOLDER" | "ACADEMIC_PRIORITY" | "RESOURCE_UNAVAILABLE";
+
+export interface CancellationResponse {
+  reservationId: string;
+  status: "CANCELADA" | "CANCELADA_POR_PRIORIDAD_ACADEMICA" | "CANCELADA_POR_RECURSO_NO_DISPONIBLE";
+  cancellationOrigin: CancellationOrigin;
+  cancelledAt: string;
+  noticeMinutes?: number;
+  releasedTime?: { start: string; end: string };
+  quota: Quota;
+  alreadyCancelled?: boolean;
+}
+
+export interface CancellationError extends ApiError {
+  code?: "CAN-001";
+  reason?: "ASSET_ALREADY_PICKED_UP" | "USE_STARTED" | "RESERVATION_FINISHED";
+  minNoticeMinutes?: number;
+  referenceAt?: string;
+  pickedUpAt?: string;
 }
