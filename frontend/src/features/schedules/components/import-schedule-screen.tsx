@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Calendar,
   CircleCheck,
   Download,
   FileText,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
+import { DatePicker } from "@/components/date-picker";
 import { Dropdown } from "@/components/dropdown";
 import { ApiRequestError } from "@/lib/api/client";
 import { clockTime, dayOf, shortDay, timeOf } from "@/lib/dates";
@@ -506,21 +506,10 @@ function DateField({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       <span className="text-base font-medium text-foreground">{label}</span>
-      <span className="relative flex h-12 items-center rounded-full border border-gray-200 focus-within:border-brand-navy focus-within:ring-2 focus-within:ring-brand-navy/20">
-        <Calendar className="pointer-events-none absolute left-5 size-5 text-gray-500" />
-        <input
-          type="date"
-          required
-          value={value}
-          min={min}
-          onChange={(event) => onChange(event.target.value)}
-          onClick={(event) => event.currentTarget.showPicker?.()}
-          className="h-full w-full cursor-pointer bg-transparent pl-13 pr-5 text-base text-foreground outline-none [&::-webkit-calendar-picker-indicator]:hidden"
-        />
-      </span>
-    </label>
+      <DatePicker label={label} value={value} min={min} onChange={onChange} />
+    </div>
   );
 }
 

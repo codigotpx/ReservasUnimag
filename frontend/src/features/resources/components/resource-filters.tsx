@@ -1,7 +1,8 @@
 "use client";
 
-import { Calendar, Clock, Layers, Minus, Plus } from "lucide-react";
+import { Clock, Layers, Minus, Plus } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
+import { DatePicker } from "@/components/date-picker";
 import { Dropdown } from "@/components/dropdown";
 import { HALF_HOURS, longDayLabel, today } from "@/lib/dates";
 import { CategoryToggle } from "./category-toggle";
@@ -63,19 +64,7 @@ export function ResourceFilters({
 
       <div className="flex flex-col gap-5 rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">
         <Field label="Fecha">
-          <PickerPill icon={<Calendar className="size-5" />}>
-            <span className="truncate">{longDayLabel(date)}</span>
-            <input
-              type="date"
-              aria-label="Fecha"
-              required
-              min={today()}
-              value={date}
-              onChange={(event) => event.target.value && setDate(event.target.value)}
-              onClick={(event) => event.currentTarget.showPicker?.()}
-              className="absolute inset-0 cursor-pointer opacity-0"
-            />
-          </PickerPill>
+          <DatePicker label="Fecha" value={date} min={today()} onChange={setDate} format={longDayLabel} />
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
@@ -164,15 +153,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
       <span className="text-base font-medium text-foreground">{label}</span>
-      {children}
-    </div>
-  );
-}
-
-function PickerPill({ icon, children }: { icon: ReactNode; children: ReactNode }) {
-  return (
-    <div className="relative flex h-12 items-center gap-3 rounded-full border border-gray-200 px-5 text-base text-foreground focus-within:border-brand-navy focus-within:ring-2 focus-within:ring-brand-navy/20">
-      <span className="pointer-events-none text-gray-500">{icon}</span>
       {children}
     </div>
   );
