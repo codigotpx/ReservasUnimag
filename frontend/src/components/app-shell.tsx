@@ -1,9 +1,10 @@
 "use client";
 
-import { CalendarDays, Search, User, type LucideIcon } from "lucide-react";
+import { CalendarDays, LogOut, Search, User, type LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+import { signOut } from "@/features/auth/api";
 import { Escudo } from "./escudo";
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
@@ -15,8 +16,17 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
 /** Navegación de la app: barra inferior en el celular y barra lateral desde lg. */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const activeIndex = NAV.findIndex(({ href }) => isActive(href));
+
+  async function handleSignOut() {
+    try {
+      await signOut();
+    } finally {
+      router.replace("/login");
+    }
+  }
 
   return (
     <div className="min-h-dvh bg-gray-100 lg:flex">
@@ -44,6 +54,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
+        {/* Al fondo de la barra, como en Dirección; en el celular sigue en Perfil, que no tiene barra lateral. */}
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="mt-auto flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-red-700 transition hover:bg-red-50"
+        >
+          <LogOut className="size-5" /> Cerrar sesión
+        </button>
       </aside>
 
       {/* La key hace que cada pestaña entre con su animación en vez de aparecer de golpe. */}
