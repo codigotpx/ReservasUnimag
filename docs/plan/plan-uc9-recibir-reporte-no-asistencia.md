@@ -419,7 +419,7 @@ src/test/resources/contracts/
 - [ ] T017 [US1] Implementar `VoidNoShowUseCase` (depende de T016)
 - [ ] T018 [US1] Implementar `NoShowListener` con los dos tipos de evento del topic, apoyado en `InboxGuard`, y `NoShowAckEvent` en la *outbox* (depende de T016, T017)
 - [ ] T019 [US1] Registrar los beans y las transacciones de UC9 en `UseCasesConfig`, añadir el campo `absence` a `GET /api/reservations/mine` según [Contratos §4](#4-get-apireservationsmine--el-campo-nuevo), y actualizar [modelo-datos-der.md](./modelo-datos-der.md) con la clave primaria nueva de `absence`
-- [ ] T020 [P] [US1] Frontend: el tipo `Absence` y la marca en `MyReservationsList.tsx`, con el texto que no promete ni niega sanción (FR-003, FR-010)
+- [x] T020 [P] [US1] Frontend: el tipo `Absence` y la marca en `MyReservationsList.tsx`, con el texto que no promete ni niega sanción (FR-003, FR-010)
 
 **Checkpoint**: UC9 queda funcional de punta a punta
 
@@ -472,3 +472,4 @@ src/test/resources/contracts/
 - La sección **Contratos** es la única fuente del JSON de UC9
 - **Decisiones de los contratos que el spec no fija**: nace el topic de acuse `module2.reservation.no-show-ack.v1`, porque FR-002 y FR-011 piden responderle al Módulo 3 y por Kafka no hay respuesta; un rechazo de negocio **no** va al DLT, porque el evento no está roto; el plazo se mide contra `verifiedAt` y no contra la hora de llegada; el borde de los 10 minutos es inclusivo, igual que el de UC4; un reporte repetido responde `accepted: true` con `duplicate`; y la clave primaria de `absence` pasa a ser `reservation_id`
 - **Propuesta para cerrar un pendiente**: una reserva con ausencia queda **`FINALIZADA`**, y la fila de `absence` es la que explica por qué. Así se libera el recurso sin inventar un estado que obligaría a tocar UC1, UC2 y UC11
+- **T020 en el frontend:** la marca sale en el historial de `/my-reservations` como "Ausencia registrada", con el `message` del backend debajo; el tipo `Absence` vive en `features/reservations/types.ts` y no hay `MyReservationsList.tsx` suelto.

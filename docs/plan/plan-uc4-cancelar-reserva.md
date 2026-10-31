@@ -468,8 +468,8 @@ El de UC3, `event-reservation-cancelled.json`, se renombra a `event-reservation-
 - [ ] T016 [US1] Implementar `DELETE /api/reservations/{reservationId}` en `ReservationController` según [Contratos §1](#1-delete-apireservationsreservationid), y añadir `cancellable` a `GET /api/reservations/mine`
 - [ ] T017 [US1] Implementar `POST /api/resources/{resourceId}/cancel-reservations` según [Contratos §2](#2-post-apiresourcesresourceidcancel-reservations), restringido a `DIRECCION_PROGRAMA`
 - [ ] T018 [US1] Registrar los beans y las transacciones de UC4 en `UseCasesConfig`
-- [ ] T019 [P] [US1] Frontend: `CancelReservation.tsx` con la confirmación —que dice qué se libera y, en un activo, que el periodo entero queda libre— y los tipos de [Contratos §4](#4-tipos-del-frontend)
-- [ ] T020 [US1] Frontend: enganchar el botón en `MyReservationsList.tsx`, oculto cuando `cancellable` es `false`, con el motivo visible y refrescando el cupo tras cancelar
+- [x] T019 [P] [US1] Frontend: `CancelReservation.tsx` con la confirmación —que dice qué se libera y, en un activo, que el periodo entero queda libre— y los tipos de [Contratos §4](#4-tipos-del-frontend)
+- [x] T020 [US1] Frontend: enganchar el botón en `MyReservationsList.tsx`, oculto cuando `cancellable` es `false`, con el motivo visible y refrescando el cupo tras cancelar
 
 **Checkpoint**: UC4 queda funcional de punta a punta
 
@@ -522,3 +522,9 @@ El de UC3, `event-reservation-cancelled.json`, se renombra a `event-reservation-
 - Commit after each task or logical group
 - La sección **Contratos** es la única fuente del JSON de UC4
 - **Decisiones de los contratos que el spec no fija**: el borde del plazo es inclusivo; cancelar la reserva de otra persona responde `404` y no `403`, para no confirmar que existe; la doble cancelación es `200` con `alreadyCancelled` y no un `409`; el titular no escribe un motivo libre; y el endpoint de mantenimiento existe solo mientras nadie nos avise del cambio de estado
+- **Lo que cambió en el frontend (T019 y T020):**
+  - "Mis reservas" vive en `/my-reservations` (grupo `(app)`), con las pestañas Vigentes e Historial del diseño (`docs/diseno/pantallas/mis-reservas-*.png`). Los componentes están en `features/reservations/components/`, no en `MyReservationsList.tsx` y `CancelReservation.tsx` sueltos.
+  - El historial son las de `?vigentes=false` menos las de `?vigentes=true`: qué es vigente lo decide el backend.
+  - La cancelación es la hoja `reservas-cancelar.png`, con `BottomSheet`. Sin `cancellable` no hay botón, y se explica por qué (ya empezó, el activo ya se recogió o faltan menos de 10 minutos).
+  - El diseño traía un botón "Renovar" para los préstamos; no se puso, porque la renovación salió del alcance (ver `pendientes-clarificacion.md`, 2026-09-21).
+  - `GET /api/reservations/mine` no trae la ubicación del recurso, así que la tarjeta del activo muestra la placa y no "Devuélvelo en…".

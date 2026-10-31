@@ -129,3 +129,27 @@ export const HALF_HOURS = Array.from({ length: 33 }, (_, index) => {
   const minutes = 6 * 60 + index * 30;
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${minutes % 60 === 0 ? "00" : "30"}`;
 });
+
+const shortDayMonth = new Intl.DateTimeFormat("es-CO", { timeZone: ZONE, day: "numeric", month: "short" });
+const monthName = new Intl.DateTimeFormat("es-CO", { timeZone: ZONE, month: "long" });
+const yearNumber = new Intl.DateTimeFormat("es-CO", { timeZone: ZONE, year: "numeric" });
+
+/** "15 sept". */
+export function shortDay(date: string): string {
+  return shortDayMonth.format(midday(date)).replace(".", "");
+}
+
+/** "Septiembre 2026", para agrupar por mes. */
+export function monthYear(date: string): string {
+  const name = monthName.format(midday(date));
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${yearNumber.format(midday(date))}`;
+}
+
+/** "2 h 15 min", "25 min" o "3 días": cuánto falta, redondeado hacia abajo. */
+export function timeUntil(minutes: number): string {
+  if (minutes >= 24 * 60) {
+    const days = Math.floor(minutes / (24 * 60));
+    return `${days} ${days === 1 ? "día" : "días"}`;
+  }
+  return durationLabel(Math.max(0, minutes)).replace(/ 0 min$/, "");
+}

@@ -18,3 +18,6 @@ Los assets que sí usa la aplicación (íconos, logos, imágenes, tipografías) 
 | `consultar-recursos-espacios.png` | `/resources` | Resultados de espacios |
 | `consultar-recursos-activos.png` | `/resources` | Resultados de activos |
 | `reservar-espacio.png` | `/resources` | Hoja para confirmar la reserva de un espacio |
+| `mis-reservas-vigentes.png` | `/my-reservations` | Reservas vigentes y cupo |
+| `mis-reservas-historial.png` | `/my-reservations?tab=historial` | Historial por mes |
+| `reservas-cancelar.png` | `/my-reservations` | Hoja para confirmar la cancelación |

@@ -280,7 +280,7 @@ frontend/
     │   ├── (auth)/login/, register/
     │   ├── (app)/resources/             UC1, UC8 y reservar (UC2); también la usa Dirección
     │   ├── (app)/profile/               datos de la sesión y cerrar sesión
-    │   ├── (student)/my-reservations/   ver y cancelar (UC4)
+    │   ├── (app)/my-reservations/       vigentes, historial y cancelar (UC4)
     │   └── (direction)/schedules/       importar horarios (UC3)
     ├── components/                      componentes visuales reutilizables
     ├── features/                        lógica por funcionalidad: recursos, reservas,
