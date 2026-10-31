@@ -46,3 +46,24 @@ body {
     transform: translateY(8px);
   }
 }
+
+/* El check de éxito (SuccessCheck): el disco entra con rebote y los trazos se dibujan (pathLength=1). */
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+/* Una barra que se llena de izquierda a derecha. */
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}

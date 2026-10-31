@@ -1,8 +1,9 @@
 "use client";
 
-import { Check, CircleCheck, Loader2, TriangleAlert, X } from "lucide-react";
+import { Check, Loader2, TriangleAlert, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { BottomSheet } from "@/components/bottom-sheet";
+import { SuccessCheck } from "@/components/success-check";
 import { checkAvailability, type AvailabilityResponse } from "@/features/resources/api";
 import { codeLabel, statusLabel } from "@/features/resources/labels";
 import type { ResourceWithStatus, SanctionNotice, TimeSlot } from "@/features/resources/types";
@@ -342,13 +343,23 @@ function dayLabel(date: string): string {
   return relative ? `${relative}, ${shortDay(date)}` : shortDay(date);
 }
 
+/** Cada bloque de la confirmación sube detrás del anterior, cuando el check ya se está cerrando. */
+const RISE = "motion-safe:animate-[page-in_480ms_cubic-bezier(0.22,1,0.36,1)_both]";
+
 function Confirmed({ reservation, name }: { reservation: Reservation; name: string }) {
   return (
     <div className="flex flex-col items-center py-4 text-center">
-      <CircleCheck className="size-16 text-green-600" strokeWidth={1.5} />
-      <h2 className="mt-4 text-2xl font-bold text-foreground">Reserva confirmada</h2>
-      <p className="mt-2 text-gray-600">{reservation.name ?? name}</p>
-      <p className="mt-4 rounded-2xl bg-gray-100 px-5 py-4 text-foreground">
+      <SuccessCheck />
+      <h2 className={`mt-5 text-2xl font-bold text-foreground ${RISE}`} style={{ animationDelay: "420ms" }}>
+        Reserva confirmada
+      </h2>
+      <p className={`mt-2 text-gray-600 ${RISE}`} style={{ animationDelay: "500ms" }}>
+        {reservation.name ?? name}
+      </p>
+      <p
+        className={`mt-4 rounded-2xl bg-gray-100 px-5 py-4 text-foreground ${RISE}`}
+        style={{ animationDelay: "580ms" }}
+      >
         {reservation.loan ? (
           <>
             Recógelo el <strong>{dayMonth(dayOf(reservation.loan.pickup))}</strong> a las{" "}
@@ -364,9 +375,27 @@ function Confirmed({ reservation, name }: { reservation: Reservation; name: stri
         )}
       </p>
       {reservation.quota && (
-        <p className="mt-3 text-sm text-gray-500">
-          Ahora tienes {reservation.quota.used} de {reservation.quota.max} reservas vigentes.
-        </p>
+        <div className={`mt-4 w-full ${RISE}`} style={{ animationDelay: "660ms" }}>
+          <p className="text-sm text-gray-500">
+            Ahora tienes {reservation.quota.used} de {reservation.quota.max} reservas vigentes.
+          </p>
+          {/* El cupo que acaba de usar esta reserva se llena al final. */}
+          <div aria-hidden className="mx-auto mt-2.5 flex max-w-60 gap-1.5">
+            {Array.from({ length: reservation.quota.max }, (_, index) => (
+              <span key={index} className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
+                {index < reservation.quota!.used && (
+                  <span
+                    className={`block h-full origin-left rounded-full bg-brand-navy ${
+                      index === reservation.quota!.used - 1
+                        ? "motion-safe:animate-[grow-x_600ms_cubic-bezier(0.22,1,0.36,1)_900ms_both]"
+                        : ""
+                    }`}
+                  />
+                )}
+              </span>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
