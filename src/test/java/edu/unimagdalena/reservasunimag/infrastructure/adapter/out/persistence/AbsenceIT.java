@@ -1,5 +1,6 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence;
 
+import com.zaxxer.hikari.HikariDataSource;
 import edu.unimagdalena.reservasunimag.TestcontainersConfiguration;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.NoShowAck;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.NoShowReport;
@@ -51,6 +52,8 @@ class AbsenceIT {
     private ListMyReservationsPort listMyReservations;
     @Autowired
     private JdbcClient jdbc;
+    @Autowired
+    private HikariDataSource dataSource;
 
     @BeforeEach
     void emptyTables() {
@@ -173,6 +176,19 @@ class AbsenceIT {
         assertThat(listMyReservations.list(STUDENT, false).reservations()).extracting(i -> i.absence())
                 .containsExactly((edu.unimagdalena.reservasunimag.domain.model.compliance.Absence) null);
         assertThat(listMyReservations.list(STUDENT, true).reservations()).isEqualTo(List.of());
+    }
+
+    @Test
+    void listingTheReservationsGivesBackEveryConnection() {
+        startedReservation(jdbc, STUDENT.id(), "ESP-0107", 15);
+        int poolSize = dataSource.getMaximumPoolSize();
+
+        // Cada consulta de las ausencias dejaba su conexión tomada; pasado el tamaño del pool, la app se quedaba sin base.
+        for (int i = 0; i <= poolSize; i++) {
+            listMyReservations.list(STUDENT, true);
+        }
+
+        assertThat(dataSource.getHikariPoolMXBean().getActiveConnections()).isZero();
     }
 
     private static void await(CountDownLatch latch) {

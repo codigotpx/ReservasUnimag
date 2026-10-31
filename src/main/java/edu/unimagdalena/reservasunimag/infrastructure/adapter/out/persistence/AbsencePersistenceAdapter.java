@@ -74,6 +74,8 @@ class AbsencePersistenceAdapter implements AbsenceRepositoryPort {
         return jdbc.sql(SELECT + "WHERE reservation_id IN (:ids) AND NOT voided")
                 .param("ids", reservationIds)
                 .query(AbsencePersistenceAdapter::toAbsence)
+                // list() y no stream(): el Stream de JdbcClient deja abierta la conexión hasta que alguien lo cierre.
+                .list()
                 .stream()
                 .collect(Collectors.toMap(Absence::reservationId, Function.identity()));
     }

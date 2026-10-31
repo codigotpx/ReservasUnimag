@@ -306,7 +306,7 @@ src/test/resources/contracts/
 
 - [x] T011 [US1] Implementar `AvailabilityController` y `AvailabilityResponse` según [Contratos §1](#1-get-apiresourcesresourceidavailability), con `Cache-Control: no-store` y documentado con OpenAPI (depende de T001)
 - [x] T012 [US1] Añadir el campo `occupiedUntil` a la respuesta de la lista de UC1, que lo tenía **reservado sin enviar** desde su plan, ahora que UC2 ya lo calcula
-- [ ] T013 [P] [US1] Frontend: usar el endpoint en la pantalla de confirmación de UC2 para revalidar antes de que la persona pulse el botón, dejando claro que la decisión final la toma el backend
+- [x] T013 [P] [US1] Frontend: usar el endpoint en la pantalla de confirmación de UC2 para revalidar antes de que la persona pulse el botón, dejando claro que la decisión final la toma el backend
 
 **Checkpoint**: UC8 queda cerrado y con una sola definición de "disponible" probada
 
@@ -355,4 +355,4 @@ src/test/resources/contracts/
 - **Este plan es de cierre, no de construcción.** Los doce FR ya estaban implementados por UC1 y UC2; lo que aporta es la trazabilidad, las pruebas transversales que ningún plan individual podía escribir, el borde enunciado en un sitio y el endpoint que faltaba
 - **Decisiones de los contratos que el spec no fija**: una franja fuera de la ventana operativa es `400` y no "no disponible", porque el problema está en la pregunta y no en el recurso; `occupiedUntil` se omite en un préstamo vencido y sin devolver, porque no hay fecha honesta; y el endpoint individual es una cortesía para la interfaz que **no** sustituye la revalidación de UC2 dentro de la transacción
 - **Decisión explícita de no hacer**: ninguna caché, por FR-006. La prueba de T008 lo fija
-- **Lo que cambió al implementar** (2026-10-30, ver P-28): `Occupancy.dueAt` para que un préstamo entregado diga su vencimiento; un motivo propio para el préstamo vencido; sin `@Transactional(readOnly = true)`; dos operaciones en el puerto en vez de un parámetro opcional; la lista conserva `ResourceWithStatus`; la prueba de coherencia va por HTTP y la de la llamada única cuenta fichas en vez de usar WireMock. Quedan sin hacer T013, porque el frontend no está en este repositorio, y T014
+- **Lo que cambió al implementar** (2026-10-30, ver P-28): `Occupancy.dueAt` para que un préstamo entregado diga su vencimiento; un motivo propio para el préstamo vencido; sin `@Transactional(readOnly = true)`; dos operaciones en el puerto en vez de un parámetro opcional; la lista conserva `ResourceWithStatus`; la prueba de coherencia va por HTTP y la de la llamada única cuenta fichas en vez de usar WireMock. T013 quedó hecho con la hoja de confirmación de UC2 en el frontend (`frontend/`); queda sin hacer T014

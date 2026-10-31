@@ -840,9 +840,9 @@ src/test/resources/contracts/
 - [ ] T032 [P] [US1] Implementar `OutboxPublisher` con `@Scheduled`: lee los `PENDING` con `FOR UPDATE SKIP LOCKED`, publica con la clave `reservation_id`, marca `SENT`, y en el fallo sube `intentos` con espera creciente hasta `FAILED`
 - [ ] T033 [US1] Registrar los beans y las transacciones de UC2 en `UseCasesConfig` (depende de T024 a T032)
 - [ ] T034 [US1] Implementar `ReservationController` (`POST /api/reservations`) exactamente como lo fija [Contratos §1](#1-post-apireservations): `CreateReservationRequest` validado contra la categoría que devuelve la ficha, `ReservationResponse` que omite lo que no aplica, `Location` en el `201`, y la documentación OpenAPI con los mismos ejemplos de la sección
-- [ ] T035 [P] [US1] Frontend: copiar los tipos de [Contratos §7](#7-tipos-del-frontend) a `frontend/src/features/reservations/types.ts` y escribir en `api.ts` la llamada de creación y el mapeo del `ProblemDetail` a `ErrorReserva`
-- [ ] T036 [US1] Frontend: `ConfirmReservation.tsx` (franja para espacios con el tope de 2 horas, hora de recogida y vencimiento previsto para activos tomado de [Contratos §2](#2-get-apiloansexpected-due-date)) y `DenialMessage.tsx` con un texto por código armado desde los campos del error —`active`/`max` para el "3 de 3", `sanctionUntil` para la sanción, `detectedStatus` para el mantenimiento— y el `detail` como respaldo
-- [ ] T037 [US1] Frontend: enganchar el botón de reservar en `app/(app)/resources/page.tsx`, habilitado solo para los recursos seleccionables que ya marca UC1, y refrescar la lista tras confirmar
+- [x] T035 [P] [US1] Frontend: copiar los tipos de [Contratos §7](#7-tipos-del-frontend) a `frontend/src/features/reservations/types.ts` y escribir en `api.ts` la llamada de creación y el mapeo del `ProblemDetail` a `ErrorReserva`
+- [x] T036 [US1] Frontend: `ConfirmReservation.tsx` (franja para espacios con el tope de 2 horas, hora de recogida y vencimiento previsto para activos tomado de [Contratos §2](#2-get-apiloansexpected-due-date)) y `DenialMessage.tsx` con un texto por código armado desde los campos del error —`active`/`max` para el "3 de 3", `sanctionUntil` para la sanción, `detectedStatus` para el mantenimiento— y el `detail` como respaldo
+- [x] T037 [US1] Frontend: enganchar el botón de reservar en `app/(app)/resources/page.tsx`, habilitado solo para los recursos seleccionables que ya marca UC1, y refrescar la lista tras confirmar
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -905,3 +905,9 @@ src/test/resources/contracts/
 - Stop at any checkpoint to validate story independently
 - La sección **Contratos** es la única fuente del JSON de UC2: si algo cambia ahí, cambia en los *fixtures*, en el OpenAPI y en los tipos del frontend, no al revés. Las convenciones comunes no se repiten: viven en el plan de UC1.
 - **Decisiones de los contratos que el spec no fija**: el cuerpo de `POST /api/reservations` no lleva `category` ni `origin` (los pone el Módulo 1 y el JWT); `GET /api/reservations/mine` responde `200` con `catalogUnavailable: true` si el Módulo 1 no contesta, en vez de `503`, porque la reserva y el cupo son datos nuestros; y `detectedStatus: "EN_MANTENIMIENTO"` acompaña al `RES-004` provisional para poder migrarlo a `RES-005` sin romper al frontend.
+- **Lo que cambió en el frontend (T035 a T037):**
+  - La confirmación es una hoja que sube al tocar un recurso disponible en `/resources` (diseño `docs/diseno/pantallas/reservar-espacio.png`; en escritorio es un diálogo centrado). Vive en `features/reservations/components/confirm-reservation.tsx`, no en `ConfirmReservation.tsx`.
+  - Antes de confirmar muestra lo que el backend va a comprobar: sanción (del `sanctionNotice` de la consulta), cupo (de `GET /api/reservations/mine`) y si el recurso sigue libre (revalidación de UC8 T013). Si algo ya se sabe que falla, el botón queda deshabilitado; si no se pudo comprobar, se deja confirmar y decide el backend.
+  - Un espacio de más de 2 horas no se puede confirmar desde la hoja: se pide cambiar la franja en la búsqueda.
+  - Un activo elige la hora de recogida en la hoja y ve el vencimiento de `GET /api/loans/expected-due-date`. El activo no tenía diseño en Figma: sigue el del espacio.
+  - Tras confirmar, o si sale `RES-001`/`RES-004`, la lista se vuelve a pedir al cerrar la hoja.

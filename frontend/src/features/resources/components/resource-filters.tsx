@@ -3,7 +3,7 @@
 import { Calendar, Clock, Layers, Minus, Plus } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Dropdown } from "@/components/dropdown";
-import { longDayLabel, today } from "@/lib/dates";
+import { HALF_HOURS, longDayLabel, today } from "@/lib/dates";
 import { CategoryToggle } from "./category-toggle";
 import { TYPES_BY_CATEGORY, codeLabel } from "../labels";
 import type { Category, SearchResourcesParams } from "../types";
@@ -178,11 +178,6 @@ function PickerPill({ icon, children }: { icon: ReactNode; children: ReactNode }
   );
 }
 
-/** Las horas de media en media hora, en formato de 24 horas sin importar el idioma del navegador. */
-const HALF_HOURS = Array.from({ length: 33 }, (_, index) => {
-  const minutes = 6 * 60 + index * 30;
-  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${minutes % 60 === 0 ? "00" : "30"}`;
-});
 
 function TimeInput({
   label,

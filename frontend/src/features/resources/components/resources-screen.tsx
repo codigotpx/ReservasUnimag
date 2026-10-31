@@ -3,13 +3,15 @@
 import { Calendar, CalendarSearch, RefreshCw, SearchX, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ConfirmReservation } from "@/features/reservations/components/confirm-reservation";
+import { useQuota } from "@/features/reservations/use-quota";
 import { useProfile } from "@/features/auth/session";
 import { canReserve } from "@/features/auth/types";
 import { ApiRequestError, type ApiError } from "@/lib/api/client";
 import { defaultSlot, shortDayLabel } from "@/lib/dates";
 import { categoryOf, fromQuery, searchResources, toQuery } from "../api";
 import { CATEGORY_LABELS } from "../labels";
-import type { Category, SearchResourcesParams, SearchResourcesResponse } from "../types";
+import type { Category, ResourceWithStatus, SearchResourcesParams, SearchResourcesResponse } from "../types";
 import { CategoryToggle } from "./category-toggle";
 import { Pagination } from "./pagination";
 import { QuotaCard } from "./quota-card";
@@ -37,6 +39,10 @@ export function ResourcesScreen() {
 
   const [editing, setEditing] = useState(false);
   const [chipsOpen, setChipsOpen] = useState(false);
+  const [selected, setSelected] = useState<ResourceWithStatus | null>(null);
+  const [listStale, setListStale] = useState(false);
+  const reserver = profile !== null && canReserve(profile.role);
+  const { quota, setQuota } = useQuota(reserver);
   const [attempt, setAttempt] = useState(0);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const requestKey = searchKey && `${searchKey}#${attempt}`;
@@ -126,7 +132,7 @@ export function ResourcesScreen() {
                 onChange={(type) => go({ ...search, type, page: 1 })}
               />
             </div>
-            {profile && canReserve(profile.role) && <QuotaCard />}
+            {quota && <QuotaCard quota={quota} />}
 
             {loading ? (
               <ResourceListSkeleton />
@@ -135,11 +141,40 @@ export function ResourcesScreen() {
                 <Problem detail={current.error.detail} onRetry={() => setAttempt((value) => value + 1)} />
               )
             ) : (
-              current && <Results data={current.data} onSearch={go} search={search} />
+              current && (
+                <Results
+                  data={current.data}
+                  onSearch={go}
+                  search={search}
+                  onSelect={reserver ? setSelected : undefined}
+                />
+              )
             )}
           </>
         )}
       </section>
+
+      {selected && current && "data" in current && (
+        <ConfirmReservation
+          resource={selected}
+          slot={current.data.timeSlot}
+          sanctionNotice={current.data.sanctionNotice}
+          quota={quota}
+          onReserved={(reservation) => {
+            setListStale(true);
+            if (reservation.quota) setQuota(reservation.quota);
+          }}
+          onStale={() => setListStale(true)}
+          onClose={() => {
+            setSelected(null);
+            // Tras reservar, o si el recurso resultó ocupado, la lista vuelve a pedirse.
+            if (listStale) {
+              setListStale(false);
+              setAttempt((value) => value + 1);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -148,10 +183,12 @@ function Results({
   data,
   search,
   onSearch,
+  onSelect,
 }: {
   data: SearchResourcesResponse;
   search: Search;
   onSearch: (next: Search) => void;
+  onSelect?: (resource: ResourceWithStatus) => void;
 }) {
   const activeFilters = Object.values(data.filters).filter((value) => value !== null).length;
   return (
@@ -185,7 +222,11 @@ function Results({
           <ul className="flex flex-col gap-4">
             {data.resources.map((resource) => (
               <li key={resource.id}>
-                <ResourceCard resource={resource} slot={data.timeSlot} />
+                <ResourceCard
+                  resource={resource}
+                  slot={data.timeSlot}
+                  onSelect={onSelect && (() => onSelect(resource))}
+                />
               </li>
             ))}
           </ul>

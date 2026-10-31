@@ -17,3 +17,4 @@ Los assets que sí usa la aplicación (íconos, logos, imágenes, tipografías) 
 | `consultar-recursos-cargando.png` | `/resources` | Esperando la respuesta |
 | `consultar-recursos-espacios.png` | `/resources` | Resultados de espacios |
 | `consultar-recursos-activos.png` | `/resources` | Resultados de activos |
+| `reservar-espacio.png` | `/resources` | Hoja para confirmar la reserva de un espacio |
