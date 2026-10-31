@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Lock, Mail } from "lucide-react";
 import { ApiRequestError } from "@/lib/api/client";
 import { fetchProfile, signIn } from "../api";
@@ -14,6 +14,18 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Con cacheComponents, Next no desmonta el login al entrar: lo esconde (<Activity>) y lo vuelve a mostrar con el
+  // mismo estado al cerrar sesión. Al esconderse se limpia, para no volver con "Iniciando sesión…" trabado ni con la
+  // contraseña todavía en memoria.
+  useEffect(
+    () => () => {
+      setSubmitting(false);
+      setPassword("");
+      setError(null);
+    },
+    [],
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
