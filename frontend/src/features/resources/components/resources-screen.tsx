@@ -3,6 +3,7 @@
 import { Calendar, CalendarSearch, RefreshCw, SearchX, SlidersHorizontal, TriangleAlert } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { BottomSheet } from "@/components/bottom-sheet";
 import { ConfirmReservation } from "@/features/reservations/components/confirm-reservation";
 import { useQuota } from "@/features/reservations/use-quota";
 import { useProfile } from "@/features/auth/session";
@@ -24,9 +25,14 @@ import { TypeChips } from "./type-chips";
 type Search = SearchResourcesParams & { category: Category };
 type Outcome = { key: string; data: SearchResourcesResponse } | { key: string; error: ApiError };
 
+/** Desde aquí (el xl de Tailwind) el formulario queda a la vista junto a los resultados. */
+const DESKTOP = "(min-width: 80rem)";
+const FILTERS_ID = "filtros";
+
 /**
- * Consultar recursos (UC1 T040). En el celular se alterna entre el formulario y los resultados;
- * desde xl el formulario queda fijo a la izquierda y los resultados a la derecha.
+ * Consultar recursos (UC1 T040). En el celular, el formulario hasta la primera búsqueda y después los resultados, con
+ * la búsqueda en una hoja para cambiarla sin salir de ellos; desde xl el formulario queda fijo a la izquierda y los
+ * resultados a la derecha.
  */
 export function ResourcesScreen() {
   const router = useRouter();
@@ -72,7 +78,8 @@ export function ResourcesScreen() {
   const current = outcome && outcome.key === requestKey ? outcome : null;
   const loading = search !== null && current === null;
   const badRequest = current && "error" in current && current.error.status === 400 ? current.error.detail : undefined;
-  const showForm = !search || editing || badRequest !== undefined;
+  // En el celular el formulario solo ocupa la pantalla mientras no hay búsqueda válida; para cambiarla, va en una hoja.
+  const showForm = !search || badRequest !== undefined;
 
   function closeSheet() {
     setSelected(null);
@@ -88,6 +95,15 @@ export function ResourcesScreen() {
     router.push(`/resources?${toQuery(next)}`, { scroll: true });
   }
 
+  /** Cambiar fecha, franja o tipo sin perder los resultados: en el celular, una hoja; en escritorio, el formulario de al lado. */
+  function changeSearch() {
+    if (window.matchMedia(DESKTOP).matches) {
+      document.getElementById(FILTERS_ID)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      setEditing(true);
+    }
+  }
+
   const formInitial: Search = search ?? {
     ...defaultSlot(),
     category: categoryOf(query.get("category")),
@@ -95,7 +111,7 @@ export function ResourcesScreen() {
 
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 lg:px-10 lg:py-8 xl:grid xl:grid-cols-[minmax(20rem,26rem)_minmax(0,1fr)] xl:items-start xl:gap-10">
-      <section aria-label="Filtros" className={`mx-auto w-full max-w-2xl xl:sticky xl:top-28 ${showForm ? "" : "hidden xl:block"}`}>
+      <section id={FILTERS_ID} aria-label="Filtros" className={`mx-auto w-full max-w-2xl xl:sticky xl:top-28 ${showForm ? "" : "hidden xl:block"}`}>
         <ResourceFilters key={`${searchKey ?? "nueva"}|${badRequest ?? ""}`} initial={formInitial} serverError={badRequest} onSubmit={go} />
       </section>
 
@@ -116,7 +132,8 @@ export function ResourcesScreen() {
             <div className="flex h-14 items-center rounded-full border border-gray-200 bg-white xl:hidden">
               <button
                 type="button"
-                onClick={() => setEditing(true)}
+                onClick={changeSearch}
+                aria-haspopup="dialog"
                 className="flex h-full min-w-0 flex-1 items-center gap-3 rounded-l-full pl-5 text-left text-base text-foreground"
               >
                 <Calendar className="size-6 shrink-0 text-brand-navy" />
@@ -177,10 +194,17 @@ export function ResourcesScreen() {
           onClose={closeSheet}
           onDenialAction={(action) => {
             closeSheet();
-            if (action === "change-slot") setEditing(true);
+            if (action === "change-slot") changeSearch();
             if (action === "my-reservations") router.push("/my-reservations");
           }}
         />
+      )}
+
+      {editing && search && (
+        <BottomSheet label="Cambiar la búsqueda" onClose={() => setEditing(false)}>
+          <h2 className="mb-5 text-2xl font-bold text-foreground sm:pr-8">Cambiar la búsqueda</h2>
+          <ResourceFilters initial={search} onSubmit={go} embedded />
+        </BottomSheet>
       )}
     </div>
   );

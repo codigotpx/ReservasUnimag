@@ -16,16 +16,19 @@ const DEFAULT_MINUTES = 120;
 
 /**
  * Fecha, franja, tipo y aforo mínimo (UC1 T039). Valida por usabilidad la ventana de 06:00 a 22:00;
- * la decisión final es del backend, cuyo 400 llega en serverError.
+ * la decisión final es del backend, cuyo 400 llega en serverError. Con embedded va sin tarjeta, para usarlo dentro
+ * de una hoja.
  */
 export function ResourceFilters({
   initial,
   serverError,
   onSubmit,
+  embedded = false,
 }: {
   initial: SearchResourcesParams & { category: Category };
   serverError?: string;
   onSubmit: (search: SearchResourcesParams & { category: Category }) => void;
+  embedded?: boolean;
 }) {
   const [category, setCategory] = useState(initial.category);
   const [date, setDate] = useState(initial.date);
@@ -70,7 +73,7 @@ export function ResourceFilters({
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <CategoryToggle value={category} onChange={changeCategory} />
 
-      <div className="flex flex-col gap-5 rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">
+      <div className={`flex flex-col gap-5 ${embedded ? "" : "rounded-3xl border border-gray-200 bg-white p-5 sm:p-6"}`}>
         <Field label="Fecha">
           <DatePicker label="Fecha" value={date} min={today()} onChange={setDate} format={longDayLabel} />
         </Field>
