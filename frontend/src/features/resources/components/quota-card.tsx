@@ -1,28 +1,15 @@
 "use client";
 
 import { Info } from "lucide-react";
-import { useEffect, useState } from "react";
-import { fetchQuota, type Quota } from "@/features/reservations/api";
+import { useState } from "react";
+import type { Quota } from "@/features/reservations/types";
 
 /**
  * "Tienes 2 de 3 reservas vigentes": el cupo de UC2 FR-008, que se comparte entre espacios y activos.
- * Si no se puede leer no se muestra nada: es información de apoyo, no bloquea la consulta.
+ * Quien la usa no la muestra si el cupo no se pudo leer: es información de apoyo, no bloquea la consulta.
  */
-export function QuotaCard() {
-  const [quota, setQuota] = useState<Quota | null>(null);
+export function QuotaCard({ quota }: { quota: Quota }) {
   const [helpOpen, setHelpOpen] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    fetchQuota()
-      .then((value) => active && setQuota(value))
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  if (!quota) return null;
 
   return (
     <section className="rounded-2xl border border-gray-200 bg-white px-5 py-4">

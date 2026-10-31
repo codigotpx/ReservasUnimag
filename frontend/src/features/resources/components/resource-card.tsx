@@ -11,16 +11,28 @@ const BADGE: Record<DisplayedStatus, string> = {
   EN_MANTENIMIENTO: "bg-red-100 text-red-700",
 };
 
-/** Un recurso con su estado (UC1 T039). Los no seleccionables se ven apagados y dicen por qué. */
-export function ResourceCard({ resource, slot }: { resource: ResourceWithStatus; slot: TimeSlot }) {
+/**
+ * Un recurso con su estado (UC1 T039). Los no seleccionables se ven apagados y dicen por qué;
+ * con onSelect, los seleccionables se tocan para reservar (UC2 T037).
+ */
+export function ResourceCard({
+  resource,
+  slot,
+  onSelect,
+}: {
+  resource: ResourceWithStatus;
+  slot: TimeSlot;
+  onSelect?: () => void;
+}) {
   const muted = !resource.selectable;
+  const interactive = resource.selectable && onSelect !== undefined;
   const badge =
     resource.status === "EN_USO" && resource.category === "ACTIVO"
       ? "bg-slate-200 text-slate-700"
       : BADGE[resource.status];
 
-  return (
-    <article className="rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">
+  const body = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <h3 className={`text-lg font-semibold leading-snug ${muted ? "text-gray-400" : "text-foreground"}`}>
           {resource.name}
@@ -34,8 +46,22 @@ export function ResourceCard({ resource, slot }: { resource: ResourceWithStatus;
         <Clock className="mt-0.5 size-5 shrink-0" />
         <span>{footer(resource, slot)}</span>
       </p>
-    </article>
+    </>
   );
+
+  if (interactive) {
+    return (
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-label={`Reservar ${resource.name}`}
+        className="block w-full rounded-3xl border border-gray-200 bg-white p-5 text-left transition hover:border-brand-navy/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy sm:p-6"
+      >
+        {body}
+      </button>
+    );
+  }
+  return <article className="rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">{body}</article>;
 }
 
 function details(resource: ResourceWithStatus): string {

@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api/client";
-import type { Category, SearchResourcesParams, SearchResourcesResponse } from "./types";
+import type { Category, DisplayedStatus, SearchResourcesParams, SearchResourcesResponse } from "./types";
 
 /** GET /api/resources (UC1 Contratos §1). */
 export function searchResources(params: SearchResourcesParams): Promise<SearchResourcesResponse> {
@@ -37,4 +37,26 @@ export function fromQuery(query: URLSearchParams): SearchResourcesParams | null 
 
 export function categoryOf(value: string | null): Category {
   return value === "ACTIVO" ? "ACTIVO" : "ESPACIO";
+}
+
+/** Lo que responde GET /api/resources/{id}/availability (UC8 Contratos §1). */
+export interface AvailabilityResponse {
+  resourceId: string;
+  name: string;
+  category: Category;
+  timeSlot: { date: string; start: string; end: string };
+  available: boolean;
+  status: DisplayedStatus;
+  reason?: string;
+  occupiedUntil?: string;
+  answeredAt: string;
+}
+
+/** Revalida un recurso justo antes de confirmar (UC8 T013). Es una cortesía: la que decide es la de UC2 al reservar. */
+export function checkAvailability(
+  resourceId: string,
+  slot: { date: string; start: string; end: string },
+): Promise<AvailabilityResponse> {
+  const query = new URLSearchParams(slot);
+  return apiFetch<AvailabilityResponse>(`/resources/${encodeURIComponent(resourceId)}/availability?${query}`);
 }

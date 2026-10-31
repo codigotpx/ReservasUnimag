@@ -93,3 +93,39 @@ function pad(hour: number): string {
 function midday(date: string): Date {
   return new Date(`${date}T12:00:00-05:00`);
 }
+
+const longWeekday = new Intl.DateTimeFormat("es-CO", { timeZone: ZONE, weekday: "long" });
+
+/** "Miércoles, 24 de agosto". */
+export function fullDayLabel(date: string): string {
+  const name = longWeekday.format(midday(date));
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)}, ${dayMonth(date)}`;
+}
+
+/** Minutos entre dos horas "HH:mm" del mismo día. */
+export function minutesBetween(start: string, end: string): number {
+  return toMinutes(end) - toMinutes(start);
+}
+
+/** "2 h 0 min", "45 min". */
+export function durationLabel(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  return hours > 0 ? `${hours} h ${minutes % 60} min` : `${minutes} min`;
+}
+
+/** Suma minutos a una hora "HH:mm", sin pasar de las 22:00. */
+export function addMinutes(time: string, minutes: number): string {
+  const total = Math.min(toMinutes(time) + minutes, 22 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+function toMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+/** Las horas de 06:00 a 22:00 de media en media hora, en formato de 24 horas. */
+export const HALF_HOURS = Array.from({ length: 33 }, (_, index) => {
+  const minutes = 6 * 60 + index * 30;
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${minutes % 60 === 0 ? "00" : "30"}`;
+});

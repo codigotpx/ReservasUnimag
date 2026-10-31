@@ -26,3 +26,15 @@ body {
     cursor: pointer;
   }
 }
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
