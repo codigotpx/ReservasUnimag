@@ -44,7 +44,7 @@ export function ReportTable({ rows }: { rows: ValidatedRow[] }) {
             className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${
               filter === value
                 ? "border-brand-navy bg-brand-navy text-white"
-                : "border-[#dde3e9] bg-white text-gray-600 hover:border-gray-300"
+                : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
             }`}
           >
             {label}
@@ -52,9 +52,9 @@ export function ReportTable({ rows }: { rows: ValidatedRow[] }) {
         ))}
       </div>
 
-      <div className="max-h-[32rem] overflow-auto rounded-lg border border-[#dde3e9]">
-        <table className="w-full min-w-[56rem] text-left text-[13px]">
-          <thead className="sticky top-0 bg-[#f4f6f8] text-xs font-bold text-gray-500">
+      <div className="max-h-[32rem] overflow-auto rounded-2xl border border-gray-200">
+        <table className="w-full min-w-[56rem] text-left text-sm">
+          <thead className="sticky top-0 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
             <tr>
               <th className="w-16 px-3 py-3">Fila</th>
               <th className="px-3 py-3">Asignatura</th>
@@ -66,7 +66,7 @@ export function ReportTable({ rows }: { rows: ValidatedRow[] }) {
           </thead>
           <tbody>
             {visible.map((row) => (
-              <tr key={row.row} className="border-t border-[#dde3e9] align-top">
+              <tr key={row.row} className="border-t border-gray-100 align-top">
                 <td className="px-3 py-3 font-medium text-gray-500">{row.row}</td>
                 <td className="px-3 py-3">
                   <p className="font-medium text-foreground">{row.course}</p>
@@ -83,7 +83,7 @@ export function ReportTable({ rows }: { rows: ValidatedRow[] }) {
                 </td>
                 <td className="px-3 py-3 text-right">
                   <span
-                    className={`inline-block whitespace-nowrap rounded px-2 py-1 text-[11px] font-bold ${VERDICTS[row.verdict].className}`}
+                    className={`inline-block whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-semibold ${VERDICTS[row.verdict].className}`}
                   >
                     {row.verdict === "DISPLACES_RESERVATIONS" && row.affectedReservations
                       ? `Desplaza ${row.affectedReservations.length} ${row.affectedReservations.length === 1 ? "reserva" : "reservas"}`

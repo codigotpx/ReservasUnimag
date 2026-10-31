@@ -67,9 +67,9 @@ export function FormatGuide() {
       </Card>
 
       <Card title="Columnas">
-        <div className="overflow-x-auto rounded-lg border border-[#dde3e9]">
-          <table className="w-full min-w-[44rem] text-left text-[13px]">
-            <thead className="bg-[#f4f6f8] text-xs font-bold text-gray-500">
+        <div className="overflow-x-auto rounded-2xl border border-gray-200">
+          <table className="w-full min-w-[44rem] text-left text-sm">
+            <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
               <tr>
                 <th className="px-4 py-3">Columna</th>
                 <th className="px-4 py-3">Obligatoria</th>
@@ -79,9 +79,9 @@ export function FormatGuide() {
             </thead>
             <tbody>
               {COLUMNS.map(([name, required, what, example]) => (
-                <tr key={name} className="border-t border-[#dde3e9] align-top">
+                <tr key={name} className="border-t border-gray-100 align-top">
                   <td className="px-4 py-3">
-                    <code className="rounded bg-[#eef3f8] px-1.5 py-0.5 font-mono text-brand-navy">{name}</code>
+                    <code className="rounded-md bg-brand-navy/5 px-1.5 py-0.5 font-mono text-brand-navy">{name}</code>
                   </td>
                   <td className="px-4 py-3">{required ? "Sí" : "No"}</td>
                   <td className="px-4 py-3">{what}</td>
@@ -98,7 +98,7 @@ export function FormatGuide() {
           Las primeras filas de un archivo válido, separado por punto y coma como la plantilla. La segunda clase no tiene
           docente todavía: esa columna va vacía.
         </p>
-        <pre className="overflow-x-auto rounded-lg bg-[#10202f] p-4 font-mono text-[13px] leading-6 text-[#e8edf2]">
+        <pre className="overflow-x-auto rounded-2xl bg-brand-night p-5 font-mono text-sm leading-6 text-[#e8edf2]">
           {SAMPLE.map((line, index) => (
             <span key={line} className={index === 0 ? "block text-[#7fb8ff]" : "block"}>
               {line}
@@ -108,15 +108,15 @@ export function FormatGuide() {
       </Card>
 
       <Card title="Errores frecuentes y cómo corregirlos">
-        <dl className="divide-y divide-[#dde3e9] border-t border-[#dde3e9]">
+        <dl className="divide-y divide-gray-100 border-t border-gray-100">
           {MISTAKES.map(([problem, fix]) => (
             <div key={problem} className="grid gap-1 py-3.5 sm:grid-cols-[18rem_1fr] sm:gap-6">
-              <dt className="text-sm font-bold text-foreground">{problem}</dt>
+              <dt className="text-sm font-semibold text-foreground">{problem}</dt>
               <dd className="text-sm text-gray-600">{fix}</dd>
             </div>
           ))}
         </dl>
-        <p className="text-[13px] text-gray-500">
+        <p className="text-sm text-gray-500">
           Una sola fila con error impide aplicar la carga: el reporte de validación dice la línea del archivo y la
           columna, para corregirlas todas de una vez.
         </p>
@@ -126,13 +126,13 @@ export function FormatGuide() {
         <a
           href={TEMPLATE_URL}
           download="plantilla-horarios.csv"
-          className="inline-flex items-center gap-2 rounded-md border border-brand-navy bg-white px-6 py-3 text-sm font-bold text-brand-navy transition hover:bg-brand-navy/5"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-full border-2 border-brand-navy bg-white px-6 font-semibold text-brand-navy transition hover:bg-brand-navy/5"
         >
           <Download className="size-4" /> Descargar plantilla vacía
         </a>
         <Link
           href="/schedules"
-          className="rounded-md bg-brand-navy px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-navy/90"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand-navy px-7 font-semibold text-white transition hover:bg-brand-navy/90"
         >
           Volver a importar
         </Link>
@@ -143,7 +143,7 @@ export function FormatGuide() {
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-[#dde3e9] bg-white p-5 sm:p-6">
+    <section className="flex flex-col gap-4 rounded-3xl border border-gray-200 bg-white p-5 sm:p-7">
       <h2 className="text-lg font-bold text-foreground">{title}</h2>
       {children}
     </section>

@@ -158,7 +158,7 @@ export function ImportScheduleScreen() {
             type="button"
             onClick={validate}
             disabled={!canValidate}
-            className="inline-flex items-center gap-2 rounded-md bg-brand-navy px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-navy/90 disabled:cursor-not-allowed disabled:bg-[#c5cdd5]"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand-navy px-7 font-semibold text-white transition hover:bg-brand-navy/90 disabled:cursor-not-allowed disabled:bg-gray-300"
           >
             {validating && <Loader2 className="size-4 animate-spin" />}
             {validating ? "Validando…" : "Validar archivo"}
@@ -252,7 +252,7 @@ function Impact({
               <button
                 type="button"
                 onClick={() => setListOpen((open) => !open)}
-                className="shrink-0 rounded border border-amber-600 px-3 py-1 text-xs font-bold text-amber-700 transition hover:bg-amber-500/10"
+                className="shrink-0 rounded-full border border-amber-600 px-4 py-1.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-500/10"
               >
                 {listOpen ? "Ocultar listado" : "Ver listado"}
               </button>
@@ -286,11 +286,11 @@ function Impact({
               ? " Esta validación ya venció: vuelve a validar el archivo."
               : ` Esta validación vence a las ${clockTime(report.expiresAt)}; después hay que volver a validar el archivo.`)}
         </p>
-        <div className="flex gap-3">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-md border border-[#dde3e9] bg-white px-6 py-3 text-sm font-bold text-foreground transition hover:bg-gray-50"
+            className="h-12 rounded-full border border-gray-200 bg-white px-7 font-semibold text-foreground transition hover:bg-gray-100"
           >
             Cancelar proceso
           </button>
@@ -298,7 +298,7 @@ function Impact({
             <button
               type="button"
               onClick={onRevalidate}
-              className="rounded-md bg-brand-navy px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-navy/90"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand-navy px-7 font-semibold text-white transition hover:bg-brand-navy/90"
             >
               Volver a validar
             </button>
@@ -307,7 +307,7 @@ function Impact({
               type="button"
               onClick={onApply}
               disabled={!report.applicable || applying}
-              className="inline-flex items-center gap-2 rounded-md bg-brand-navy px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-navy/90 disabled:cursor-not-allowed disabled:bg-[#c5cdd5]"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand-navy px-7 font-semibold text-white transition hover:bg-brand-navy/90 disabled:cursor-not-allowed disabled:bg-gray-300"
             >
               {applying && <Loader2 className="size-4 animate-spin" />}
               {applying ? "Aplicando…" : "Aplicar carga completa"}
@@ -321,9 +321,9 @@ function Impact({
 
 function AffectedList({ items }: { items: { row: ValidationResponse["rows"][number]; reservation: NonNullable<ValidationResponse["rows"][number]["affectedReservations"]>[number] }[] }) {
   return (
-    <div className="max-h-80 overflow-auto rounded-lg border border-[#dde3e9]">
-      <table className="w-full min-w-[40rem] text-left text-[13px]">
-        <thead className="sticky top-0 bg-[#f4f6f8] text-xs font-bold text-gray-500">
+    <div className="max-h-80 overflow-auto rounded-2xl border border-gray-200">
+      <table className="w-full min-w-[40rem] text-left text-sm">
+        <thead className="sticky top-0 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
           <tr>
             <th className="px-3 py-3">Estudiante</th>
             <th className="px-3 py-3">Recurso</th>
@@ -333,7 +333,7 @@ function AffectedList({ items }: { items: { row: ValidationResponse["rows"][numb
         </thead>
         <tbody>
           {items.map(({ row, reservation }) => (
-            <tr key={reservation.reservationId} className="border-t border-[#dde3e9]">
+            <tr key={reservation.reservationId} className="border-t border-gray-100">
               <td className="px-3 py-3">
                 <p className="font-medium text-foreground">{reservation.holder.name}</p>
                 <p className="text-xs text-gray-500">{reservation.holder.code}</p>
@@ -356,7 +356,7 @@ function AffectedList({ items }: { items: { row: ValidationResponse["rows"][numb
 function Applied({ result, onStartOver }: { result: ConfirmationResponse; onStartOver: () => void }) {
   const { blocksCreated, blocksUnchanged, blocksWithdrawn, reservationsCancelled } = result.result;
   return (
-    <div className="flex flex-col items-start gap-4 rounded-lg border border-green-600/30 bg-green-600/5 p-5">
+    <div className="flex flex-col items-start gap-4 rounded-2xl bg-green-50 p-5 sm:p-6">
       <p className="flex items-center gap-2 text-lg font-bold text-green-800">
         <CircleCheck className="size-6" /> Carga del semestre {result.academicTerm} aplicada
       </p>
@@ -370,7 +370,7 @@ function Applied({ result, onStartOver }: { result: ConfirmationResponse; onStar
       <button
         type="button"
         onClick={onStartOver}
-        className="rounded-md border border-brand-navy px-5 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-brand-navy/5"
+        className="h-11 rounded-full border-2 border-brand-navy px-6 font-semibold text-brand-navy transition hover:bg-brand-navy/5"
       >
         Cargar otro archivo
       </button>
@@ -396,8 +396,8 @@ function Dropzone({ file, onFile, onClear }: { file: File | null; onFile: (file?
       }}
       onDragLeave={() => setOver(false)}
       onDrop={drop}
-      className={`flex flex-col items-center gap-3 rounded-lg border border-dashed px-6 py-10 text-center transition ${
-        over ? "border-brand-navy bg-brand-navy/5" : "border-[#c5cdd5] bg-[#f4f6f8]"
+      className={`flex flex-col items-center gap-3 rounded-3xl border-2 border-dashed px-6 py-12 text-center transition ${
+        over ? "border-brand-navy bg-brand-navy/5" : "border-gray-200 bg-gray-50"
       }`}
     >
       <input
@@ -411,7 +411,7 @@ function Dropzone({ file, onFile, onClear }: { file: File | null; onFile: (file?
         }}
       />
       {file ? (
-        <div className="flex items-center gap-3 rounded-lg border border-[#dde3e9] bg-white px-4 py-3">
+        <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
           <FileText className="size-6 text-brand-navy" />
           <div className="text-left">
             <p className="text-sm font-bold text-foreground">{file.name}</p>
@@ -429,21 +429,21 @@ function Dropzone({ file, onFile, onClear }: { file: File | null; onFile: (file?
       ) : (
         <>
           <UploadCloud className="size-9 text-brand-navy" />
-          <button type="button" onClick={() => input.current?.click()} className="text-[15px] font-bold text-foreground">
+          <button type="button" onClick={() => input.current?.click()} className="text-base font-semibold text-foreground">
             Arrastra la plantilla de horarios aquí o haz clic para buscar
           </button>
-          <p className="text-[13px] text-gray-500">Solo archivos .csv de hasta 2 MB, con las columnas de la plantilla</p>
+          <p className="text-sm text-gray-500">Solo archivos .csv de hasta 2 MB, con las columnas de la plantilla</p>
         </>
       )}
       <div className="mt-1 flex flex-wrap items-center justify-center gap-4">
         <a
           href={TEMPLATE_URL}
           download="plantilla-horarios.csv"
-          className="inline-flex items-center gap-2 rounded-md border border-brand-navy bg-white px-4 py-2 text-[13px] font-bold text-brand-navy transition hover:bg-brand-navy/5"
+          className="inline-flex h-11 items-center gap-2 rounded-full border-2 border-brand-navy bg-white px-5 text-sm font-semibold text-brand-navy transition hover:bg-brand-navy/5"
         >
           <Download className="size-4" /> Descargar plantilla vacía
         </a>
-        <Link href="/schedules/format" className="text-[13px] font-bold text-brand-navy underline">
+        <Link href="/schedules/format" className="text-sm font-semibold text-brand-navy underline underline-offset-4">
           ¿Cómo debe ser el archivo?
         </Link>
       </div>
@@ -479,10 +479,10 @@ function StepCard({
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-5 rounded-lg border border-[#dde3e9] bg-white p-5 sm:p-6">
+    <section className="flex flex-col gap-5 rounded-3xl border border-gray-200 bg-white p-5 sm:p-7">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="flex items-center gap-3 text-lg font-bold text-foreground">
-          <span className="flex size-7 items-center justify-center rounded-full bg-brand-navy text-sm text-white">
+          <span className="flex size-8 items-center justify-center rounded-full bg-brand-navy text-sm font-bold text-white">
             {number}
           </span>
           {title}
@@ -507,9 +507,9 @@ function DateField({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[13px] font-bold text-foreground">{label}</span>
-      <span className="relative flex items-center rounded-md border border-[#dde3e9] focus-within:border-brand-navy focus-within:ring-2 focus-within:ring-brand-navy/20">
-        <Calendar className="pointer-events-none absolute left-3.5 size-4 text-gray-500" />
+      <span className="text-base font-medium text-foreground">{label}</span>
+      <span className="relative flex h-12 items-center rounded-full border border-gray-200 focus-within:border-brand-navy focus-within:ring-2 focus-within:ring-brand-navy/20">
+        <Calendar className="pointer-events-none absolute left-5 size-5 text-gray-500" />
         <input
           type="date"
           required
@@ -517,7 +517,7 @@ function DateField({
           min={min}
           onChange={(event) => onChange(event.target.value)}
           onClick={(event) => event.currentTarget.showPicker?.()}
-          className="w-full cursor-pointer bg-transparent py-2.5 pl-10 pr-3 text-sm text-foreground outline-none [&::-webkit-calendar-picker-indicator]:hidden"
+          className="h-full w-full cursor-pointer bg-transparent pl-13 pr-5 text-base text-foreground outline-none [&::-webkit-calendar-picker-indicator]:hidden"
         />
       </span>
     </label>
@@ -525,10 +525,10 @@ function DateField({
 }
 
 function Stat({ label, value, tone }: { label: string; value: number; tone: "navy" | "muted" | "red" }) {
-  const color = tone === "navy" ? "text-brand-navy" : tone === "red" ? "text-red-700" : "text-[#9aa7b4]";
+  const color = tone === "navy" ? "text-brand-navy" : tone === "red" ? "text-red-700" : "text-gray-400";
   return (
-    <div className="rounded-lg bg-[#f4f6f8] p-4">
-      <p className="text-xs font-bold uppercase text-gray-500">{label}</p>
+    <div className="rounded-2xl bg-gray-50 p-5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
       <p className={`mt-2 text-3xl font-bold ${color}`}>{value}</p>
     </div>
   );
@@ -552,11 +552,11 @@ function Banner({
   }[tone];
   const Icon = tone === "ok" ? CircleCheck : TriangleAlert;
   return (
-    <div role={tone === "error" ? "alert" : "status"} className={`flex items-start gap-4 rounded-lg border p-4 ${styles}`}>
+    <div role={tone === "error" ? "alert" : "status"} className={`flex items-start gap-4 rounded-2xl border p-4 sm:p-5 ${styles}`}>
       <Icon className="mt-0.5 size-6 shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-bold text-foreground">{title}</p>
-        <p className="mt-1 text-[13px] text-gray-600">{children}</p>
+        <p className="text-base font-semibold text-foreground">{title}</p>
+        <p className="mt-1 text-sm text-gray-600">{children}</p>
       </div>
       {action}
     </div>
@@ -565,7 +565,7 @@ function Banner({
 
 function Alert({ tone, children }: { tone: "error"; children: ReactNode }) {
   return (
-    <div role="alert" className={`rounded-lg px-4 py-3 text-sm ${tone === "error" ? "bg-red-50 text-red-800" : ""}`}>
+    <div role="alert" className={`rounded-2xl px-4 py-3 text-sm ${tone === "error" ? "bg-red-50 text-red-800" : ""}`}>
       {children}
     </div>
   );
