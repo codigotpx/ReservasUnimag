@@ -173,7 +173,7 @@ export function ConfirmReservation({
           <button
             type="button"
             onClick={() => onDenialAction(denial.action.kind)}
-            className="h-13 w-full rounded-full bg-danger text-lg font-semibold text-white transition hover:bg-danger-strong"
+            className="h-13 w-full rounded-full bg-danger/10 text-lg font-semibold text-danger-strong transition hover:bg-danger/15"
           >
             {denial.action.label}
           </button>
