@@ -38,3 +38,11 @@ body {
     transform: translateY(100%);
   }
 }
+
+/* Al cambiar de pestaña, la pantalla nueva sube un poco mientras aparece. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
