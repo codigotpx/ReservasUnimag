@@ -281,7 +281,7 @@ frontend/
     │   ├── (app)/resources/             UC1, UC8 y reservar (UC2); también la usa Dirección
     │   ├── (app)/profile/               datos de la sesión y cerrar sesión
     │   ├── (app)/my-reservations/       vigentes, historial y cancelar (UC4)
-    │   └── (direction)/schedules/       importar horarios (UC3)
+    │   └── (direction)/schedules/       importar horarios (UC3) y format/, la guía del CSV; con su propio layout de escritorio
     ├── components/                      componentes visuales reutilizables
     ├── features/                        lógica por funcionalidad: recursos, reservas,
     │                                    horarios, auth (hooks, formularios, tipos)

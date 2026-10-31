@@ -26,3 +26,6 @@ Los assets que sí usa la aplicación (íconos, logos, imágenes, tipografías) 
 | `mis-reservas-vigentes.png` | `/my-reservations` | Reservas vigentes y cupo |
 | `mis-reservas-historial.png` | `/my-reservations?tab=historial` | Historial por mes |
 | `reservas-cancelar.png` | `/my-reservations` | Hoja para confirmar la cancelación |
+| `admin-importar-horarios.png` | `/schedules` | Dirección: carga válida que desplaza reservas |
+| `admin-importar-horarios-rechazada.png` | `/schedules` | Dirección: carga con filas rechazadas |
+| `admin-formato-archivo.png` | `/schedules/format` | Dirección: cómo debe ser el CSV |

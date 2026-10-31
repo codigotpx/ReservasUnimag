@@ -153,3 +153,10 @@ export function timeUntil(minutes: number): string {
   }
   return durationLabel(Math.max(0, minutes)).replace(/ 0 min$/, "");
 }
+
+const clock = new Intl.DateTimeFormat("es-CO", { timeZone: ZONE, hour: "numeric", minute: "2-digit", hour12: true });
+
+/** "4:10 p. m.", la hora como la lee una persona. */
+export function clockTime(instant: string): string {
+  return clock.format(new Date(instant)).replace(/\s/g, " ");
+}
