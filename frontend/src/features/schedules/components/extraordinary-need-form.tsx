@@ -1,8 +1,9 @@
 "use client";
 
-import { Calendar, CircleCheck, Loader2, TriangleAlert } from "lucide-react";
+import { CircleCheck, Loader2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
+import { DatePicker } from "@/components/date-picker";
 import { Dropdown } from "@/components/dropdown";
 import { ApiRequestError, type ApiError } from "@/lib/api/client";
 import { HALF_HOURS, dayOf, fullDayLabel, timeOf, today } from "@/lib/dates";
@@ -100,12 +101,12 @@ export function ExtraordinaryNeedForm() {
     return (
       <Shell>
         <Card title="Bloqueo creado">
-          <div className="flex flex-col items-start gap-4 rounded-lg border border-green-600/30 bg-green-600/5 p-5">
+          <div className="flex flex-col items-start gap-4 rounded-2xl border border-green-600/30 bg-green-600/5 p-5">
             <p className="flex items-center gap-2 text-lg font-bold text-green-800">
               <CircleCheck className="size-6" /> {done.block.course}
             </p>
             <p className="text-sm text-foreground">
-              {done.block.resourceId} · {fullDayLabel(dayOf(done.block.start))}, de {timeOf(done.block.start)} a{" "}
+              {done.block.resourceId}, {fullDayLabel(dayOf(done.block.start))}, de {timeOf(done.block.start)} a{" "}
               {timeOf(done.block.end)}
             </p>
             {(done.reservationsCancelled ?? 0) > 0 && (
@@ -119,7 +120,7 @@ export function ExtraordinaryNeedForm() {
             <button
               type="button"
               onClick={startOver}
-              className="rounded-md border border-brand-navy px-5 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-brand-navy/5"
+              className="rounded-full border border-brand-navy px-5 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-brand-navy/5"
             >
               Registrar otra actividad
             </button>
@@ -148,18 +149,7 @@ export function ExtraordinaryNeedForm() {
               />
             </Field>
             <Field label="Fecha">
-              <span className="relative flex items-center">
-                <Calendar className="pointer-events-none absolute left-3.5 size-4 text-gray-500" />
-                <input
-                  type="date"
-                  required
-                  min={today()}
-                  value={form.date}
-                  onChange={(event) => update("date", event.target.value)}
-                  onClick={(event) => event.currentTarget.showPicker?.()}
-                  className={`${inputClass} cursor-pointer pl-10 [&::-webkit-calendar-picker-indicator]:hidden`}
-                />
-              </span>
+              <DatePicker label="Fecha" value={form.date} min={today()} onChange={(value) => update("date", value)} />
             </Field>
             <Field label="Hora inicio">
               <Dropdown
@@ -167,7 +157,7 @@ export function ExtraordinaryNeedForm() {
                 value={form.start}
                 onChange={(value) => update("start", value)}
                 options={HALF_HOURS.slice(0, -1).map((time) => ({ value: time, label: time }))}
-                className="[&>button]:rounded-md"
+               
               />
             </Field>
             <Field label="Hora fin" hint={slotProblem ?? "Sin tope de 2 horas: es una actividad académica."} error={Boolean(slotProblem)}>
@@ -176,7 +166,7 @@ export function ExtraordinaryNeedForm() {
                 value={form.end}
                 onChange={(value) => update("end", value)}
                 options={HALF_HOURS.slice(1).map((time) => ({ value: time, label: time }))}
-                className="[&>button]:rounded-md"
+               
               />
             </Field>
           </div>
@@ -233,7 +223,7 @@ export function ExtraordinaryNeedForm() {
             <button
               type="submit"
               disabled={!complete || Boolean(slotProblem) || checking}
-              className="inline-flex items-center gap-2 rounded-md bg-brand-navy px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-navy/90 disabled:cursor-not-allowed disabled:bg-[#c5cdd5]"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-navy px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-navy/90 disabled:cursor-not-allowed disabled:bg-[#c5cdd5]"
             >
               {checking && <Loader2 className="size-4 animate-spin" />}
               {checking ? "Revisando…" : "Revisar impacto"}
@@ -244,7 +234,7 @@ export function ExtraordinaryNeedForm() {
 
       {problem && (
         <Card title="No se puede bloquear esa franja">
-          <div role="alert" className="flex gap-3 rounded-lg border border-red-700 bg-red-600/5 p-4">
+          <div role="alert" className="flex gap-3 rounded-2xl border border-red-700 bg-red-600/5 p-4">
             <TriangleAlert className="mt-0.5 size-6 shrink-0 text-red-700" />
             <div className="text-sm">
               {problem.verdict && <p className="font-bold text-red-700">{VERDICTS[problem.verdict]?.label}</p>}
@@ -263,13 +253,13 @@ export function ExtraordinaryNeedForm() {
             {preview.start && preview.end && (
               <>
                 {" "}
-                · {fullDayLabel(dayOf(preview.start))}, de {timeOf(preview.start)} a {timeOf(preview.end)}
+                , {fullDayLabel(dayOf(preview.start))}, de {timeOf(preview.start)} a {timeOf(preview.end)}
               </>
             )}
           </p>
           {preview.verdict === "DISPLACES_RESERVATIONS" && preview.affectedReservations?.length ? (
             <>
-              <div role="status" className="flex gap-3 rounded-lg border border-amber-600 bg-amber-500/10 p-4">
+              <div role="status" className="flex gap-3 rounded-2xl border border-amber-600 bg-amber-500/10 p-4">
                 <TriangleAlert className="mt-0.5 size-6 shrink-0 text-amber-600" />
                 <div className="text-sm">
                   <p className="font-bold text-foreground">
@@ -285,7 +275,7 @@ export function ExtraordinaryNeedForm() {
               <AffectedList reservations={preview.affectedReservations} resourceName={preview.resourceName ?? preview.resourceId} />
             </>
           ) : (
-            <p role="status" className="flex items-center gap-2 rounded-lg border border-green-700/40 bg-green-600/5 p-4 text-sm font-bold text-foreground">
+            <p role="status" className="flex items-center gap-2 rounded-2xl border border-green-700/40 bg-green-600/5 p-4 text-sm font-bold text-foreground">
               <CircleCheck className="size-5 text-green-700" /> La franja está libre: no se cancela ninguna reserva.
             </p>
           )}
@@ -293,7 +283,7 @@ export function ExtraordinaryNeedForm() {
             <button
               type="button"
               onClick={() => setPreview(null)}
-              className="rounded-md border border-[#dde3e9] bg-white px-6 py-3 text-sm font-bold text-foreground transition hover:bg-gray-50"
+              className="rounded-full border border-gray-200 bg-white px-6 py-3 text-sm font-bold text-foreground transition hover:bg-gray-50"
             >
               Cambiar datos
             </button>
@@ -301,7 +291,7 @@ export function ExtraordinaryNeedForm() {
               type="button"
               onClick={confirm}
               disabled={confirming}
-              className="inline-flex items-center gap-2 rounded-md bg-brand-navy px-6 py-3 text-sm font-bold text-white transition hover:bg-brand-navy/90 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-navy px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-navy/90 disabled:opacity-60"
             >
               {confirming && <Loader2 className="size-4 animate-spin" />}
               {confirming ? "Bloqueando…" : "Confirmar bloqueo"}
@@ -321,7 +311,7 @@ export function ExtraordinaryNeedForm() {
 }
 
 const inputClass =
-  "w-full rounded-md border border-[#dde3e9] bg-white px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-gray-400 focus:border-brand-navy focus:ring-2 focus:ring-brand-navy/20";
+  "w-full rounded-full border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-foreground outline-none transition placeholder:text-gray-400 focus:border-brand-navy focus:ring-2 focus:ring-brand-navy/20";
 
 function Shell({ children }: { children: ReactNode }) {
   return <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8 lg:px-10 lg:py-10">{children}</div>;
@@ -329,7 +319,7 @@ function Shell({ children }: { children: ReactNode }) {
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-5 rounded-lg border border-[#dde3e9] bg-white p-5 sm:p-6">
+    <section className="flex flex-col gap-5 rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">
       <h2 className="text-lg font-bold text-foreground">{title}</h2>
       {children}
     </section>

@@ -4,7 +4,7 @@ import { ClientOnly } from "@/components/client-only";
 import { ExtraordinaryNeedForm } from "@/features/schedules/components/extraordinary-need-form";
 
 export const metadata: Metadata = {
-  title: "Actividades extraordinarias · Reservas Unimagdalena",
+  title: "Actividades extraordinarias | Reservas Unimagdalena",
 };
 
 export default function ExtraordinaryNeedPage() {

@@ -48,7 +48,7 @@ export function UploadHistory() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8 lg:px-10 lg:py-10">
-      <section className="flex flex-col gap-5 rounded-lg border border-[#dde3e9] bg-white p-5 sm:p-6">
+      <section className="flex flex-col gap-5 rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-foreground">Cargas de horario</h2>
@@ -58,7 +58,7 @@ export function UploadHistory() {
           </div>
           <Link
             href="/schedules"
-            className="rounded-md bg-brand-navy px-5 py-2.5 text-sm font-bold text-white transition hover:bg-brand-navy/90"
+            className="rounded-full bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-navy/90"
           >
             Nueva carga
           </Link>
@@ -67,7 +67,7 @@ export function UploadHistory() {
         {!current ? (
           <div aria-busy="true" className="flex flex-col gap-2">
             {[0, 1, 2].map((index) => (
-              <div key={index} className="h-14 animate-pulse rounded-lg bg-[#f4f6f8]" />
+              <div key={index} className="h-14 animate-pulse rounded-2xl bg-gray-50" />
             ))}
           </div>
         ) : "error" in current ? (
@@ -77,7 +77,7 @@ export function UploadHistory() {
             <button
               type="button"
               onClick={() => setAttempt((value) => value + 1)}
-              className="inline-flex items-center gap-2 rounded-md bg-brand-navy px-5 py-2.5 text-sm font-bold text-white"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white"
             >
               <RefreshCw className="size-4" /> Reintentar
             </button>
@@ -89,9 +89,9 @@ export function UploadHistory() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border border-[#dde3e9]">
+            <div className="overflow-x-auto rounded-2xl border border-gray-200">
               <table className="w-full min-w-[56rem] text-left text-[13px]">
-                <thead className="bg-[#f4f6f8] text-xs font-bold text-gray-500">
+                <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
                   <tr>
                     <th className="px-4 py-3">Semestre</th>
                     <th className="px-4 py-3">Archivo</th>
@@ -110,14 +110,14 @@ export function UploadHistory() {
                       <tr
                         key={upload.uploadId}
                         onClick={() => router.push(href)}
-                        className="cursor-pointer border-t border-[#dde3e9] transition hover:bg-[#f4f6f8]"
+                        className="cursor-pointer border-t border-gray-200 transition hover:bg-gray-50"
                       >
                         <td className="px-4 py-3 font-bold text-foreground">
                           <Link href={href} className="hover:underline" onClick={(event) => event.stopPropagation()}>
                             {upload.academicTerm}
                           </Link>
                         </td>
-                        <td className="max-w-56 truncate px-4 py-3 text-foreground">{upload.fileName ?? "—"}</td>
+                        <td className="max-w-56 truncate px-4 py-3 text-foreground">{upload.fileName ?? "Sin nombre"}</td>
                         <td className="px-4 py-3">
                           <span className={`whitespace-nowrap rounded px-2 py-1 text-[11px] font-bold ${status.className}`}>
                             {status.label}
@@ -125,14 +125,14 @@ export function UploadHistory() {
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-gray-600">{dateTimeLabel(upload.validatedAt)}</td>
                         <td className="whitespace-nowrap px-4 py-3 text-gray-600">
-                          {upload.appliedAt ? dateTimeLabel(upload.appliedAt) : "—"}
+                          {upload.appliedAt ? dateTimeLabel(upload.appliedAt) : "Sin aplicar"}
                         </td>
                         <td className="px-4 py-3 text-gray-600">
                           {upload.result
-                            ? `${upload.result.blocksCreated} sesiones · ${upload.result.reservationsCancelled} reservas canceladas`
-                            : "—"}
+                            ? `${upload.result.blocksCreated} sesiones, ${upload.result.reservationsCancelled} reservas canceladas`
+                            : "Sin resultado"}
                         </td>
-                        <td className="px-4 py-3 text-gray-600">{upload.uploadedBy.name ?? "—"}</td>
+                        <td className="px-4 py-3 text-gray-600">{upload.uploadedBy.name ?? "Sin nombre"}</td>
                       </tr>
                     );
                   })}
@@ -165,13 +165,13 @@ function Pagination({
   const last = Math.min(page * pageSize, total);
   return (
     <nav aria-label="Páginas" className="flex items-center justify-end gap-3 text-sm text-gray-500">
-      {first}–{last} de {total}
+      {first} a {last} de {total}
       <button
         type="button"
         aria-label="Anterior"
         disabled={page <= 1}
         onClick={() => onPage(page - 1)}
-        className="rounded-md border border-[#dde3e9] p-2 text-brand-navy disabled:text-gray-300"
+        className="rounded-full border border-gray-200 p-2 text-brand-navy disabled:text-gray-300"
       >
         <ChevronLeft className="size-4" />
       </button>
@@ -180,7 +180,7 @@ function Pagination({
         aria-label="Siguiente"
         disabled={page >= totalPages}
         onClick={() => onPage(page + 1)}
-        className="rounded-md border border-[#dde3e9] p-2 text-brand-navy disabled:text-gray-300"
+        className="rounded-full border border-gray-200 p-2 text-brand-navy disabled:text-gray-300"
       >
         <ChevronRight className="size-4" />
       </button>

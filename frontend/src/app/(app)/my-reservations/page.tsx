@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { MyReservationsScreen } from "@/features/reservations/components/my-reservations-screen";
 
 export const metadata: Metadata = {
-  title: "Mis reservas · Reservas Unimagdalena",
+  title: "Mis reservas | Reservas Unimagdalena",
 };
 
 export default function MyReservationsPage() {

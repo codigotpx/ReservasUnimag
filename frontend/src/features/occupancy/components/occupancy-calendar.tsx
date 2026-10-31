@@ -88,7 +88,7 @@ export function OccupancyCalendar() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-8 lg:px-10 lg:py-10">
-      <section className="flex flex-wrap items-center gap-4 rounded-lg border border-[#dde3e9] bg-white p-4">
+      <section className="flex flex-wrap items-center gap-4 rounded-3xl border border-gray-200 bg-white p-4">
         <div className="w-72">
           {spaces && spaces.length > 0 && resourceId ? (
             <Dropdown
@@ -96,13 +96,13 @@ export function OccupancyCalendar() {
               value={resourceId}
               onChange={setResourceId}
               options={spaces.map((space) => ({ value: space.id, label: `Espacio: ${space.name}` }))}
-              className="[&>button]:rounded-md"
+             
             />
           ) : (
-            <div className="h-12 animate-pulse rounded-md bg-[#f4f6f8]" />
+            <div className="h-12 animate-pulse rounded-full bg-gray-50" />
           )}
         </div>
-        <div className="flex items-center gap-1 rounded-md border border-[#dde3e9]">
+        <div className="flex items-center gap-1 rounded-full border border-gray-200">
           <button
             type="button"
             aria-label="Semana anterior"
@@ -113,7 +113,7 @@ export function OccupancyCalendar() {
           </button>
           <span className="flex items-center gap-2 px-2 text-sm font-medium text-foreground">
             <CalendarDays className="size-4 text-gray-500" />
-            Semana: {shortDay(monday)} – {shortDay(saturday)}, {monday.slice(0, 4)}
+            Semana del {shortDay(monday)} al {shortDay(saturday)} de {monday.slice(0, 4)}
           </span>
           <button
             type="button"
@@ -127,7 +127,7 @@ export function OccupancyCalendar() {
         <button
           type="button"
           onClick={() => setMonday(mondayOf(today()))}
-          className="rounded-md border border-[#dde3e9] px-4 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-gray-50"
+          className="rounded-full border border-gray-200 px-4 py-2.5 text-sm font-bold text-brand-navy transition hover:bg-gray-50"
         >
           Esta semana
         </button>
@@ -148,7 +148,7 @@ export function OccupancyCalendar() {
       ) : (
         <>
           {current?.data.operationalStatus === "EN_MANTENIMIENTO" && (
-            <p className="flex items-center gap-3 rounded-lg border border-[#c5cdd5] bg-[#e8edf2] p-4 text-sm text-foreground">
+            <p className="flex items-center gap-3 rounded-2xl border border-[#c5cdd5] bg-[#e8edf2] p-4 text-sm text-foreground">
               <Wrench className="size-5 text-gray-600" />
               Según el inventario, este espacio está en mantenimiento ahora: no se puede reservar mientras tanto.
             </p>
@@ -164,13 +164,13 @@ function Grid({ days, uses, loading }: { days: string[]; uses: ScheduledUse[]; l
   const hours = Array.from({ length: (CLOSING - OPENING) / 60 }, (_, index) => OPENING / 60 + index);
   const todayDate = today();
   return (
-    <div aria-busy={loading} className="overflow-x-auto rounded-lg border border-[#dde3e9] bg-white">
+    <div aria-busy={loading} className="overflow-x-auto rounded-3xl border border-gray-200 bg-white">
       <div className="grid min-w-[60rem]" style={{ gridTemplateColumns: `5rem repeat(${days.length}, 1fr)` }}>
-        <div className="border-b border-[#dde3e9]" />
+        <div className="border-b border-gray-200" />
         {days.map((day, index) => (
           <div
             key={day}
-            className={`border-b border-l border-[#dde3e9] py-3 text-center text-sm font-bold ${
+            className={`border-b border-l border-gray-200 py-3 text-center text-sm font-bold ${
               day === todayDate ? "text-brand-navy" : "text-foreground"
             }`}
           >
@@ -192,7 +192,7 @@ function Grid({ days, uses, loading }: { days: string[]; uses: ScheduledUse[]; l
         {days.map((day) => (
           <div
             key={day}
-            className={`relative border-l border-[#dde3e9] ${loading ? "animate-pulse bg-[#f8fafb]" : ""}`}
+            className={`relative border-l border-gray-200 ${loading ? "animate-pulse bg-gray-50" : ""}`}
             style={{
               height: hours.length * HOUR_HEIGHT,
               backgroundImage: `repeating-linear-gradient(to bottom, transparent 0, transparent ${HOUR_HEIGHT - 1}px, #eef1f4 ${HOUR_HEIGHT - 1}px, #eef1f4 ${HOUR_HEIGHT}px)`,
@@ -207,7 +207,7 @@ function Grid({ days, uses, loading }: { days: string[]; uses: ScheduledUse[]; l
         ))}
       </div>
       {!loading && uses.length === 0 && (
-        <p className="border-t border-[#dde3e9] p-4 text-center text-sm text-gray-500">
+        <p className="border-t border-gray-200 p-4 text-center text-sm text-gray-500">
           Esta semana el espacio no tiene clases ni reservas confirmadas.
         </p>
       )}
@@ -223,13 +223,13 @@ function UseBlock({ use }: { use: ScheduledUse }) {
   const height = Math.max(((end - start) / 60) * HOUR_HEIGHT - 4, 20);
   return (
     <div
-      title={`${use.course ?? kind.label} · ${timeOf(use.start)} - ${timeOf(use.end)}`}
-      className={`absolute inset-x-1 overflow-hidden rounded-md px-2.5 py-1.5 text-xs shadow-sm ${kind.className}`}
+      title={`${use.course ?? kind.label}, de ${timeOf(use.start)} a ${timeOf(use.end)}`}
+      className={`absolute inset-x-1 overflow-hidden rounded-full px-2.5 py-1.5 text-xs shadow-sm ${kind.className}`}
       style={{ top: top + 2, height }}
     >
       <p className="truncate font-bold">{use.course ?? kind.label}</p>
       <p className="truncate opacity-80">
-        {use.program ? `${use.program} · ` : ""}
+        {use.program ? `${use.program}, ` : ""}
         {timeOf(use.start)} - {timeOf(use.end)}
       </p>
     </div>
@@ -238,13 +238,13 @@ function UseBlock({ use }: { use: ScheduledUse }) {
 
 function Problem({ detail, onRetry }: { detail: string; onRetry: () => void }) {
   return (
-    <div role="alert" className="flex flex-col items-center gap-3 rounded-lg border border-[#dde3e9] bg-white py-10 text-center">
+    <div role="alert" className="flex flex-col items-center gap-3 rounded-3xl border border-gray-200 bg-white py-10 text-center">
       <TriangleAlert className="size-9 text-amber-500" />
       <p className="max-w-sm text-gray-600">{detail}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="inline-flex items-center gap-2 rounded-md bg-brand-navy px-5 py-2.5 text-sm font-bold text-white"
+        className="inline-flex items-center gap-2 rounded-full bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white"
       >
         <RefreshCw className="size-4" /> Reintentar
       </button>

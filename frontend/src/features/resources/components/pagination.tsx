@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { SearchResourcesResponse } from "../types";
 
 /**
- * "21–40 de 47 · Página 2 de 3", con anterior y siguiente (UC1 FR-009 y FR-013). Con 20 o menos
+ * "21 a 40 de 47, página 2 de 3", con anterior y siguiente (UC1 FR-009 y FR-013). Con 20 o menos
  * recursos no hay control de paginación: el backend los manda en una sola página.
  */
 export function Pagination({
@@ -24,9 +24,9 @@ export function Pagination({
       </PageButton>
       <p className="text-center text-sm text-gray-500">
         <span className="font-semibold text-foreground">
-          {first}–{last} de {total}
-        </span>{" "}
-        · Página {page} de {totalPages}
+          {first} a {last} de {total}
+        </span>
+        , página {page} de {totalPages}
       </p>
       <PageButton disabled={page >= totalPages} onClick={() => onPage(page + 1)} label="Siguiente">
         <ChevronRight className="size-5" />

@@ -4,7 +4,7 @@ import { ClientOnly } from "@/components/client-only";
 import { OccupancyCalendar } from "@/features/occupancy/components/occupancy-calendar";
 
 export const metadata: Metadata = {
-  title: "Ocupación de espacios · Reservas Unimagdalena",
+  title: "Ocupación de espacios | Reservas Unimagdalena",
 };
 
 export default function OccupancyPage() {

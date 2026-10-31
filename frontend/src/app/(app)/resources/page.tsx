@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { ResourcesScreen } from "@/features/resources/components/resources-screen";
 
 export const metadata: Metadata = {
-  title: "Consultar recursos · Reservas Unimagdalena",
+  title: "Consultar recursos | Reservas Unimagdalena",
 };
 
 export default function ResourcesPage() {

@@ -23,7 +23,7 @@ export function PendingCheckOuts() {
   const [tab, setTab] = useState<Tab>("returns");
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8 lg:px-10 lg:py-10">
-      <div role="tablist" aria-label="Pendientes" className="flex gap-2 border-b border-[#dde3e9]">
+      <div role="tablist" aria-label="Pendientes" className="flex gap-2 border-b border-gray-200">
         {(
           [
             ["returns", "Devoluciones pendientes"],
@@ -79,7 +79,7 @@ function PendingReturns() {
                   key: loan.reservationId,
                   cells: [
                     <Named key="a" name={loan.resourceName ?? loan.resourceId} code={loan.resourceId} />,
-                    loan.holder ? <Named key="p" name={loan.holder.name ?? loan.holder.code} code={loan.holder.code} /> : "—",
+                    loan.holder ? <Named key="p" name={loan.holder.name ?? loan.holder.code} code={loan.holder.code} /> : "Sin dato",
                     dateTimeLabel(loan.pickup),
                     dateTimeLabel(loan.dueAt),
                     loan.overdueDays > 0 ? (
@@ -97,7 +97,7 @@ function PendingReturns() {
                         {near && <span className="block text-xs">Menos de 48 h</span>}
                       </span>
                     ) : (
-                      "—"
+                      "Sin fecha"
                     ),
                   ],
                 };
@@ -118,7 +118,7 @@ function PendingReviews() {
 
   return (
     <>
-      <p className="flex gap-3 rounded-lg border border-[#dde3e9] bg-white p-4 text-sm text-gray-600">
+      <p className="flex gap-3 rounded-3xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
         <Info className="mt-0.5 size-5 shrink-0 text-brand-navy" />
         La revisión de espacios es opcional: la franja se liberó sola al terminar la reserva. Un check-out de espacio
         solo deja constancia de cómo quedó, y lo registra el Módulo 3.
@@ -142,7 +142,7 @@ function PendingReviews() {
             className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${
               origin === value
                 ? "border-brand-navy bg-brand-navy text-white"
-                : "border-[#dde3e9] bg-white text-gray-600 hover:border-gray-300"
+                : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
             }`}
           >
             {label}
@@ -240,20 +240,20 @@ function Loaded<T>({
     return (
       <div aria-busy="true" className="flex flex-col gap-2">
         {[0, 1, 2].map((index) => (
-          <div key={index} className="h-14 animate-pulse rounded-lg bg-white" />
+          <div key={index} className="h-14 animate-pulse rounded-2xl bg-white" />
         ))}
       </div>
     );
   }
   if ("error" in current) {
     return (
-      <div role="alert" className="flex flex-col items-center gap-3 rounded-lg border border-[#dde3e9] bg-white py-10 text-center">
+      <div role="alert" className="flex flex-col items-center gap-3 rounded-3xl border border-gray-200 bg-white py-10 text-center">
         <TriangleAlert className="size-9 text-amber-500" />
         <p className="max-w-sm text-gray-600">{current.error.detail}</p>
         <button
           type="button"
           onClick={retry}
-          className="inline-flex items-center gap-2 rounded-md bg-brand-navy px-5 py-2.5 text-sm font-bold text-white"
+          className="inline-flex items-center gap-2 rounded-full bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white"
         >
           <RefreshCw className="size-4" /> Reintentar
         </button>
@@ -265,9 +265,9 @@ function Loaded<T>({
 
 function Table({ head, rows }: { head: string[]; rows: { key: string; cells: ReactNode[] }[] }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-[#dde3e9] bg-white">
+    <div className="overflow-x-auto rounded-3xl border border-gray-200 bg-white">
       <table className="w-full min-w-[52rem] text-left text-[13px]">
-        <thead className="bg-[#f4f6f8] text-xs font-bold text-gray-500">
+        <thead className="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
           <tr>
             {head.map((title) => (
               <th key={title} className="px-4 py-3">
@@ -278,7 +278,7 @@ function Table({ head, rows }: { head: string[]; rows: { key: string; cells: Rea
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.key} className="border-t border-[#dde3e9] align-top">
+            <tr key={row.key} className="border-t border-gray-200 align-top">
               {row.cells.map((cell, index) => (
                 <td key={index} className="px-4 py-3 text-foreground">
                   {cell}
@@ -313,7 +313,7 @@ function Badge({ tone, children }: { tone: "amber" | "muted" | "violet"; childre
 function Stat({ label, value, tone = "navy" }: { label: string; value: number; tone?: "navy" | "amber" | "red" | "muted" }) {
   const color = { navy: "text-brand-navy", amber: "text-amber-600", red: "text-red-700", muted: "text-[#9aa7b4]" }[tone];
   return (
-    <div className="rounded-lg border border-[#dde3e9] bg-white p-4">
+    <div className="rounded-3xl border border-gray-200 bg-white p-4">
       <p className="text-xs font-bold uppercase text-gray-500">{label}</p>
       <p className={`mt-1 text-3xl font-bold ${color}`}>{value}</p>
     </div>
@@ -322,7 +322,7 @@ function Stat({ label, value, tone = "navy" }: { label: string; value: number; t
 
 function Empty({ text }: { text: string }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-[#dde3e9] bg-white py-12 text-center text-gray-500">
+    <div className="flex flex-col items-center gap-3 rounded-3xl border border-gray-200 bg-white py-12 text-center text-gray-500">
       <PackageCheck className="size-10 text-gray-400" />
       <p>{text}</p>
     </div>
@@ -334,13 +334,13 @@ function Pager({ pagination, onPage }: { pagination: Pagination; onPage: (page: 
   if (totalPages <= 1) return null;
   return (
     <nav aria-label="Páginas" className="flex items-center justify-end gap-3 text-sm text-gray-500">
-      {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} de {total}
+      {(page - 1) * pageSize + 1} a {Math.min(page * pageSize, total)} de {total}
       <button
         type="button"
         aria-label="Anterior"
         disabled={page <= 1}
         onClick={() => onPage(page - 1)}
-        className="rounded-md border border-[#dde3e9] bg-white p-2 text-brand-navy disabled:text-gray-300"
+        className="rounded-full border border-gray-200 bg-white p-2 text-brand-navy disabled:text-gray-300"
       >
         <ChevronLeft className="size-4" />
       </button>
@@ -349,7 +349,7 @@ function Pager({ pagination, onPage }: { pagination: Pagination; onPage: (page: 
         aria-label="Siguiente"
         disabled={page >= totalPages}
         onClick={() => onPage(page + 1)}
-        className="rounded-md border border-[#dde3e9] bg-white p-2 text-brand-navy disabled:text-gray-300"
+        className="rounded-full border border-gray-200 bg-white p-2 text-brand-navy disabled:text-gray-300"
       >
         <ChevronRight className="size-4" />
       </button>

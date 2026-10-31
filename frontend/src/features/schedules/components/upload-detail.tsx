@@ -76,7 +76,7 @@ export function UploadDetail({ uploadId }: { uploadId: string }) {
       </Link>
 
       {!current ? (
-        <div aria-busy="true" className="h-64 animate-pulse rounded-lg border border-[#dde3e9] bg-white" />
+        <div aria-busy="true" className="h-64 animate-pulse rounded-3xl border border-gray-200 bg-white" />
       ) : "error" in current ? (
         <Card>
           <div role="alert" className="flex flex-col items-center gap-3 py-8 text-center">
@@ -88,7 +88,7 @@ export function UploadDetail({ uploadId }: { uploadId: string }) {
               <button
                 type="button"
                 onClick={() => setAttempt((value) => value + 1)}
-                className="inline-flex items-center gap-2 rounded-md bg-brand-navy px-5 py-2.5 text-sm font-bold text-white"
+                className="inline-flex items-center gap-2 rounded-full bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white"
               >
                 <RefreshCw className="size-4" /> Reintentar
               </button>
@@ -128,13 +128,13 @@ function Detail({
           <span className={`rounded px-2.5 py-1 text-xs font-bold ${status.className}`}>{status.label}</span>
         </div>
         <dl className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-          <Info label="Archivo">{upload.fileName ?? "—"}</Info>
+          <Info label="Archivo">{upload.fileName ?? "Sin nombre"}</Info>
           <Info label="Periodo de clases">
             {dayMonth(upload.term.start)} al {dayMonth(upload.term.end)}
           </Info>
-          <Info label="Subida por">{upload.uploadedBy.name ?? "—"}</Info>
+          <Info label="Subida por">{upload.uploadedBy.name ?? "Sin nombre"}</Info>
           <Info label="Validada">{dateTimeLabel(upload.validatedAt)}</Info>
-          <Info label="Aplicada">{upload.appliedAt ? dateTimeLabel(upload.appliedAt) : "—"}</Info>
+          <Info label="Aplicada">{upload.appliedAt ? dateTimeLabel(upload.appliedAt) : "Sin aplicar"}</Info>
         </dl>
 
         {upload.result && (
@@ -163,7 +163,7 @@ function Detail({
           </Note>
         )}
         {pending && (
-          <div className="flex flex-col gap-3 rounded-lg border border-amber-600 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-2xl border border-amber-600 bg-amber-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-foreground">
               Está validada pero no se aplicó; vence a las <strong>{clockTime(upload.expiresAt!)}</strong>
               {impactOf(upload.summary) ? ` Al aplicarla ${impactOf(upload.summary)}.` : ""}
@@ -172,7 +172,7 @@ function Detail({
               type="button"
               onClick={onApply}
               disabled={applying}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-brand-navy px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-brand-navy px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               {applying && <Loader2 className="size-4 animate-spin" />}
               {applying ? "Aplicando…" : "Aplicar carga completa"}
@@ -185,8 +185,8 @@ function Detail({
       <Card>
         <h2 className="text-lg font-bold text-foreground">Reporte por fila</h2>
         <p className="text-sm text-gray-500">
-          {upload.summary.rowsRead} filas leídas · {upload.summary.rowsOk} a cargar · {upload.summary.rowsUnchanged} ya
-          cargadas · {upload.summary.rowsWithBlockingVerdict} rechazadas
+          {upload.summary.rowsRead} filas leídas: {upload.summary.rowsOk} a cargar, {upload.summary.rowsUnchanged} ya
+          cargadas y {upload.summary.rowsWithBlockingVerdict} rechazadas.
         </p>
         <ReportTable rows={upload.rows} />
       </Card>
@@ -218,7 +218,7 @@ function impactOf(summary: ScheduleUploadDetail["summary"]): string {
 }
 
 function Card({ children }: { children: ReactNode }) {
-  return <section className="flex flex-col gap-5 rounded-lg border border-[#dde3e9] bg-white p-5 sm:p-6">{children}</section>;
+  return <section className="flex flex-col gap-5 rounded-3xl border border-gray-200 bg-white p-5 sm:p-6">{children}</section>;
 }
 
 function Info({ label, children }: { label: string; children: ReactNode }) {
@@ -232,7 +232,7 @@ function Info({ label, children }: { label: string; children: ReactNode }) {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg bg-[#f4f6f8] p-4">
+    <div className="rounded-2xl bg-gray-50 p-5">
       <p className="text-xs font-bold uppercase text-gray-500">{label}</p>
       <p className="mt-1 text-2xl font-bold text-brand-navy">{value}</p>
     </div>
@@ -243,7 +243,7 @@ function Note({ tone, children }: { tone: "error" | "muted"; children: ReactNode
   return (
     <p
       role={tone === "error" ? "alert" : undefined}
-      className={`rounded-lg px-4 py-3 text-sm ${tone === "error" ? "bg-red-50 text-red-800" : "bg-[#f4f6f8] text-gray-600"}`}
+      className={`rounded-2xl px-4 py-3 text-sm ${tone === "error" ? "bg-red-50 text-red-800" : "bg-gray-50 text-gray-600"}`}
     >
       {children}
     </p>

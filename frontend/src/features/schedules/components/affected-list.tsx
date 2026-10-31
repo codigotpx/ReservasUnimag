@@ -18,9 +18,9 @@ export function AffectedList({
     ? rows.flatMap((row) => (row.affectedReservations ?? []).map((reservation) => ({ row, reservation })))
     : (reservations ?? []).map((reservation) => ({ reservation }));
   return (
-    <div className="max-h-80 overflow-auto rounded-lg border border-[#dde3e9]">
+    <div className="max-h-80 overflow-auto rounded-2xl border border-gray-200">
       <table className="w-full min-w-[40rem] text-left text-[13px]">
-        <thead className="sticky top-0 bg-[#f4f6f8] text-xs font-bold text-gray-500">
+        <thead className="sticky top-0 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
           <tr>
             <th className="px-3 py-3">Estudiante</th>
             <th className="px-3 py-3">Recurso</th>
@@ -30,7 +30,7 @@ export function AffectedList({
         </thead>
         <tbody>
           {items.map(({ row, reservation }) => (
-            <tr key={reservation.reservationId} className="border-t border-[#dde3e9]">
+            <tr key={reservation.reservationId} className="border-t border-gray-200">
               <td className="px-3 py-3">
                 <p className="font-medium text-foreground">{reservation.holder.name}</p>
                 <p className="text-xs text-gray-500">{reservation.holder.code}</p>

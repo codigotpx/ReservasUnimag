@@ -4,7 +4,7 @@ import { ClientOnly } from "@/components/client-only";
 import { PendingCheckOuts } from "@/features/checkout/components/pending-check-outs";
 
 export const metadata: Metadata = {
-  title: "Pendientes de check-out · Reservas Unimagdalena",
+  title: "Pendientes de check-out | Reservas Unimagdalena",
 };
 
 export default function PendingReviewsPage() {
