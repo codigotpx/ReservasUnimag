@@ -160,3 +160,8 @@ const clock = new Intl.DateTimeFormat("es-CO", { timeZone: ZONE, hour: "numeric"
 export function clockTime(instant: string): string {
   return clock.format(new Date(instant)).replace(/\s/g, " ");
 }
+
+/** "2 oct, 3:40 p. m.". */
+export function dateTimeLabel(instant: string): string {
+  return `${shortDay(dayOf(instant))}, ${clockTime(instant)}`;
+}
