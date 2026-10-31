@@ -62,7 +62,7 @@ export function LoginScreen() {
               : "scale-90 opacity-0"
         }`}
       >
-        <Escudo className="w-[min(56vw,18rem)] drop-shadow-lg" />
+        <Escudo surface="dark" className="w-[min(56vw,18rem)] drop-shadow-lg" />
       </div>
 
       <Login visible={phase === "login"} />
@@ -98,7 +98,7 @@ function Welcome({ phase }: { phase: Phase }) {
       <div
         className={`relative flex h-full flex-col items-center px-6 text-center text-white transition-opacity duration-500 ${phase === "welcome" ? "opacity-100" : "opacity-0"}`}
       >
-        <Escudo className="mt-[19dvh] w-[min(40vw,15rem)] drop-shadow-md" />
+        <Escudo surface="dark" className="mt-[19dvh] w-[min(40vw,15rem)] drop-shadow-md" />
         <p className="mt-[3dvh] font-display text-xl font-bold tracking-wide sm:text-2xl">
           BIENVENIDO A
         </p>
@@ -131,7 +131,7 @@ function Login({ visible }: { visible: boolean }) {
       <header
         className={`flex flex-col px-6 pb-10 pt-12 text-white transition duration-700 motion-reduce:transition-none sm:px-10 lg:justify-center lg:px-16 lg:pb-12 xl:px-24 ${visible ? "translate-y-0 opacity-100 delay-200" : "translate-y-4 opacity-0"}`}
       >
-        <Escudo className="w-20 drop-shadow-md sm:w-24 lg:w-36" />
+        <Escudo surface="dark" className="w-20 drop-shadow-md sm:w-24 lg:w-36" />
         <h1 className="mt-5 text-3xl font-bold sm:text-4xl lg:mt-8 lg:text-6xl">¡Hola!</h1>
         <p className="mt-2 text-base font-light text-white/85 sm:text-lg lg:mt-4 lg:max-w-md lg:text-2xl">
           Inicia sesión con tu correo institucional
