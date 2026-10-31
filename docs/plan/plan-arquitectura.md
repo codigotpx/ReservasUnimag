@@ -18,7 +18,7 @@ Este documento llega hasta la organización de carpetas y el modelo de datos. La
 |---|---|
 | **Lenguaje backend** | Java 21 |
 | **Framework backend** | Spring Boot 4.1.1: Web MVC, Data JPA, Security, Validation, RestClient |
-| **Frontend** | Next.js (App Router) con React y TypeScript |
+| **Frontend** | Next.js 16 (App Router) con React, TypeScript, Tailwind CSS 4 y los íconos de `lucide-react` |
 | **Base de datos** | PostgreSQL, con la extensión `btree_gist` |
 | **Migraciones** | Flyway, con SQL versionado |
 | **Mensajería** | Apache Kafka, con Spring for Apache Kafka (`spring-kafka`). Eventos en JSON, con la clave de partición por reserva |
@@ -278,7 +278,8 @@ frontend/
 └── src/
     ├── app/                             rutas (App Router)
     │   ├── (auth)/login/, register/
-    │   ├── (student)/resources/         UC1, UC8 y reservar (UC2)
+    │   ├── (app)/resources/             UC1, UC8 y reservar (UC2); también la usa Dirección
+    │   ├── (app)/profile/               datos de la sesión y cerrar sesión
     │   ├── (student)/my-reservations/   ver y cancelar (UC4)
     │   └── (direction)/schedules/       importar horarios (UC3)
     ├── components/                      componentes visuales reutilizables

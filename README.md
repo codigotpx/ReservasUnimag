@@ -65,6 +65,7 @@ La arquitectura, las capas y el modelo de datos están en
 
 - JDK 21
 - Docker en ejecución (lo usan Testcontainers y el arranque de desarrollo)
+- Node.js 20 o superior, para el frontend
 
 ## Cómo ejecutarlo
 
@@ -204,6 +205,8 @@ docs/
   unimag.png              Diagrama de casos de uso
   specs/                  Especificaciones por caso de uso
   plan/                   Planes técnicos: arquitectura y uno por caso de uso
+  diseno/                 Capturas de las pantallas de Figma
+frontend/                 Next.js; cómo arrancarlo, en frontend/README.md
 src/
   main/java/edu/unimagdalena/reservasunimag/
     domain/               Modelo, puertos y casos de uso, sin Spring ni JPA

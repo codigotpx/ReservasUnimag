@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Colores sacados de las pantallas de Figma (docs/diseno/pantallas). */
+@theme inline {
+  --color-background: #ffffff;
+  --color-foreground: #111827;
+  --color-brand-sky: #3b88ff;
+  --color-brand-blue: #2468d6;
+  --color-brand-navy: #004a8f;
+  --color-brand-night: #0b2547;
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-open-sans);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+/* Tailwind 4 deja el cursor por defecto en los botones; en la app todo lo clicable lleva la mano. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  select:not(:disabled),
+  label:has(> input[type="checkbox"]) {
+    cursor: pointer;
+  }
+}
