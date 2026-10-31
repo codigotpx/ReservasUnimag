@@ -758,7 +758,7 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - [ ] T002 Agregar a `build.gradle` Security, OAuth2 Resource Server, Validation, Flyway (`flyway-core` y `flyway-database-postgresql`), springdoc-openapi, y en pruebas WireMock y ArchUnit
 - [ ] T003 [P] Configurar `src/main/resources/application.properties`: zona horaria `America/Bogota`, `spring.jpa.hibernate.ddl-auto=validate`, Flyway activado, URLs y timeouts de los Módulos 1 y 3 como propiedades; y crear `application-local.properties` para el perfil local
 - [ ] T004 [P] Fijar la imagen de PostgreSQL en `src/test/java/.../TestcontainersConfiguration.java` a una versión concreta en vez de `postgres:latest`, para que las pruebas sean reproducibles
-- [ ] T005 [P] Crear el frontend con `create-next-app` en `frontend/` (TypeScript, App Router, ESLint) y configurar en `frontend/next.config.ts` el *rewrite* de `/api/*` hacia el backend
+- [x] T005 [P] Crear el frontend con `create-next-app` en `frontend/` (TypeScript, App Router, ESLint) y configurar en `frontend/next.config.ts` el *rewrite* de `/api/*` hacia el backend
 
 ---
 
@@ -777,7 +777,7 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - [ ] T012 Configurar `infrastructure/config/SecurityConfig.java`: validación del JWT desde la cookie `httpOnly`, roles `ESTUDIANTE`, `MONITOR` (hereda de `ESTUDIANTE`, FR-005) y `DIRECCION_PROGRAMA`; y un resolvedor que entrega `CurrentUser` a los controladores
 - [ ] T013 Crear `db/local/R__local_users.sql`, que solo se aplica con el perfil local (`spring.flyway.locations` lo suma), con un usuario por rol, y el login mínimo (`POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`) según [Contratos §4](#4-login-mínimo-t013), para poder probar la consulta. El autorregistro queda para su propio spec
 - [ ] T014 [P] Crear `infrastructure/config/HttpClientsConfig.java` con un `RestClient` por módulo externo, cada uno con su URL base y su timeout
-- [ ] T015 [P] Crear `frontend/src/lib/api/client.ts`, que envía la cookie de sesión y convierte los `ProblemDetail` en errores tipados, y el layout del grupo `(app)`, que redirige al login si no hay sesión
+- [x] T015 [P] Crear `frontend/src/lib/api/client.ts`, que envía la cookie de sesión y convierte los `ProblemDetail` en errores tipados, y el layout del grupo `(app)`, que redirige al login si no hay sesión
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -816,9 +816,9 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - [ ] T035 [P] [US1] Implementar `InventoryFakeAdapter` y `ComplianceFakeAdapter` para el perfil local, con un catálogo de ejemplo que cubra espacios y activos de varios tipos
 - [ ] T036 [US1] Registrar los casos de uso como beans, con `@Transactional(readOnly = true)`, en `infrastructure/config/UseCasesConfig.java` (depende de T028 a T035)
 - [ ] T037 [US1] Implementar `ResourceController` (`GET /api/resources`) exactamente como lo fija [Contratos §1](#1-get-apiresources--frontend--módulo-2): los filtros como `@RequestParam` validados, `SearchResourcesResponse` que omite los campos que no aplican, `Cache-Control: no-store`, y la documentación OpenAPI con los mismos ejemplos de la sección
-- [ ] T038 [P] [US1] Frontend: copiar los tipos de [Contratos §5](#5-tipos-del-frontend) a `frontend/src/features/resources/types.ts` y escribir la llamada en `api.ts`
-- [ ] T039 [US1] Frontend: `ResourceFilters.tsx` (fecha, franja limitada a 06:00–22:00, tipo y aforo mínimo solo para espacios), `ResourceList.tsx` (estado de cada recurso y selección solo de los `DISPONIBLE`), `Pagination.tsx` ("20 de 250", anterior y siguiente) y `SanctionNotice.tsx`
-- [ ] T040 [US1] Frontend: `frontend/src/app/(app)/resources/page.tsx`, que arma la pantalla y muestra los estados vacío, "no hay disponibles" con la sugerencia, y "el inventario no está disponible en este momento" (FR-008)
+- [x] T038 [P] [US1] Frontend: copiar los tipos de [Contratos §5](#5-tipos-del-frontend) a `frontend/src/features/resources/types.ts` y escribir la llamada en `api.ts`
+- [x] T039 [US1] Frontend: `ResourceFilters.tsx` (fecha, franja limitada a 06:00–22:00, tipo y aforo mínimo solo para espacios), `ResourceList.tsx` (estado de cada recurso y selección solo de los `DISPONIBLE`), `Pagination.tsx` ("20 de 250", anterior y siguiente) y `SanctionNotice.tsx`
+- [x] T040 [US1] Frontend: `frontend/src/app/(app)/resources/page.tsx`, que arma la pantalla y muestra los estados vacío, "no hay disponibles" con la sugerencia, y "el inventario no está disponible en este momento" (FR-008)
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
@@ -850,6 +850,13 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - **UC6 `Consultar sanciones`**: este plan implementa la lectura del reporte. Su plan agrega el registro de auditoría de cada consulta (UC6 FR-009) y la denegación `RES-003` al reservar.
 - **UC2 `Reservar recursos`**: no hace falta para UC1. Mientras no exista, las ocupaciones se cargan con datos de prueba.
 - **Registro e inicio de sesión**: T013 deja un login mínimo con usuarios sembrados. El autorregistro espera su spec.
+- **Lo que cambió en el frontend (T038 a T040) respecto a esta sección:**
+  - La pantalla sigue el diseño de Figma (`docs/diseno/pantallas/`). Los componentes viven en `features/resources/components/`, y los tipos de §5 en `features/resources/types.ts`, más `ApiError` en `lib/api/client.ts`.
+  - La búsqueda vive en la URL de `/resources`, para poder recargar, compartir y volver atrás.
+  - Las horas se eligen de media en media hora entre 06:00 y 22:00, con un desplegable propio (`components/dropdown.tsx`) que reemplaza al `<select>` nativo.
+  - Los tipos del filtro son una lista fija del frontend, igual a `reservations.resource-types`, porque no hay endpoint de tipos (P-16).
+  - Un recurso libre dice "Disponible de 10:00 a 12:00", la franja consultada: el contrato no dice hasta cuándo sigue libre.
+  - El layout del grupo `(app)` no espera a `GET /api/auth/me` para dibujar la pantalla, y solo redirige al login con un `401`. Así lo pide la validación de navegación instantánea de Next.js 16.
 
 ### Within User Story 1
 
