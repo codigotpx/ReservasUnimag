@@ -28,6 +28,16 @@ body {
   label:has(> input[type="checkbox"]) {
     cursor: pointer;
   }
+
+  /*
+   * Barras de desplazamiento finas, sin flechas ni carril: solo el pulgar gris translúcido, en todo lo que se desplaza.
+   * Va con "html, html *" y no con "*": Turbopack descarta la regla de solo "*" (Tailwind y Lightning CSS la dejan).
+   */
+  html,
+  html * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(17 24 39 / 0.2) transparent;
+  }
 }
 
 @keyframes fade-in {
