@@ -14,10 +14,11 @@ import { useEffect, useRef, useState, type DragEvent, type ReactNode } from "rea
 import { DatePicker } from "@/components/date-picker";
 import { Dropdown } from "@/components/dropdown";
 import { ApiRequestError } from "@/lib/api/client";
-import { clockTime, dayOf, shortDay, timeOf } from "@/lib/dates";
+import { clockTime } from "@/lib/dates";
 import { confirmSchedule, validateSchedule } from "../api";
 import { termOptions } from "../labels";
 import type { ConfirmationResponse, ScheduleError, ValidationResponse } from "../types";
+import { AffectedList } from "./affected-list";
 import { ReportTable } from "./report-table";
 
 /** El tope de spring.servlet.multipart.max-file-size. */
@@ -242,7 +243,8 @@ function Impact({
           title={[
             reservationsToCancel > 0 &&
               `Esta carga cancelará ${plural(reservationsToCancel, "reserva estudiantil confirmada", "reservas estudiantiles confirmadas")}`,
-            blocksToWithdraw > 0 && `retirará ${plural(blocksToWithdraw, "clase que ya no viene", "clases que ya no vienen")} en el archivo`,
+            blocksToWithdraw > 0 &&
+              `retirará ${plural(blocksToWithdraw, "sesión de una clase que ya no viene", "sesiones de clases que ya no vienen")} en el archivo`,
           ]
             .filter(Boolean)
             .join(" y ")
@@ -259,8 +261,10 @@ function Impact({
             )
           }
         >
-          Quedan como «Cancelada por prioridad académica», no cuentan en contra de los estudiantes y se reportan al
-          Módulo 3.
+          {reservationsToCancel > 0 &&
+            "Las reservas quedan como «Cancelada por prioridad académica», no cuentan en contra de los estudiantes y se reportan al Módulo 3. "}
+          {blocksToWithdraw > 0 &&
+            "Una carga del mismo semestre reemplaza a la anterior: lo que no venga en este archivo deja de estar bloqueado."}
         </Banner>
       ) : (
         <Banner tone="ok" title="Esta carga no cancela ninguna reserva.">
@@ -268,7 +272,7 @@ function Impact({
         </Banner>
       )}
 
-      {listOpen && <AffectedList items={affected} />}
+      {listOpen && <AffectedList rows={report.rows} />}
 
       {applyError && (
         <Alert tone="error">
@@ -316,40 +320,6 @@ function Impact({
         </div>
       </div>
     </>
-  );
-}
-
-function AffectedList({ items }: { items: { row: ValidationResponse["rows"][number]; reservation: NonNullable<ValidationResponse["rows"][number]["affectedReservations"]>[number] }[] }) {
-  return (
-    <div className="max-h-80 overflow-auto rounded-2xl border border-gray-200">
-      <table className="w-full min-w-[40rem] text-left text-sm">
-        <thead className="sticky top-0 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
-          <tr>
-            <th className="px-3 py-3">Estudiante</th>
-            <th className="px-3 py-3">Recurso</th>
-            <th className="px-3 py-3">Reserva</th>
-            <th className="px-3 py-3">La desplaza</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map(({ row, reservation }) => (
-            <tr key={reservation.reservationId} className="border-t border-gray-100">
-              <td className="px-3 py-3">
-                <p className="font-medium text-foreground">{reservation.holder.name}</p>
-                <p className="text-xs text-gray-500">{reservation.holder.code}</p>
-              </td>
-              <td className="px-3 py-3 text-foreground">{row.resourceName ?? row.resourceId}</td>
-              <td className="whitespace-nowrap px-3 py-3 text-foreground">
-                {shortDay(dayOf(reservation.start))}, {timeOf(reservation.start)} - {timeOf(reservation.end)}
-              </td>
-              <td className="px-3 py-3 text-gray-600">
-                Fila {row.row}: {row.course}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }
 

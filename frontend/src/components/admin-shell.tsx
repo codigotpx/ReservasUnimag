@@ -3,16 +3,25 @@
 import { BookOpen, CalendarDays, CircleAlert, LogOut, Menu, PieChart, X, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Suspense,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { signOut } from "@/features/auth/api";
 import { useProfile } from "@/features/auth/session";
 import { ROLE_LABELS } from "@/features/auth/types";
 import { Escudo } from "./escudo";
 
 /** null = todavía sin pantalla: se muestra, pero no lleva a ningún lado. */
-const NAV: { href: string | null; label: string; icon: LucideIcon }[] = [
-  { href: "/schedules", label: "Carga académica", icon: BookOpen },
-  { href: null, label: "Horarios importados", icon: CalendarDays },
+const NAV: { href: string | null; label: string; icon: LucideIcon; also?: string[] }[] = [
+  { href: "/schedules", label: "Carga académica", icon: BookOpen, also: ["/schedules/format"] },
+  { href: "/schedules/history", label: "Horarios importados", icon: CalendarDays },
   { href: null, label: "Ocupación", icon: PieChart },
   { href: null, label: "Actividades extraordinarias", icon: CircleAlert },
 ];
@@ -59,9 +68,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
  * bloque entra animado detrás del anterior.
  */
 function SidebarContent({ onNavigate, stagger = false }: { onNavigate?: () => void; stagger?: boolean }) {
-  const pathname = usePathname();
   const router = useRouter();
-  const active = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const enter = stagger ? ITEM_IN : "";
   const delay = (step: number) => (stagger ? { animationDelay: `${110 + step * ITEM_DELAY_MS}ms` } : undefined);
 
@@ -86,35 +93,10 @@ function SidebarContent({ onNavigate, stagger = false }: { onNavigate?: () => vo
           <p className="mt-1 text-xs font-medium text-gray-500">Dirección de Programa</p>
         </div>
       </div>
-      <nav aria-label="Administración" className="mt-10 flex flex-col gap-1">
-        {NAV.map(({ href, label, icon: Icon }, index) =>
-          href ? (
-            <Link
-              key={label}
-              href={href}
-              onClick={onNavigate}
-              aria-current={active(href) ? "page" : undefined}
-              style={delay(index + 1)}
-              className={`flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition ${enter} ${
-                active(href) ? "bg-brand-navy/10 text-brand-navy" : "text-gray-500 hover:bg-gray-100"
-              }`}
-            >
-              <Icon className="size-5 shrink-0" />
-              {label}
-            </Link>
-          ) : (
-            <span
-              key={label}
-              title="Todavía no está disponible"
-              style={delay(index + 1)}
-              className={`flex cursor-not-allowed items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-gray-300 ${enter}`}
-            >
-              <Icon className="size-5 shrink-0" />
-              {label}
-            </span>
-          ),
-        )}
-      </nav>
+      {/* La ruta actual solo se conoce en el navegador; mientras tanto el menú sale sin nada resaltado. */}
+      <Suspense fallback={<AdminNav pathname={null} onNavigate={onNavigate} enter={enter} delay={delay} />}>
+        <CurrentAdminNav onNavigate={onNavigate} enter={enter} delay={delay} />
+      </Suspense>
       <button
         type="button"
         onClick={handleSignOut}
@@ -124,6 +106,52 @@ function SidebarContent({ onNavigate, stagger = false }: { onNavigate?: () => vo
         <LogOut className="size-5" /> Cerrar sesión
       </button>
     </>
+  );
+}
+
+type NavProps = { onNavigate?: () => void; enter: string; delay: (step: number) => CSSProperties | undefined };
+
+function CurrentAdminNav(props: NavProps) {
+  return <AdminNav pathname={usePathname()} {...props} />;
+}
+
+function AdminNav({ pathname, onNavigate, enter, delay }: NavProps & { pathname: string | null }) {
+  // /schedules/history también empieza por /schedules: cada opción dice qué rutas le pertenecen.
+  const active = (href: string, also: string[] = []) =>
+    pathname !== null &&
+    (href === "/schedules"
+      ? [href, ...also].includes(pathname)
+      : pathname === href || pathname.startsWith(`${href}/`));
+  return (
+    <nav aria-label="Administración" className="mt-10 flex flex-col gap-1">
+      {NAV.map(({ href, label, icon: Icon, also }, index) =>
+        href ? (
+          <Link
+            key={label}
+            href={href}
+            onClick={onNavigate}
+            aria-current={active(href, also) ? "page" : undefined}
+            style={delay(index + 1)}
+            className={`flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition ${enter} ${
+              active(href, also) ? "bg-brand-navy/10 text-brand-navy" : "text-gray-500 hover:bg-gray-100"
+            }`}
+          >
+            <Icon className="size-5 shrink-0" />
+            {label}
+          </Link>
+        ) : (
+          <span
+            key={label}
+            title="Todavía no está disponible"
+            style={delay(index + 1)}
+            className={`flex cursor-not-allowed items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-gray-300 ${enter}`}
+          >
+            <Icon className="size-5 shrink-0" />
+            {label}
+          </span>
+        ),
+      )}
+    </nav>
   );
 }
 

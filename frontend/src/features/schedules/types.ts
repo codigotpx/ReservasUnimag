@@ -106,3 +106,29 @@ export interface ScheduleError extends ApiError {
   expiredAt?: string;
   appliedAt?: string;
 }
+
+/** Una carga del histórico (UC3 Contratos §4). */
+export interface ScheduleUploadItem {
+  uploadId: string;
+  academicTerm: string;
+  status: UploadStatus;
+  fileName?: string;
+  uploadedBy: { userId: string; name?: string };
+  validatedAt: string;
+  appliedAt?: string;
+  result?: { blocksCreated: number; blocksUnchanged: number; blocksWithdrawn: number; reservationsCancelled: number };
+}
+
+export interface ScheduleUploadsResponse {
+  uploads: ScheduleUploadItem[];
+  pagination: { page: number; pageSize: number; totalPages: number; total: number };
+}
+
+/** GET /api/schedules/{uploadId}: el objeto del listado más el periodo, el resumen y las filas. */
+export interface ScheduleUploadDetail extends ScheduleUploadItem {
+  term: { start: string; end: string };
+  expiresAt?: string;
+  applicable: boolean;
+  summary: ValidationSummary;
+  rows: ValidatedRow[];
+}
