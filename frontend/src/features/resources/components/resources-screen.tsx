@@ -202,8 +202,10 @@ export function ResourcesScreen() {
 
       {editing && search && (
         <BottomSheet label="Cambiar la búsqueda" onClose={() => setEditing(false)}>
-          <h2 className="mb-5 text-2xl font-bold text-foreground sm:pr-8">Cambiar la búsqueda</h2>
-          <ResourceFilters initial={search} onSubmit={go} embedded />
+          {/* Sin título: el formulario se explica solo. En tablet la hoja es un diálogo con X arriba: se le deja lugar. */}
+          <div className="sm:mt-6">
+            <ResourceFilters initial={search} onSubmit={go} embedded />
+          </div>
         </BottomSheet>
       )}
     </div>
