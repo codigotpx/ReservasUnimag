@@ -9,9 +9,8 @@ import { useQuota } from "@/features/reservations/use-quota";
 import { useProfile } from "@/features/auth/session";
 import { canReserve } from "@/features/auth/types";
 import { ApiRequestError, type ApiError } from "@/lib/api/client";
-import { dayInSentence, defaultSlot } from "@/lib/dates";
+import { defaultSlot, relativeDay, shortDay } from "@/lib/dates";
 import { categoryOf, fromQuery, searchResources, toQuery } from "../api";
-import { CATEGORY_LABELS } from "../labels";
 import type { Category, ResourceWithStatus, SearchResourcesParams, SearchResourcesResponse } from "../types";
 import { CategoryToggle } from "./category-toggle";
 import { Pagination } from "./pagination";
@@ -138,7 +137,8 @@ export function ResourcesScreen() {
               >
                 <Calendar className="size-6 shrink-0 text-brand-navy" />
                 <span className="min-w-0 flex-1 truncate">
-                  {CATEGORY_LABELS[search.category]} {dayInSentence(search.date)}, de {search.start} a {search.end}
+                  {/* La categoría ya está en el selector de arriba: aquí solo el día y la franja, para que quepa. */}
+                  {relativeDay(search.date) ?? shortDay(search.date)}, de {search.start} a {search.end}
                 </span>
               </button>
               <button
