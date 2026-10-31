@@ -64,6 +64,27 @@ body {
   }
 }
 
+/* El menú del celular de Dirección entra desde la izquierda; sus opciones, una detrás de otra, y la X girando. */
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes item-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+@keyframes spin-in {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
+  }
+}
+
 /* Una barra que se llena de izquierda a derecha. */
 @keyframes grow-x {
   from {
