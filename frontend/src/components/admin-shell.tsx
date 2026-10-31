@@ -1,12 +1,13 @@
 "use client";
 
-import { BookOpen, CalendarDays, CircleAlert, GraduationCap, LogOut, PieChart, type LucideIcon } from "lucide-react";
+import { BookOpen, CalendarDays, CircleAlert, LogOut, PieChart, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { signOut } from "@/features/auth/api";
 import { useProfile } from "@/features/auth/session";
 import { ROLE_LABELS } from "@/features/auth/types";
+import { Escudo } from "./escudo";
 
 /** null = todavía sin pantalla: se muestra, pero no lleva a ningún lado. */
 const NAV: { href: string | null; label: string; icon: LucideIcon }[] = [
@@ -17,8 +18,8 @@ const NAV: { href: string | null; label: string; icon: LucideIcon }[] = [
 ];
 
 /**
- * El módulo administrativo de Dirección de Programa (diseño admin-importar-horarios): menú lateral oscuro en
- * escritorio y, en pantallas chicas, una barra arriba con lo mismo.
+ * El módulo administrativo de Dirección de Programa, con el mismo lenguaje que la app del estudiante: barra lateral
+ * blanca con el escudo desde lg y, en pantallas chicas, el escudo y el menú arriba.
  */
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -34,26 +35,31 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-dvh bg-[#f4f6f8] lg:flex">
-      <aside className="flex shrink-0 flex-col bg-brand-night text-white lg:sticky lg:top-0 lg:h-dvh lg:w-72">
-        <div className="flex items-center gap-3 px-6 py-6">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-[#1e88ff]">
-            <GraduationCap className="size-5" />
-          </span>
+    <div className="min-h-dvh bg-gray-100 lg:flex">
+      <aside className="flex shrink-0 flex-col border-b border-gray-200 bg-white px-4 pt-4 lg:sticky lg:top-0 lg:h-dvh lg:w-72 lg:border-b-0 lg:border-r lg:py-6">
+        <div className="flex items-center gap-3 px-2">
+          <Escudo className="w-10 lg:w-12" />
           <div>
-            <p className="font-bold leading-tight">Reservas Unimag</p>
-            <p className="text-xs text-[#4da3ff]">Módulo Administrativo</p>
+            <p className="text-sm font-bold leading-tight text-brand-navy">
+              Reservas
+              <br />
+              Unimagdalena
+            </p>
+            <p className="mt-1 text-xs font-medium text-gray-500">Dirección de Programa</p>
           </div>
         </div>
-        <nav aria-label="Administración" className="flex gap-1 overflow-x-auto px-2 pb-3 lg:mt-4 lg:flex-col lg:px-0">
+        <nav
+          aria-label="Administración"
+          className="-mx-4 mt-4 flex gap-1 overflow-x-auto px-4 pb-3 [scrollbar-width:none] lg:mx-0 lg:mt-10 lg:flex-col lg:px-0 lg:pb-0"
+        >
           {NAV.map(({ href, label, icon: Icon }) =>
             href ? (
               <Link
                 key={label}
                 href={href}
                 aria-current={active(href) ? "page" : undefined}
-                className={`flex shrink-0 items-center gap-3 border-l-4 px-5 py-3 text-sm font-semibold transition ${
-                  active(href) ? "border-[#1e88ff] bg-[#004a87]/60" : "border-transparent text-white/70 hover:bg-white/5"
+                className={`flex shrink-0 items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition ${
+                  active(href) ? "bg-brand-navy/10 text-brand-navy" : "text-gray-500 hover:bg-gray-100"
                 }`}
               >
                 <Icon className="size-5" />
@@ -63,7 +69,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <span
                 key={label}
                 title="Todavía no está disponible"
-                className="flex shrink-0 cursor-not-allowed items-center gap-3 border-l-4 border-transparent px-5 py-3 text-sm text-white/35"
+                className="flex shrink-0 cursor-not-allowed items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-gray-300"
               >
                 <Icon className="size-5" />
                 {label}
@@ -74,15 +80,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={handleSignOut}
-          className="mt-auto hidden items-center gap-3 px-6 py-5 text-sm text-white/70 transition hover:text-white lg:flex"
+          className="mt-auto hidden items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-red-700 transition hover:bg-red-50 lg:flex"
         >
           <LogOut className="size-5" /> Cerrar sesión
         </button>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        {children}
-      </div>
+      <div className="flex min-w-0 flex-1 flex-col">{children}</div>
     </div>
   );
 }
@@ -96,19 +100,21 @@ export function AdminHeader({ title }: { title: string }) {
     .map((word) => word.charAt(0).toUpperCase())
     .join("");
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-[#dde3e9] bg-white px-4 sm:px-8 lg:px-12">
-      <h1 className="truncate text-xl font-bold text-foreground">{title}</h1>
-      {profile && (
-        <div className="flex items-center gap-3">
-          <span className="flex size-9 items-center justify-center rounded-full bg-brand-navy text-sm font-bold text-white">
-            {initials}
-          </span>
-          <div className="hidden sm:block">
-            <p className="text-sm font-bold text-foreground">{profile.name}</p>
-            <p className="text-xs text-gray-500">{ROLE_LABELS[profile.role]}</p>
+    <header className="sticky top-0 z-20 border-b border-gray-200 bg-white">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:h-20 lg:px-10">
+        <h1 className="truncate text-xl font-bold text-foreground lg:text-2xl">{title}</h1>
+        {profile && (
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-full bg-brand-navy/10 text-sm font-bold text-brand-navy">
+              {initials}
+            </span>
+            <div className="hidden sm:block">
+              <p className="text-sm font-semibold text-foreground">{profile.name}</p>
+              <p className="text-xs text-gray-500">{ROLE_LABELS[profile.role]}</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </header>
   );
 }
