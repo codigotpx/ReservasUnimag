@@ -8,10 +8,13 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Component;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,13 +22,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Lee el CSV del horario con Commons CSV (UC3 Contratos §5): UTF-8, cabecera, coma y comillas dobles. Valida solo la
- * cabecera; una fila mal escrita no rompe la lectura, porque decidir qué le pasa es trabajo del dominio. Una columna
- * extra se ignora y las filas en blanco se saltan.
+ * Lee el CSV del horario con Commons CSV (UC3 Contratos §5): cabecera y comillas dobles. Valida solo la cabecera; una
+ * fila mal escrita no rompe la lectura, porque decidir qué le pasa es trabajo del dominio. Una columna extra se ignora
+ * y las filas en blanco se saltan.
+ * <p>
+ * Acepta lo que guarda Excel en español sin que nadie tenga que tocar nada: el separador puede ser coma o punto y coma
+ * (con la configuración regional de Colombia, Excel usa punto y coma), y un archivo que no es UTF-8 se lee como
+ * Windows-1252, que es lo que produce "CSV (delimitado por comas)".
  */
 @Component
 class CsvScheduleReader implements ScheduleReader {
 
+    private static final Charset WINDOWS_1252 = Charset.forName("windows-1252");
     private static final CSVFormat FORMAT = CSVFormat.DEFAULT.builder()
             .setHeader()
             .setSkipHeaderRecord(true)
@@ -35,8 +43,9 @@ class CsvScheduleReader implements ScheduleReader {
 
     @Override
     public List<RawScheduleRow> read(byte[] content) {
-        try (var parser = CSVParser.parse(new InputStreamReader(new ByteArrayInputStream(withoutBom(content)),
-                StandardCharsets.UTF_8), FORMAT)) {
+        String text = decode(withoutBom(content));
+        CSVFormat format = FORMAT.builder().setDelimiter(delimiterOf(text)).build();
+        try (var parser = CSVParser.parse(new StringReader(text), format)) {
             List<String> header = parser.getHeaderNames().stream().map(String::strip).toList();
             List<String> missing = RawScheduleRow.REQUIRED_COLUMNS.stream()
                     .filter(column -> !header.contains(column))
@@ -66,6 +75,28 @@ class CsvScheduleReader implements ScheduleReader {
         } catch (UncheckedIOException unreadable) {
             throw InvalidScheduleFileException.invalidHeader(List.of());
         }
+    }
+
+    /** UTF-8 si lo es; si no, Windows-1252, que es como guarda Excel cuando no se elige "CSV UTF-8". */
+    private static String decode(byte[] content) {
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(content))
+                    .toString();
+        } catch (CharacterCodingException notUtf8) {
+            return new String(content, WINDOWS_1252);
+        }
+    }
+
+    /** El separador sale de la cabecera, cuyos nombres no tienen ni comas ni punto y coma. */
+    private static char delimiterOf(String text) {
+        int lineEnd = text.indexOf('\n');
+        String header = lineEnd < 0 ? text : text.substring(0, lineEnd);
+        long semicolons = header.chars().filter(c -> c == ';').count();
+        long commas = header.chars().filter(c -> c == ',').count();
+        return semicolons > commas ? ';' : ',';
     }
 
     private static byte[] withoutBom(byte[] content) {

@@ -18,3 +18,8 @@ export const ROLE_LABELS: Record<Role, string> = {
 export function canReserve(role: Role): boolean {
   return role === "ESTUDIANTE" || role === "MONITOR";
 }
+
+/** La pantalla de inicio de cada rol después del login. */
+export function homeFor(role: Role): string {
+  return role === "DIRECCION_PROGRAMA" ? "/schedules" : "/resources";
+}

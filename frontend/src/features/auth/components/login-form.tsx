@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Lock, Mail } from "lucide-react";
 import { ApiRequestError } from "@/lib/api/client";
-import { signIn } from "../api";
+import { fetchProfile, signIn } from "../api";
+import { homeFor } from "../types";
 
 export function LoginForm() {
   const router = useRouter();
@@ -20,7 +21,8 @@ export function LoginForm() {
     setError(null);
     try {
       await signIn(email.trim(), password);
-      router.replace("/resources");
+      // Cada rol entra a su parte: Dirección de Programa a la carga académica, el resto a buscar recursos.
+      router.replace(homeFor((await fetchProfile()).role));
     } catch (failure) {
       setError(
         failure instanceof ApiRequestError

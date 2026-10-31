@@ -74,4 +74,33 @@ class CsvScheduleReaderTest {
 
         assertThat(reader.read(withBom)).hasSize(3);
     }
+
+    @Test
+    void aFileSavedByExcelInSpanishWithSemicolonsIsReadTheSame() {
+        String semicolons = """
+                course_code;course;group;program;instructor;resource_id;day_of_week;start_time;end_time
+                IS-402;Redes de Computadores;1;Ingeniería de Sistemas;Docente;ESP-0412;LUNES;08:00;10:00
+                IC-110;"Dibujo Técnico; taller";1;Ingeniería Civil;;ESP-0150;VIERNES;14:00;16:00
+                """;
+
+        List<RawScheduleRow> rows = reader.read(semicolons.getBytes(StandardCharsets.UTF_8));
+
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).value(RawScheduleRow.RESOURCE_ID)).isEqualTo("ESP-0412");
+        assertThat(rows.get(1).value(RawScheduleRow.COURSE)).isEqualTo("Dibujo Técnico; taller");
+        assertThat(rows.get(1).value(RawScheduleRow.INSTRUCTOR)).isEmpty();
+    }
+
+    @Test
+    void aFileThatIsNotUtf8IsReadAsWindows1252SoAccentsSurvive() {
+        String csv = """
+                course_code;course;group;program;instructor;resource_id;day_of_week;start_time;end_time
+                IS-510;Seminario de Investigación;1;Ingeniería de Sistemas;;ESP-0301;JUEVES;14:00;16:00
+                """;
+
+        List<RawScheduleRow> rows = reader.read(csv.getBytes(java.nio.charset.Charset.forName("windows-1252")));
+
+        assertThat(rows.get(0).value(RawScheduleRow.COURSE)).isEqualTo("Seminario de Investigación");
+        assertThat(rows.get(0).value(RawScheduleRow.PROGRAM)).isEqualTo("Ingeniería de Sistemas");
+    }
 }
