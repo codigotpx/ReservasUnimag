@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, CalendarDays, CircleAlert, GraduationCap, LogOut, PieChart, type LucideIcon } from "lucide-react";
+import { BookOpen, CalendarDays, CircleAlert, ClipboardCheck, GraduationCap, LogOut, PieChart, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
@@ -12,8 +12,9 @@ import { ROLE_LABELS } from "@/features/auth/types";
 const NAV: { href: string | null; label: string; icon: LucideIcon; also?: string[] }[] = [
   { href: "/schedules", label: "Carga académica", icon: BookOpen, also: ["/schedules/format"] },
   { href: "/schedules/history", label: "Horarios importados", icon: CalendarDays },
-  { href: null, label: "Ocupación", icon: PieChart },
-  { href: null, label: "Actividades extraordinarias", icon: CircleAlert },
+  { href: "/occupancy", label: "Ocupación", icon: PieChart },
+  { href: "/schedules/extraordinary", label: "Actividades extraordinarias", icon: CircleAlert },
+  { href: "/pending-reviews", label: "Pendientes de check-out", icon: ClipboardCheck },
 ];
 
 /**

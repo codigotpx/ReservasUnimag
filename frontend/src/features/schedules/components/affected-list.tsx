@@ -1,11 +1,22 @@
 import { dayOf, shortDay, timeOf } from "@/lib/dates";
 import type { AffectedReservation, ValidatedRow } from "../types";
 
-/** Las reservas estudiantiles que una carga cancela (FR-008), con quién las tenía y qué fila las desplaza. */
-export function AffectedList({ rows }: { rows: ValidatedRow[] }) {
-  const items: { row: ValidatedRow; reservation: AffectedReservation }[] = rows.flatMap((row) =>
-    (row.affectedReservations ?? []).map((reservation) => ({ row, reservation })),
-  );
+/**
+ * Las reservas estudiantiles que una carga o una necesidad extraordinaria cancela (FR-008), con quién las tenía y, en
+ * una carga, qué fila las desplaza.
+ */
+export function AffectedList({
+  rows,
+  reservations,
+  resourceName,
+}: {
+  rows?: ValidatedRow[];
+  reservations?: AffectedReservation[];
+  resourceName?: string;
+}) {
+  const items: { row?: ValidatedRow; reservation: AffectedReservation }[] = rows
+    ? rows.flatMap((row) => (row.affectedReservations ?? []).map((reservation) => ({ row, reservation })))
+    : (reservations ?? []).map((reservation) => ({ reservation }));
   return (
     <div className="max-h-80 overflow-auto rounded-lg border border-[#dde3e9]">
       <table className="w-full min-w-[40rem] text-left text-[13px]">
@@ -14,7 +25,7 @@ export function AffectedList({ rows }: { rows: ValidatedRow[] }) {
             <th className="px-3 py-3">Estudiante</th>
             <th className="px-3 py-3">Recurso</th>
             <th className="px-3 py-3">Reserva</th>
-            <th className="px-3 py-3">La desplaza</th>
+            {rows && <th className="px-3 py-3">La desplaza</th>}
           </tr>
         </thead>
         <tbody>
@@ -24,13 +35,15 @@ export function AffectedList({ rows }: { rows: ValidatedRow[] }) {
                 <p className="font-medium text-foreground">{reservation.holder.name}</p>
                 <p className="text-xs text-gray-500">{reservation.holder.code}</p>
               </td>
-              <td className="px-3 py-3 text-foreground">{row.resourceName ?? row.resourceId}</td>
+              <td className="px-3 py-3 text-foreground">{row ? (row.resourceName ?? row.resourceId) : resourceName}</td>
               <td className="whitespace-nowrap px-3 py-3 text-foreground">
                 {shortDay(dayOf(reservation.start))}, {timeOf(reservation.start)} - {timeOf(reservation.end)}
               </td>
-              <td className="px-3 py-3 text-gray-600">
-                Fila {row.row}: {row.course}
-              </td>
+              {row && (
+                <td className="px-3 py-3 text-gray-600">
+                  Fila {row.row}: {row.course}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

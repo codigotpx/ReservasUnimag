@@ -165,3 +165,15 @@ export function clockTime(instant: string): string {
 export function dateTimeLabel(instant: string): string {
   return `${shortDay(dayOf(instant))}, ${clockTime(instant)}`;
 }
+
+/** El lunes de la semana de una fecha yyyy-MM-dd. */
+export function mondayOf(date: string): string {
+  const weekday = new Date(`${date}T12:00:00Z`).getUTCDay();
+  return addDays(date, weekday === 0 ? -6 : 1 - weekday);
+}
+
+/** Minutos desde la medianoche de un instante, en Bogotá. */
+export function minutesOfDay(instant: string): number {
+  const [hours, minutes] = timeOf(instant).split(":").map(Number);
+  return hours * 60 + minutes;
+}

@@ -1,6 +1,8 @@
 import { apiFetch } from "@/lib/api/client";
 import type {
   ConfirmationResponse,
+  ExtraordinaryNeedRequest,
+  ExtraordinaryNeedResponse,
   ScheduleUploadDetail,
   ScheduleUploadsResponse,
   ValidationResponse,
@@ -37,4 +39,16 @@ export function fetchUploads(page = 1): Promise<ScheduleUploadsResponse> {
 /** GET /api/schedules/{uploadId}: una carga con su reporte, para volver a mirarlo sin repetir la carga. */
 export function fetchUpload(uploadId: string): Promise<ScheduleUploadDetail> {
   return apiFetch<ScheduleUploadDetail>(`/schedules/${encodeURIComponent(uploadId)}`);
+}
+
+/**
+ * POST /api/schedules/extraordinary-needs (UC3 Contratos §3). Con confirm en false solo dice qué pasaría; con true
+ * crea el bloqueo y cancela lo que desplace.
+ */
+export function registerExtraordinaryNeed(request: ExtraordinaryNeedRequest): Promise<ExtraordinaryNeedResponse> {
+  return apiFetch<ExtraordinaryNeedResponse>("/schedules/extraordinary-needs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
 }
