@@ -179,9 +179,9 @@ export function ImportScheduleScreen() {
               />
             </div>
             <p className="text-sm text-gray-500">
-              {report.summary.rowsRead} filas leídas · {report.summary.sessionsToCreate} sesiones en el periodo
+              {report.summary.rowsRead} filas leídas, {report.summary.sessionsToCreate} sesiones en el periodo
               {report.summary.sessionsSkippedNonBusinessDay > 0 &&
-                ` · ${report.summary.sessionsSkippedNonBusinessDay} omitidas por caer en día no hábil`}
+                ` y ${report.summary.sessionsSkippedNonBusinessDay} omitidas por caer en día no hábil`}
             </p>
             <ReportTable rows={report.rows} />
           </StepCard>

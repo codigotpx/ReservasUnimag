@@ -4,7 +4,7 @@ import { ClientOnly } from "@/components/client-only";
 import { ImportScheduleScreen } from "@/features/schedules/components/import-schedule-screen";
 
 export const metadata: Metadata = {
-  title: "Importar horarios · Reservas Unimagdalena",
+  title: "Importar horarios | Reservas Unimagdalena",
 };
 
 export default function SchedulesPage() {

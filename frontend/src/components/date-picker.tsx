@@ -196,7 +196,7 @@ export function DatePicker({
                 </HeaderButton>
               ) : (
                 <p className="px-2 py-1 font-semibold text-foreground">
-                  {firstYear} – {firstYear + YEARS_PER_PAGE - 1}
+                  {firstYear} - {firstYear + YEARS_PER_PAGE - 1}
                 </p>
               )}
             </div>

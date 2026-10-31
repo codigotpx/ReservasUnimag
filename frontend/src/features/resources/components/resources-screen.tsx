@@ -8,7 +8,7 @@ import { useQuota } from "@/features/reservations/use-quota";
 import { useProfile } from "@/features/auth/session";
 import { canReserve } from "@/features/auth/types";
 import { ApiRequestError, type ApiError } from "@/lib/api/client";
-import { defaultSlot, shortDayLabel } from "@/lib/dates";
+import { dayInSentence, defaultSlot } from "@/lib/dates";
 import { categoryOf, fromQuery, searchResources, toQuery } from "../api";
 import { CATEGORY_LABELS } from "../labels";
 import type { Category, ResourceWithStatus, SearchResourcesParams, SearchResourcesResponse } from "../types";
@@ -121,7 +121,7 @@ export function ResourcesScreen() {
               >
                 <Calendar className="size-6 shrink-0 text-brand-navy" />
                 <span className="min-w-0 flex-1 truncate">
-                  {shortDayLabel(search.date)} · {search.start} - {search.end} · {CATEGORY_LABELS[search.category]}
+                  {CATEGORY_LABELS[search.category]} {dayInSentence(search.date)}, de {search.start} a {search.end}
                 </span>
               </button>
               <button

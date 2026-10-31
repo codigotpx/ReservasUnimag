@@ -36,7 +36,7 @@ export function ActiveReservationCard({
         </>
       ) : (
         <p className="mt-2 text-gray-500">
-          {fullDayLabel(dayOf(reservation.start))} · {timeOf(reservation.start)} - {timeOf(reservation.end)}
+          {fullDayLabel(dayOf(reservation.start))}, de {timeOf(reservation.start)} a {timeOf(reservation.end)}
         </p>
       )}
 

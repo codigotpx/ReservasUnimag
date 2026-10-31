@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { ProfileCard } from "@/features/auth/components/profile-card";
 
 export const metadata: Metadata = {
-  title: "Perfil · Reservas Unimagdalena",
+  title: "Perfil | Reservas Unimagdalena",
 };
 
 export default function ProfilePage() {

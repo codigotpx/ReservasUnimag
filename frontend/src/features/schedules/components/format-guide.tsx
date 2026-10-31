@@ -27,7 +27,7 @@ const SAMPLE = [
 const MISTAKES: [problem: string, fix: string][] = [
   [
     "Al abrirlo, todo queda en una sola columna",
-    "El archivo usa un separador distinto al que espera tu Excel. Descarga de nuevo la plantilla, que viene con punto y coma, o ábrelo desde Datos → Desde texto/CSV y elige el separador. El sistema acepta los dos.",
+    "El archivo usa un separador distinto al que espera tu Excel. Descarga de nuevo la plantilla, que viene con punto y coma, o ábrelo desde la pestaña Datos, con «Desde texto/CSV», y elige el separador. El sistema acepta los dos.",
   ],
   [
     "«Falta la columna …» y la carga no empieza",

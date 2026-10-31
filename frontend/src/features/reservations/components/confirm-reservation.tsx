@@ -263,7 +263,7 @@ export function ConfirmReservation({
 
 /**
  * El préstamo de un activo (diseño sheet-prestar-activo): dónde se recoge, la línea de tiempo con un tramo por día
- * —gris los que no consumen plazo— y hasta cuándo hay que devolverlo.
+ * (en gris los que no consumen plazo) y hasta cuándo hay que devolverlo.
  */
 function AssetLoan({
   resource,
@@ -309,7 +309,7 @@ function LoanTimeline({ date, pickup, due }: { date: string; pickup: string; due
         <div>
           <p className="text-sm text-gray-500">Recoges</p>
           <p className="font-semibold text-foreground">
-            {dayLabel(date)} · {pickup}
+            {dayLabel(date)}, {pickup}
           </p>
         </div>
         <div className="text-right">
@@ -325,7 +325,7 @@ function LoanTimeline({ date, pickup, due }: { date: string; pickup: string; due
       <p className="mt-3 text-sm text-gray-500">
         {term === 0
           ? "Uso en sitio: se devuelve el mismo día."
-          : `${term} ${term === 1 ? "día hábil" : "días hábiles"}${skipped.size > 0 ? " · los fines de semana y festivos no cuentan." : "."}`}
+          : `${term} ${term === 1 ? "día hábil" : "días hábiles"}${skipped.size > 0 ? ". Los fines de semana y festivos no cuentan." : "."}`}
       </p>
       <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-100 px-5 py-4">
         <p className="text-sm text-gray-500">Plazo de devolución máximo</p>

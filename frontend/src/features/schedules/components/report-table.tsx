@@ -71,8 +71,8 @@ export function ReportTable({ rows }: { rows: ValidatedRow[] }) {
                 <td className="px-3 py-3">
                   <p className="font-medium text-foreground">{row.course}</p>
                   <p className="text-xs text-gray-500">
-                    {row.courseCode} · grupo {row.group}
-                    {row.sessions > 0 && ` · ${row.sessions} sesiones`}
+                    {row.courseCode}, grupo {row.group}
+                    {row.sessions > 0 && `, ${row.sessions} sesiones`}
                   </p>
                   {row.problem && <p className="mt-1 text-xs text-red-700">{row.problem}</p>}
                 </td>
