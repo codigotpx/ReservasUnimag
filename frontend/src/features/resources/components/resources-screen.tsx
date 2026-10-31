@@ -74,6 +74,15 @@ export function ResourcesScreen() {
   const badRequest = current && "error" in current && current.error.status === 400 ? current.error.detail : undefined;
   const showForm = !search || editing || badRequest !== undefined;
 
+  function closeSheet() {
+    setSelected(null);
+    // Tras reservar, o si el recurso resultó ocupado, la lista vuelve a pedirse.
+    if (listStale) {
+      setListStale(false);
+      setAttempt((value) => value + 1);
+    }
+  }
+
   function go(next: Search) {
     setEditing(false);
     router.push(`/resources?${toQuery(next)}`, { scroll: true });
@@ -165,13 +174,11 @@ export function ResourcesScreen() {
             if (reservation.quota) setQuota(reservation.quota);
           }}
           onStale={() => setListStale(true)}
-          onClose={() => {
-            setSelected(null);
-            // Tras reservar, o si el recurso resultó ocupado, la lista vuelve a pedirse.
-            if (listStale) {
-              setListStale(false);
-              setAttempt((value) => value + 1);
-            }
+          onClose={closeSheet}
+          onDenialAction={(action) => {
+            closeSheet();
+            if (action === "change-slot") setEditing(true);
+            if (action === "my-reservations") router.push("/my-reservations");
           }}
         />
       )}

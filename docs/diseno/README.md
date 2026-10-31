@@ -18,6 +18,11 @@ Los assets que sí usa la aplicación (íconos, logos, imágenes, tipografías) 
 | `consultar-recursos-espacios.png` | `/resources` | Resultados de espacios |
 | `consultar-recursos-activos.png` | `/resources` | Resultados de activos |
 | `reservar-espacio.png` | `/resources` | Hoja para confirmar la reserva de un espacio |
+| `sheet-prestar-activo.png` | `/resources` | Hoja para confirmar el préstamo de un activo |
+| `error-bloqueo-docente.png` | `/resources` | Denegación `RES-001` |
+| `error-limite-alcanzado.png` | `/resources` | Denegación `RES-002` |
+| `error-sancion-activa.png` | `/resources` | Denegación `RES-003` |
+| `error-recurso-tomado.png` | `/resources` | Denegación `RES-004` |
 | `mis-reservas-vigentes.png` | `/my-reservations` | Reservas vigentes y cupo |
 | `mis-reservas-historial.png` | `/my-reservations?tab=historial` | Historial por mes |
 | `reservas-cancelar.png` | `/my-reservations` | Hoja para confirmar la cancelación |
