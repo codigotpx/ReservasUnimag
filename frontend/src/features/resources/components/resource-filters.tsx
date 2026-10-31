@@ -4,13 +4,15 @@ import { Clock, Layers, Minus, Plus } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { DatePicker } from "@/components/date-picker";
 import { Dropdown } from "@/components/dropdown";
-import { HALF_HOURS, longDayLabel, today } from "@/lib/dates";
+import { HALF_HOURS, addMinutes, longDayLabel, today } from "@/lib/dates";
 import { CategoryToggle } from "./category-toggle";
 import { TYPES_BY_CATEGORY, codeLabel } from "../labels";
 import type { Category, SearchResourcesParams } from "../types";
 
 const OPENING = "06:00";
 const CLOSING = "22:00";
+/** La duración que se propone al elegir la hora de inicio, la misma de la franja por defecto. */
+const DEFAULT_MINUTES = 120;
 
 /**
  * Fecha, franja, tipo y aforo mínimo (UC1 T039). Valida por usabilidad la ventana de 06:00 a 22:00;
@@ -36,6 +38,12 @@ export function ResourceFilters({
   function changeCategory(next: Category) {
     setCategory(next);
     setType("");
+  }
+
+  // Al mover el inicio, el fin se va dos horas después (sin pasar de las 22:00); si quiere otra duración, la cambia.
+  function changeStart(next: string) {
+    setStart(next);
+    setEnd(addMinutes(next, DEFAULT_MINUTES));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -69,7 +77,7 @@ export function ResourceFilters({
 
         <div className="grid grid-cols-2 gap-4">
           <Field label="Hora inicio">
-            <TimeInput label="Hora inicio" value={start} options={HALF_HOURS.slice(0, -1)} onChange={setStart} />
+            <TimeInput label="Hora inicio" value={start} options={HALF_HOURS.slice(0, -1)} onChange={changeStart} />
           </Field>
           <Field label="Hora fin">
             <TimeInput label="Hora fin" value={end} options={HALF_HOURS.slice(1)} onChange={setEnd} />
