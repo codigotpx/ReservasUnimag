@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarX2, RefreshCw, TriangleAlert } from "lucide-react";
+import { CalendarX2, Plus, RefreshCw, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -168,13 +168,24 @@ function Active({
 }) {
   const spaces = data.reservations.filter((reservation) => reservation.category === "ESPACIO");
   const assets = data.reservations.filter((reservation) => reservation.category === "ACTIVO");
-  // En el celular el cupo va arriba; en escritorio, en su columna a la derecha, fijo mientras se recorre la lista.
+  // El cupo es el resumen de la pantalla: arriba y a todo el ancho; en escritorio, en una sola fila con la acción.
   return (
-    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-8">
-      <div className="lg:sticky lg:top-42 lg:col-start-2 lg:row-start-1">
-        <QuotaCard quota={data.quota} />
-      </div>
-      <div className="flex min-w-0 flex-col gap-5 lg:col-start-1 lg:row-start-1">
+    <div className="flex flex-col gap-5 lg:gap-8">
+      <QuotaCard
+        quota={data.quota}
+        wide
+        action={
+          data.quota.used < data.quota.max && (
+            <Link
+              href="/resources"
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-brand-navy px-5 font-semibold text-white transition hover:bg-brand-navy/90"
+            >
+              <Plus className="size-5" /> Nueva reserva
+            </Link>
+          )
+        }
+      />
+      <div className="flex min-w-0 flex-col gap-5 lg:gap-8">
         {data.reservations.length === 0 && (
           <Empty text="No tienes reservas vigentes.">
             <Link href="/resources" className="mt-2 rounded-full bg-brand-navy px-5 py-2.5 font-semibold text-white">
@@ -190,7 +201,7 @@ function Active({
             items.length > 0 && (
               <section key={title} className="flex flex-col gap-4">
                 <h2 className="pt-2 font-semibold text-gray-500 lg:pt-0">{title}</h2>
-                <div className="grid gap-4 xl:grid-cols-2">
+                <div className="grid gap-4 lg:grid-cols-2">
                   {items.map((reservation) => (
                     <ActiveReservationCard
                       key={reservation.id}
@@ -236,7 +247,7 @@ function Problem({ detail, onRetry }: { detail: string; onRetry: () => void }) {
 
 function Skeleton() {
   return (
-    <div aria-busy="true" aria-label="Cargando reservas" className="grid gap-4 xl:grid-cols-2">
+    <div aria-busy="true" aria-label="Cargando reservas" className="grid gap-4 lg:grid-cols-2">
       {[0, 1].map((card) => (
         <div key={card} className="h-44 animate-pulse rounded-3xl border border-gray-200 bg-white" />
       ))}
