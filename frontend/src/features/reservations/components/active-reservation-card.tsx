@@ -58,7 +58,7 @@ export function ActiveReservationCard({
             <p className="mt-3 text-sm text-gray-500">Puedes cancelar hasta 10 minutos antes.</p>
           </>
         ) : (
-          <p className="text-sm text-gray-500">{whyNotCancellable(reservation)}</p>
+          <p className="text-sm text-gray-500">{whyNotCancellable(reservation, now)}</p>
         )}
       </div>
     </article>
@@ -142,12 +142,15 @@ function timingOf(reservation: Reservation, now: number): Timing {
   return { text: `Empieza en ${timeUntil(Math.floor((start - now) / 60_000))}`, className: soon, icon: Clock };
 }
 
-function whyNotCancellable(reservation: Reservation): string {
+function whyNotCancellable(reservation: Reservation, now: number): string {
   if (reservation.loan?.pickedUp) {
     return "Ya tienes el activo: no se cancela, se devuelve.";
   }
   if (reservation.useStartedAt) {
     return "Ya registraste tu llegada: la reserva está en uso.";
+  }
+  if (Date.parse(reservation.start) <= now) {
+    return "Ya empezó: no se puede cancelar.";
   }
   return "Faltan menos de 10 minutos: ya no se puede cancelar.";
 }
