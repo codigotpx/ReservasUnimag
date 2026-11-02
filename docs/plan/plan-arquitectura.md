@@ -70,7 +70,7 @@ Dos consecuencias prácticas:
 | `domain.port.out` | Lo que la aplicación necesita del exterior: repositorios, Módulo 1, Módulo 3, reloj | `domain.model` |
 | `domain.usecase` | La implementación de cada caso de uso, que orquesta el modelo usando los puertos de salida | `domain.*` |
 | `infrastructure.adapter.in` | Controladores REST para el frontend y consumidores de Kafka para el Módulo 3 | `domain.port.in`, `domain.model` |
-| `infrastructure.adapter.out` | Persistencia (JPA para `app_user`, `JdbcClient` para lo demás) y clientes HTTP; cada uno implementa un puerto de salida | `domain.port.out`, `domain.model` |
+| `infrastructure.adapter.out` | Persistencia (JPA para las tablas sencillas, `JdbcClient` para las que usan funciones de PostgreSQL) y clientes HTTP; cada uno implementa un puerto de salida | `domain.port.out`, `domain.model` |
 | `infrastructure.config` | Beans de Spring, seguridad, propiedades | Todo |
 
 **Regla**: `domain` no importa nada de `infrastructure`, ni de Spring, JPA, Jackson o HTTP. Una prueba de ArchUnit lo verifica en cada build.
@@ -78,7 +78,7 @@ Dos consecuencias prácticas:
 Decisiones que se derivan de la regla:
 
 - **El dominio es puro.** Las entidades de `domain.model` no llevan `@Entity`. Las entidades JPA viven en `infrastructure.adapter.out.persistence`, y un mapper traduce entre las dos.
-- **JPA solo donde hay entidad que mantener.** Al implementar, solo `app_user` quedó con JPA (`UserJpaEntity`, `UserJpaRepository`, `UserMapper`). Las reservas, los historiales y la *outbox* se leen y escriben con `JdbcClient` y SQL a mano: son rangos `tstzrange`, `FOR UPDATE SKIP LOCKED`, `jsonb` y conteos con `FILTER`, que en JPA serían consultas nativas de todas formas. Por eso los planes de los casos de uso nombran un `*PersistenceAdapter` y no entidades ni repositorios Spring Data.
+- **JPA para las tablas sencillas, SQL donde PostgreSQL hace el trabajo.** Van con Spring Data JPA (`*JpaEntity`, `*JpaRepository`, `*Mapper`) `app_user` y, desde la migración parcial (2026-11-02), `denial`, `sanction_check` y `status_change`: solo se insertan y se consultan con filtros, que se arman con `Specification` (Criteria API), nunca concatenando valores. Sus ids los pone el dominio, así que las entidades implementan `Persistable` (`AssignedIdEntity`) para que `save()` haga un `INSERT` directo. Las reservas, los préstamos, las ocupaciones, las cargas del horario y la *outbox* siguen con `JdbcClient` y SQL a mano, siempre con parámetros con nombre: usan rangos `tstzrange` con `&&`, la restricción `EXCLUDE USING gist`, `FOR UPDATE [SKIP LOCKED]`, `jsonb` y conteos con `FILTER`, que en JPA serían consultas nativas igual. JPA y `JdbcClient` comparten la transacción (`JpaTransactionManager`); como JPA escribe al hacer flush, ninguna de esas tablas la lee SQL dentro de la misma transacción. El esquema lo sigue creando Flyway y Hibernate solo lo valida (`ddl-auto=validate`).
 - **Los casos de uso no llevan `@Service`.** Se registran como beans en `infrastructure.config`, y las transacciones (`@Transactional`) se abren en esa misma capa, envolviendo el caso de uso.
 - **La hora se inyecta con un puerto `Clock`.** Casi todas las reglas dependen de "ahora" (10 minutos de no-show, vencimiento a las 22:00, antelación de cancelación), y las pruebas necesitan controlarlo.
 - **Los `<<include>>` del diagrama son llamadas entre casos de uso.** Por ejemplo, `ReserveResourcesUseCase` usa `CheckAvailability`, `CheckSanctions`, `UpdateResourceStatus` y `ReportReservation` a través de sus puertos de entrada.
@@ -246,10 +246,10 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │                                inbox y envío al DLT
     │   └── out/
     │       ├── persistence/
-    │       │   ├── entity/              entidades JPA (solo app_user)
+    │       │   ├── entity/              entidades JPA: app_user, denial, sanction_check, status_change
     │       │   ├── repository/          interfaces Spring Data
     │       │   ├── mapper/              dominio ↔ JPA
-    │       │   └── *Adapter.java        implementan los *RepositoryPort; los de reservas, con JdbcClient
+    │       │   └── *Adapter.java        implementan los *RepositoryPort; los de reservas y ocupación, con JdbcClient
     │       ├── module1/                 cliente RestClient → InventoryPort
     │       ├── module3/                 cliente RestClient → CompliancePort
     │       ├── messaging/               outbox: el adaptador que guarda el evento
