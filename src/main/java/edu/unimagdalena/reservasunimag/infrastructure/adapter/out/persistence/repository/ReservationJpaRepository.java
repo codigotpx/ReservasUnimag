@@ -100,6 +100,19 @@ public interface ReservationJpaRepository extends JpaRepository<ReservationJpaEn
     List<ReservationRow> findOccupying(@Param("resourceIds") Collection<String> resourceIds,
                                        @Param("from") Instant from, @Param("to") Instant to);
 
+    /** El calendario de ocupación de un recurso (UC8): lo confirmado que se cruza con {@code [from, to)}. */
+    @Query("""
+            SELECT new edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.repository.ScheduledUseRow(
+                       r.origin, r.startsAt, r.endsAt, b.type, b.course, b.program)
+            FROM ReservationJpaEntity r
+            LEFT JOIN AcademicBlockJpaEntity b ON b.reservationId = r.id
+            WHERE r.status = CONFIRMADA
+              AND r.resourceId = :resourceId
+              AND r.startsAt < :to AND r.endsAt > :from
+            ORDER BY r.startsAt""")
+    List<ScheduledUseRow> findScheduledUses(@Param("resourceId") String resourceId, @Param("from") Instant from,
+                                            @Param("to") Instant to);
+
     @Query(SELECT_ROW + """
             WHERE r.resourceId = :resourceId
               AND r.origin = ESTUDIANTIL
