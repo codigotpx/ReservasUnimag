@@ -119,7 +119,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │       └── GlobalErrorHandler.java     # (existe) + 409 con el código de denegación
     │   └── out/
     │       ├── persistence/
-    │       │   ├── ReservationPersistenceAdapter.java  # la transacción de confirmación, con JdbcClient
+    │       │   ├── ReservationPersistenceAdapter.java  # la transacción de confirmación, con JPA (ReservationJpaRepository, LoanJpaRepository)
     │       │   └── DenialPersistenceAdapter.java
     │       └── messaging/
     │           ├── OutboxNotifierAdapter.java   # → Module3NotifierPort
@@ -201,7 +201,7 @@ Para el mensaje de `RES-002` se toma el `end` más próximo entre las vigentes; 
 
 **Dónde empieza y acaba la transacción.** Las llamadas HTTP a los Módulos 1 y 3 se hacen **fuera** de la transacción de escritura, para no tener una transacción abierta esperando a otro sistema. La transacción hace solo lo que debe ser atómico, y es un método del adaptador de persistencia:
 
-1. `SELECT ... FOR UPDATE` de la fila del titular en `app_user`, que serializa las reservas de una misma persona y evita que dos peticiones suyas se cuelen las dos en el cupo.
+1. `SELECT ... FOR UPDATE` de la fila del titular en `app_user` (desde la migración a JPA, `UserJpaRepository.lockById` con `@Lock(PESSIMISTIC_WRITE)`, que Hibernate envía como `FOR NO KEY UPDATE`), que serializa las reservas de una misma persona y evita que dos peticiones suyas se cuelen las dos en el cupo.
 2. Contar el cupo vigente (la comprobación que decide; la del paso 2 de la tabla es la que da el mensaje temprano).
 3. Volver a comprobar la ocupación en nuestra base, que cuesta milisegundos.
 4. `INSERT` de `reservation`, del `loan` si es un activo, y del evento en `outbox_message`.
@@ -835,7 +835,7 @@ src/test/resources/contracts/
 - [ ] T027 [US1] Implementar `ReserveResourcesUseCase` con los pasos 0 a 4 de la tabla de decisiones: validación de forma, ficha del recurso, sanción, cupo, disponibilidad, confirmación y los dos `<<include>>` (depende de T021 a T026)
 - [ ] T028 [US1] Implementar el registro de denegaciones en el caso de uso y en `DenialPersistenceAdapter`, con su propia transacción (FR-005)
 - [ ] T029 [P] [US1] Implementar `ReservationPersistenceAdapter` con la transacción de confirmación: bloqueo de la fila del titular, conteo del cupo, recomprobación de la ocupación (incluidos los préstamos abiertos sin devolver) e inserción de `reservation`, `loan` y el evento; traducir la violación de `reservation_no_overlap` a `ResourceTaken`
-- [ ] T030 [P] [US1] Escribir la persistencia de la reserva, el préstamo, la denegación y la *outbox* con `JdbcClient` (la denegación pasó después a JPA en la migración parcial; ver plan general, Reglas de dependencia: JPA quedó solo para `app_user`)
+- [ ] T030 [P] [US1] Escribir la persistencia de la reserva, el préstamo, la denegación y la *outbox* con `JdbcClient` (la denegación pasó después a JPA en la migración parcial, y la reserva y el préstamo en la migración a JPA del 2026-11-13; ver plan general, Reglas de dependencia)
 - [ ] T031 [P] [US1] Implementar `OutboxNotifierAdapter`, que serializa `ReservationRecordEvent` según [Contratos §6](#6-evento-hacia-el-módulo-3--module2reservationrecordv1) —envoltorio completo, `holder` o `academic` según el origen, `loan` solo en activos— y lo inserta en `outbox_message` con ese mismo JSON como `payload`
 - [ ] T032 [P] [US1] Implementar `OutboxPublisher` con `@Scheduled`: lee los `PENDING` con `FOR UPDATE SKIP LOCKED`, publica con la clave `reservation_id`, marca `SENT`, y en el fallo sube `intentos` con espera creciente hasta `FAILED`
 - [ ] T033 [US1] Registrar los beans y las transacciones de UC2 en `UseCasesConfig` (depende de T024 a T032)
@@ -895,7 +895,13 @@ src/test/resources/contracts/
 
 ## Notes
 
-- **Lo que se hizo distinto al implementar**: la ficha de un recurso es el mismo `Resource` del catálogo y no un `ResourceDetails` aparte; `GET /api/loans/expected-due-date` vive en `ReservationController`, sin un `LoanController` para un solo endpoint; no hay `KafkaConfig`, porque el productor se configura con propiedades; la persistencia va con `JdbcClient`; y la migración es la `V2`. La prueba del adaptador REST para `details()` contra WireMock, que había quedado pendiente, se agregó después (2026-10-30) en `InventoryRestAdapterTest`, con los tres *fixtures* `module1-*-details.json` de Contratos §8. Cubre la tabla de Contratos §4: ficha normal de activo y de espacio, `404` como recurso inexistente, cualquier otro estado, el timeout y la conexión rechazada como Módulo 1 caído, y un cuerpo roto como contrato incumplido. Un activo sin `loanTermBusinessDays` llega al dominio con el campo vacío, nunca con un valor por defecto, y un `0` se conserva como uso en sitio. El `503` con `INCOMPLETE_RESOURCE_DETAILS` lo decide UC2, no el adaptador
+- **Migración a JPA** (2026-11-13, por recomendación de arquitectura): `ReservationPersistenceAdapter` deja `JdbcClient`. `reservation` y `loan` tienen entidad (`ReservationJpaEntity`, `LoanJpaEntity`) y sus consultas son `@Query` en JPQL de `ReservationJpaRepository` y `LoanJpaRepository`:
+  - Las lecturas devuelven la proyección `ReservationRow` y no entidades, y los cambios de estado son `UPDATE` de JPQL (`@Modifying`). Así nada depende del contexto de persistencia mientras otros adaptadores toquen esas tablas con SQL en la misma transacción.
+  - La inserción usa `saveAndFlush`: la violación de `reservation_no_overlap` (`23P01`) o el *deadlock* (`40P01`) salen en el acto y se siguen traduciendo a `ResourceTakenException` → `RES-004`. La restricción `EXCLUDE` no cambia.
+  - Los bloqueos del titular y de la reserva son `@Lock(PESSIMISTIC_WRITE)`; Hibernate los envía como `FOR NO KEY UPDATE OF`, que sigue serializando a quien bloquea la misma fila. `lockById` bloquea la reserva sola y luego la lee con su préstamo.
+  - El cruce con `tstzrange` se escribe `startsAt < :to AND endsAt > :from`. Solo queda nativo el `UPDATE academic_block` de `markCancelled`, hasta que esa tabla tenga entidad.
+  - Los puertos no cambian y `ReservationPersistenceAdapterIT` y `ReservationConcurrencyIT` pasan sin cambios
+- **Lo que se hizo distinto al implementar**: la ficha de un recurso es el mismo `Resource` del catálogo y no un `ResourceDetails` aparte; `GET /api/loans/expected-due-date` vive en `ReservationController`, sin un `LoanController` para un solo endpoint; no hay `KafkaConfig`, porque el productor se configura con propiedades; la persistencia va con `JdbcClient` (la reserva y el préstamo pasaron a JPA el 2026-11-13; ver Migración a JPA); y la migración es la `V2`. La prueba del adaptador REST para `details()` contra WireMock, que había quedado pendiente, se agregó después (2026-10-30) en `InventoryRestAdapterTest`, con los tres *fixtures* `module1-*-details.json` de Contratos §8. Cubre la tabla de Contratos §4: ficha normal de activo y de espacio, `404` como recurso inexistente, cualquier otro estado, el timeout y la conexión rechazada como Módulo 1 caído, y un cuerpo roto como contrato incumplido. Un activo sin `loanTermBusinessDays` llega al dominio con el campo vacío, nunca con un valor por defecto, y un `0` se conserva como uso en sitio. El `503` con `INCOMPLETE_RESOURCE_DETAILS` lo decide UC2, no el adaptador
 - **La renovación del préstamo ya no existe.** La revisión general de specs (PR #8) eliminó FR-016 y FR-017 de UC2 y el atributo de renovación de `PeriodoDePrestamo`. Este plan tenía una fase y una sección de contratos para ella, y se quitaron: ya no hay `RenewLoanUseCase`, ni `POST /api/loans/{id}/renewal`, ni los campos `renewed` y `renewable`, ni el evento `ReservationRecordUpdated`. Queda anotado aquí porque el historial del repositorio sí los tuvo
 - La numeración `T0XX` es propia de este plan y empieza de nuevo; no continúa la del plan de UC1
 - [P] tasks = different files, no dependencies

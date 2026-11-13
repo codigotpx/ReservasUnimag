@@ -88,6 +88,18 @@ public interface ReservationJpaRepository extends JpaRepository<ReservationJpaEn
     List<ReservationRow> findStudentOccupying(@Param("resourceIds") Collection<String> resourceIds,
                                               @Param("from") Instant from, @Param("to") Instant to);
 
+    /**
+     * Todo lo confirmado que ocupa algo de {@code [from, to)} en esos recursos, sea de quien sea: lo que se cruza, y
+     * los préstamos entregados y sin devolver que empezaron antes de {@code to}, aunque hayan vencido (UC1).
+     */
+    @Query(SELECT_ROW + """
+            WHERE r.status = CONFIRMADA
+              AND r.resourceId IN :resourceIds
+              AND ( (r.startsAt < :to AND r.endsAt > :from)
+                 OR (p.pickedUpAt IS NOT NULL AND p.returnedAt IS NULL AND r.startsAt < :to) )""")
+    List<ReservationRow> findOccupying(@Param("resourceIds") Collection<String> resourceIds,
+                                       @Param("from") Instant from, @Param("to") Instant to);
+
     @Query(SELECT_ROW + """
             WHERE r.resourceId = :resourceId
               AND r.origin = ESTUDIANTIL

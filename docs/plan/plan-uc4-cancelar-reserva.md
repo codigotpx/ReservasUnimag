@@ -86,7 +86,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │   ├── ReservationController.java      # (existe) + DELETE /api/reservations/{id}
     │   │   └── CancellationResponse.java
     │   └── out/persistence/
-    │       └── ReservationPersistenceAdapter.java   # (existe) + la transacción de cancelar
+    │       └── ReservationPersistenceAdapter.java   # (existe) + la transacción de cancelar; con JPA desde 2026-11-13
     └── config/
         ├── ReservationProperties.java          # (existe) + min-cancellation-notice
         └── UseCasesConfig.java                 # (existe) + los beans de UC4
@@ -144,7 +144,7 @@ Lo común —liberar la ocupación, soltar el cupo, auditar y encolar el reporte
 
 **La transacción de cancelar.** Es corta y no llama a nadie por HTTP:
 
-1. `SELECT ... FOR UPDATE` de la reserva. Es lo que hace idempotente la doble cancelación: la segunda petición ve el estado ya cancelado y sale sin tocar nada.
+1. `SELECT ... FOR UPDATE` de la reserva (desde la migración a JPA, `@Lock(PESSIMISTIC_WRITE)` en `ReservationJpaRepository.lockById`, que bloquea solo la reserva). Es lo que hace idempotente la doble cancelación: la segunda petición ve el estado ya cancelado y sale sin tocar nada.
 2. Si ya está cancelada → se responde con lo que hay, sin reescribir `cancelled_at` ni encolar otro evento (edge case **Doble cancelación**, UC11 SC-003).
 3. Si es un activo, leer `loan` y rechazar si `picked_up_at` no es nulo (FR-008).
 4. Comprobar titular y plazo, solo en la rama `HOLDER`.
@@ -520,6 +520,7 @@ El de UC3, `event-reservation-cancelled.json`, se renombra a `event-reservation-
 - [P] tasks = different files, no dependencies
 - Verify tests pass
 - Commit after each task or logical group
+- **Migración a JPA** (2026-11-13): el bloqueo es `@Lock(PESSIMISTIC_WRITE)` (`FOR NO KEY UPDATE OF` en PostgreSQL). La cancelación es un `UPDATE` de JPQL que solo toca la fila si sigue `CONFIRMADA` (`ReservationJpaRepository.markCancelled`), y la huella de `academic_block` se suelta con una consulta nativa hasta que esa tabla tenga entidad. `CancellationIT` pasa sin cambios
 - La sección **Contratos** es la única fuente del JSON de UC4
 - **Decisiones de los contratos que el spec no fija**: el borde del plazo es inclusivo; cancelar la reserva de otra persona responde `404` y no `403`, para no confirmar que existe; la doble cancelación es `200` con `alreadyCancelled` y no un `409`; el titular no escribe un motivo libre; y el endpoint de mantenimiento existe solo mientras nadie nos avise del cambio de estado
 - **Lo que cambió en el frontend (T019 y T020):**
