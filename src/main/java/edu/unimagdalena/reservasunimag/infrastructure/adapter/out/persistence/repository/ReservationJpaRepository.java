@@ -128,12 +128,4 @@ public interface ReservationJpaRepository extends JpaRepository<ReservationJpaEn
             UPDATE ReservationJpaEntity r SET r.useStartedAt = :at, r.version = r.version + 1
             WHERE r.id = :id AND r.useStartedAt IS NULL""")
     int markUseStarted(@Param("id") UUID id, @Param("at") Instant at);
-
-    /**
-     * Un bloqueo cancelado suelta su huella, para que la misma clase se pueda volver a cargar (UC3 FR-007). Es SQL
-     * nativo mientras {@code academic_block} no tenga entidad.
-     */
-    @Modifying
-    @Query(value = "UPDATE academic_block SET session_key = NULL WHERE reservation_id = :id", nativeQuery = true)
-    void releaseAcademicBlockKey(@Param("id") UUID id);
 }

@@ -520,7 +520,7 @@ El de UC3, `event-reservation-cancelled.json`, se renombra a `event-reservation-
 - [P] tasks = different files, no dependencies
 - Verify tests pass
 - Commit after each task or logical group
-- **Migración a JPA** (2026-11-13): el bloqueo es `@Lock(PESSIMISTIC_WRITE)` (`FOR NO KEY UPDATE OF` en PostgreSQL). La cancelación es un `UPDATE` de JPQL que solo toca la fila si sigue `CONFIRMADA` (`ReservationJpaRepository.markCancelled`), y la huella de `academic_block` se suelta con una consulta nativa hasta que esa tabla tenga entidad. `CancellationIT` pasa sin cambios
+- **Migración a JPA** (2026-11-13): el bloqueo es `@Lock(PESSIMISTIC_WRITE)` (`FOR NO KEY UPDATE OF` en PostgreSQL). La cancelación es un `UPDATE` de JPQL que solo toca la fila si sigue `CONFIRMADA` (`ReservationJpaRepository.markCancelled`), y la huella de `academic_block` se suelta con otro `UPDATE` de JPQL (`AcademicBlockJpaRepository.releaseSessionKey`). `CancellationIT` pasa sin cambios
 - La sección **Contratos** es la única fuente del JSON de UC4
 - **Decisiones de los contratos que el spec no fija**: el borde del plazo es inclusivo; cancelar la reserva de otra persona responde `404` y no `403`, para no confirmar que existe; la doble cancelación es `200` con `alreadyCancelled` y no un `409`; el titular no escribe un motivo libre; y el endpoint de mantenimiento existe solo mientras nadie nos avise del cambio de estado
 - **Lo que cambió en el frontend (T019 y T020):**

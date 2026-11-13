@@ -8,6 +8,7 @@ import edu.unimagdalena.reservasunimag.domain.model.reservation.Reservation;
 import edu.unimagdalena.reservasunimag.domain.port.out.ReservationRepositoryPort;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.entity.LoanJpaEntity;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.mapper.ReservationMapper;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.repository.AcademicBlockJpaRepository;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.repository.LoanJpaRepository;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.repository.ReservationJpaRepository;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.repository.UserJpaRepository;
@@ -44,12 +45,14 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
     private final ReservationJpaRepository reservations;
     private final LoanJpaRepository loans;
     private final UserJpaRepository users;
+    private final AcademicBlockJpaRepository academicBlocks;
 
     ReservationPersistenceAdapter(ReservationJpaRepository reservations, LoanJpaRepository loans,
-                                  UserJpaRepository users) {
+                                  UserJpaRepository users, AcademicBlockJpaRepository academicBlocks) {
         this.reservations = reservations;
         this.loans = loans;
         this.users = users;
+        this.academicBlocks = academicBlocks;
     }
 
     @Override
@@ -120,7 +123,7 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
             throw new IllegalStateException("la reserva " + id + " no estaba confirmada al cancelarla");
         }
         // Un bloqueo cancelado suelta su huella, para que la misma clase se pueda volver a cargar (UC3 FR-007).
-        reservations.releaseAcademicBlockKey(id);
+        academicBlocks.releaseSessionKey(id);
     }
 
     @Override
