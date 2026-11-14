@@ -13,7 +13,6 @@ Motor de reglas de negocio encargado de gestionar el uso de los recursos físico
 | Actor | Tipo | Descripción |
 |---|---|---|
 | Estudiante | Primario (humano) | Consulta recursos, reserva y cancela sus propias reservas. |
-| Monitor | Primario (humano) | Especialización de Estudiante: hereda todas sus capacidades. |
 | Dirección de Programa | Primario (humano) | Importa la carga académica semestral y consulta el catálogo de recursos. |
 | Módulo 1 | Secundario (sistema) | Inventario físico: es dueño del catálogo y del estado operativo de cada recurso (`DISPONIBLE`, `EN_USO`, `EN_MANTENIMIENTO`). El Módulo 2 lo consulta y no le guarda reservas ni bloqueos; lo único que le envía es el inicio de uso de una reserva, para que pase el recurso a `EN_USO`. |
 | Módulo 3 | Secundario (sistema) | Control de uso, sanciones y analítica: **recibe** de nosotros la ficha de cada reserva confirmada y las cancelaciones; **nos reporta** lo que solo él ve, las ausencias que constata y el check-out de cada activo que vuelve; y **provee de vuelta** el reporte de cumplimiento con las sanciones vigentes. Es quien decide y aplica las sanciones. |
@@ -75,7 +74,6 @@ Reglas de negocio que no tienen óvalo propio en el diagrama y se resuelven con 
 
 ## Puntos abiertos transversales
 
-- El Monitor ya no tiene ninguna capacidad propia dentro del módulo: heredaba de Estudiante y lo que lo distinguía era consultar reportes, que ahora ejecuta el sistema. [NEEDS CLARIFICATION]
 - Política de sanción retroactiva: ¿se cancelan las reservas ya confirmadas de un estudiante sancionado, o solo se le impide crear nuevas? [NEEDS CLARIFICATION]
 - Umbral de no-show: definido en 10 minutos desde el inicio de la franja (ver `Reservar recursos`, FR-010). Queda abierto su encadenamiento con las sanciones. [NEEDS CLARIFICATION: cuántas ausencias acumuladas originan sanción y cuánto dura]
 - Parámetros ya definidos: **límite máximo de préstamos simultáneos, 3 reservas vigentes por persona** (`Reservar recursos`, FR-008) y **antelación mínima de cancelación, 10 minutos** (`Cancelar reserva`, FR-007). La **duración máxima de la reserva de un espacio** quedó en **2 horas continuas** (`Reservar recursos`, FR-009), y el **plazo de préstamo de un activo** depende de su tipo y viene como atributo del Módulo 1, en días hábiles (`Reservar recursos`, FR-012).

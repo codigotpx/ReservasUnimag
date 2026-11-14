@@ -19,7 +19,7 @@ erDiagram
         varchar     name
         varchar     email                   UK  "dominio institucional"
         varchar     password_hash               "BCrypt"
-        varchar     role                        "ESTUDIANTE | MONITOR | DIRECCION_PROGRAMA"
+        varchar     role                        "ESTUDIANTE | DIRECCION_PROGRAMA"
         boolean     active
         timestamptz created_at
     }

@@ -108,7 +108,7 @@ class CancelReservationControllerTest {
                 loan.cancel(CancellationOrigin.HOLDER), new Cancellation(CancellationOrigin.HOLDER,
                 CancellationReport.HOLDER_REASON, 1225, at(2026, 9, 2, 18, 5, 0)), new Quota(1, 3), false));
 
-        mockMvc.perform(delete("/api/reservations/" + LOAN_ID).with(session(Role.MONITOR)))
+        mockMvc.perform(delete("/api/reservations/" + LOAN_ID).with(session(Role.ESTUDIANTE)))
                 .andExpect(status().isOk())
                 .andExpect(content().json(read("api-cancellation-200-asset.json"), JsonCompareMode.STRICT));
     }
@@ -225,7 +225,7 @@ class CancelReservationControllerTest {
     @Test
     void onlyTheProgramDirectionCancelsForMaintenance() throws Exception {
         maintenance(Role.ESTUDIANTE, true).andExpect(status().isForbidden());
-        maintenance(Role.MONITOR, false).andExpect(status().isForbidden());
+        maintenance(Role.ESTUDIANTE, false).andExpect(status().isForbidden());
         verifyNoInteractions(cancelForMaintenance);
     }
 

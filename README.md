@@ -43,7 +43,6 @@ estudiantil.
 | Actor | Tipo | Descripción |
 |---|---|---|
 | Estudiante | Primario (humano) | Consulta recursos, reserva y cancela sus propias reservas. |
-| Monitor | Primario (humano) | Especialización de Estudiante: hereda todas sus capacidades. |
 | Dirección de Programa | Primario (humano) | Importa la carga académica semestral y consulta el catálogo de recursos. |
 | Módulo 1 | Secundario (sistema) | Inventario físico: es dueño del catálogo y del estado operativo de cada recurso (`DISPONIBLE`, `EN_USO`, `EN_MANTENIMIENTO`). El Módulo 2 lo consulta y guarda por su cuenta las reservas y los bloqueos. |
 | Módulo 3 | Secundario (sistema) | Control de uso, sanciones y analítica: recibe la ficha de cada reserva y las cancelaciones, nos reporta las ausencias y los check-out, y provee las sanciones vigentes. |
@@ -76,7 +75,7 @@ gestionado automáticamente por Testcontainers:
 ./gradlew bootTestRun
 ```
 
-Con el perfil `local` se siembran además tres usuarios de prueba, uno por rol, todos
+Con el perfil `local` se siembran además tres usuarios de prueba, uno por rol más un estudiante sancionado, todos
 con la contraseña `unimag2026`:
 
 ```bash
@@ -86,7 +85,7 @@ con la contraseña `unimag2026`:
 | Correo | Rol |
 |---|---|
 | `estudiante@unimagdalena.edu.co` | `ESTUDIANTE` |
-| `monitor@unimagdalena.edu.co` | `MONITOR` |
+| `sancionado@unimagdalena.edu.co` | `ESTUDIANTE`, con una sanción vigente en el Módulo 3 falso |
 | `direccion@unimagdalena.edu.co` | `DIRECCION_PROGRAMA` |
 
 La sesión se abre con `POST /api/auth/login` y queda en una cookie `httpOnly`. El JWT

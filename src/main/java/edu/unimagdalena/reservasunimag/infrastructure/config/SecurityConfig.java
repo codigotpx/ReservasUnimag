@@ -1,14 +1,11 @@
 package edu.unimagdalena.reservasunimag.infrastructure.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
-import edu.unimagdalena.reservasunimag.domain.model.user.Role;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.error.ProblemResponses;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.in.web.security.JwtClaimNames;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
-import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -81,14 +78,6 @@ class SecurityConfig {
         converter.setJwtGrantedAuthoritiesConverter(jwt ->
                 List.of(new SimpleGrantedAuthority(ROLE_PREFIX + jwt.getClaimAsString(JwtClaimNames.ROLE))));
         return converter;
-    }
-
-    /** {@code MONITOR} hereda todo lo de {@code ESTUDIANTE} (UC1 FR-005). */
-    @Bean
-    static RoleHierarchy roleHierarchy() {
-        return RoleHierarchyImpl.withRolePrefix(ROLE_PREFIX)
-                .role(Role.MONITOR.name()).implies(Role.ESTUDIANTE.name())
-                .build();
     }
 
     @Bean

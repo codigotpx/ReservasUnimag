@@ -115,7 +115,7 @@ class PendingCheckOutsControllerTest {
     void onlyTheProgramDirectionSeesThePendingLists() throws Exception {
         mockMvc.perform(get("/api/loans/pending-returns").with(session(Role.ESTUDIANTE)))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/reservations/pending-reviews").with(session(Role.MONITOR)))
+        mockMvc.perform(get("/api/reservations/pending-reviews").with(session(Role.ESTUDIANTE)))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(pending);
     }

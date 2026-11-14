@@ -20,7 +20,7 @@ Nadie lo pide por separado: ocurre por dentro de `Reservar recursos`, `Cancelar 
 | Actor | Tipo | Participación |
 |---|---|---|
 | Módulo 1 | Secundario | Recibe el inicio de uso de cada recurso para pasarlo a `EN_USO`; es el dueño del estado físico del inventario. |
-| Estudiante / Monitor | Indirectos | No lo ejecutan; se benefician de que la información que ven esté al día. |
+| Estudiante | Indirectos | No lo ejecutan; se benefician de que la información que ven esté al día. |
 
 **Casos de uso relacionados**
 
@@ -47,7 +47,7 @@ Nadie lo pide por separado: ocurre por dentro de `Reservar recursos`, `Cancelar 
 
 ### User Story 1 - Mantener al día la ocupación de cada recurso (Priority: P1)
 
-Como sistema, quiero actualizar la ocupación de un recurso cada vez que su situación cambia, y avisarle al Módulo 1 cuando su uso empieza, para que cualquiera que consulte —un estudiante, un monitor o la Dirección de Programa— vea siempre la realidad y no una foto vieja.
+Como sistema, quiero actualizar la ocupación de un recurso cada vez que su situación cambia, y avisarle al Módulo 1 cuando su uso empieza, para que cualquiera que consulte —un estudiante o la Dirección de Programa— vea siempre la realidad y no una foto vieja.
 
 **Why this priority**: Es P1 porque va pegado a `Reservar recursos`, que también es P1. Una reserva que se confirma pero no ocupa la franja es peor que no tener reservas: dos personas pueden apartar el mismo salón creyendo ambas que está libre.
 

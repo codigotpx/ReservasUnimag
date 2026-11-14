@@ -187,7 +187,7 @@ reservations.outbox.max-attempts=10
 - **Autorregistro** con correo institucional. El rol por defecto es `ESTUDIANTE`.
 - Contraseñas con **BCrypt**. El login devuelve un **JWT** firmado por el backend, con el id y el rol del usuario.
 - El JWT viaja en una **cookie `httpOnly`**. El frontend llama al backend a través de un *rewrite* de Next.js (`/api/*` → Spring), para que todo quede en el mismo origen sin configurar CORS y el token no quede expuesto a JavaScript.
-- **Roles**: `ESTUDIANTE`, `MONITOR` (hereda todo lo de `ESTUDIANTE`) y `DIRECCION_PROGRAMA`. La autorización por rol se aplica en el adaptador web; el caso de uso recibe el usuario ya identificado.
+- **Roles**: `ESTUDIANTE` y `DIRECCION_PROGRAMA`. El Monitor es actor del Módulo 3, no de este (V10 retiró `MONITOR`). La autorización por rol se aplica en el adaptador web; el caso de uso recibe el usuario ya identificado.
 - **No hay API key ni endpoints de integración**: UC9 y UC12 entran por Kafka, y ahí quien autentica es el broker (SASL más TLS), con las credenciales en variables de entorno.
 - Por eso `/api/**` queda entero detrás del JWT: todo lo que llega por HTTP es el frontend.
 
@@ -342,7 +342,7 @@ inbox_message  (inbox: eventos del Módulo 3 ya procesados)
 | name | varchar | |
 | email | varchar, único | dominio institucional |
 | password_hash | varchar | BCrypt |
-| role | varchar | `ESTUDIANTE`, `MONITOR`, `DIRECCION_PROGRAMA` |
+| role | varchar | `ESTUDIANTE`, `DIRECCION_PROGRAMA` |
 | active | boolean | |
 | created_at | timestamptz | |
 
@@ -529,6 +529,6 @@ Los parámetros del negocio (cupo de 3, ventana de 06:00 a 22:00, 10 minutos de 
 | P-08 | Qué pasa con un préstamo que nunca se devuelve: hoy la ocupación dura hasta el check-out |
 | UC9 | En qué estado queda una reserva con ausencia. La lista de estados de UC2 no tiene uno propio: NEEDS CLARIFICATION |
 | UC9, UC12 | Qué hacemos con un evento que no encaja con el estado de la reserva, por ejemplo un check-out de una reserva ya finalizada: hoy va al DLT |
-| Registro | Spec de registro e inicio de sesión: dominio de correo permitido, datos obligatorios y cómo se asignan los roles `MONITOR` y `DIRECCION_PROGRAMA`, que no pueden salir del autorregistro |
+| Registro | Spec de registro e inicio de sesión: dominio de correo permitido, datos obligatorios y cómo se asigna el rol `DIRECCION_PROGRAMA`, que no puede salir del autorregistro |
 | Escala | Usuarios concurrentes y volumen de recursos esperados |
 | P-29 | La pantalla de ocupación de espacios de Dirección de Programa (`GET /api/resources/{id}/occupancy`): no sale de ningún caso de uso y sus decisiones están por confirmar |

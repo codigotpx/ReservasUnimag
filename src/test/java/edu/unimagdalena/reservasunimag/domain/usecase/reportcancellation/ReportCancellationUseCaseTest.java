@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.DIRECTOR;
-import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.MONITOR;
+import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.OTHER_STUDENT;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.NOW;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.STUDENT;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.at;
@@ -147,7 +147,7 @@ class ReportCancellationUseCaseTest {
 
         assertThat(query.find(STUDENT, reservation.id()).resourceName()).isEqualTo("Sala de Estudio 3");
         assertThat(query.find(DIRECTOR, reservation.id()).reservationId()).isEqualTo(reservation.id());
-        assertThatThrownBy(() -> query.find(MONITOR, reservation.id()))
+        assertThatThrownBy(() -> query.find(OTHER_STUDENT, reservation.id()))
                 .isInstanceOf(ReservationNotFoundException.class);
         assertThatThrownBy(() -> query.find(DIRECTOR, UUID.randomUUID()))
                 .isInstanceOf(ReservationNotFoundException.class);

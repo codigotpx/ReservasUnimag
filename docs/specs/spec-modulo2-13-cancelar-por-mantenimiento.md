@@ -10,7 +10,7 @@
 
 Después de cada uso de un espacio, el Módulo 3 lo revisa y nos manda su check-out con un dictamen: `SIN_NOVEDAD` o `REQUIERE_MANTENIMIENTO` (UC12 FR-011). `Recibir check-out` registra ese dictamen sobre la reserva que se acaba de usar, y ahí termina su trabajo.
 
-El problema está en las reservas que vienen después. Si un Monitor usó el "Salón 204" de 08:00 a 10:00 y la revisión dice que se dañó el aire acondicionado, el Estudiante que tiene el mismo salón reservado de 14:00 a 16:00 va a llegar a un espacio que no se puede usar. Su reserva sigue `CONFIRMADA`, él no sabe nada y va a perder el viaje. Tampoco puede reservar otro espacio a tiempo, porque se entera en la puerta.
+El problema está en las reservas que vienen después. Si un estudiante usó el "Salón 204" de 08:00 a 10:00 y la revisión dice que se dañó el aire acondicionado, el siguiente estudiante que tiene el mismo salón reservado de 14:00 a 16:00 va a llegar a un espacio que no se puede usar. Su reserva sigue `CONFIRMADA`, él no sabe nada y va a perder el viaje. Tampoco puede reservar otro espacio a tiempo, porque se entera en la puerta.
 
 Esta especificación define la regla: **cuando un espacio queda con dictamen `REQUIERE_MANTENIMIENTO`, el sistema cancela automáticamente las reservas estudiantiles confirmadas que tenía por delante y le avisa a cada titular**. La cancelación no es culpa de nadie: no penaliza al titular, le devuelve el cupo y se le reporta al Módulo 3 como originada en la indisponibilidad del recurso.
 
@@ -27,7 +27,7 @@ Lo que faltaba era **qué dispara** esa cancelación y **qué se le dice** a la 
 | Actor | Tipo | Participación |
 |---|---|---|
 | Módulo 3 | Secundario | Revisa el espacio después de su uso y envía el check-out con el dictamen `REQUIERE_MANTENIMIENTO`, que es lo que dispara la regla. Después recibe el reporte de cada cancelación. |
-| Estudiante / Monitor | Afectados | Titulares de las reservas canceladas. No ejecutan nada: reciben el aviso de la cancelación. |
+| Estudiante | Afectados | Titulares de las reservas canceladas. No ejecutan nada: reciben el aviso de la cancelación. |
 
 **Casos de uso relacionados**
 
@@ -50,8 +50,8 @@ Como sistema, quiero cancelar automáticamente las reservas confirmadas de un es
 **Acceptance Scenarios**:
 
 1. **Scenario**: El espacio tiene reservas más tarde el mismo día
-   - **Given** un Monitor usó el "Salón 204" el 2026-09-22 de 08:00 a 10:00, y un Estudiante tiene ese salón `CONFIRMADA` de 14:00 a 16:00
-   - **When** a las 10:15 el Módulo 3 reporta el check-out de la reserva del Monitor con dictamen "requiere mantenimiento"
+   - **Given** un Estudiante usó el "Salón 204" el 2026-09-22 de 08:00 a 10:00, y otro Estudiante tiene ese salón `CONFIRMADA` de 14:00 a 16:00
+   - **When** a las 10:15 el Módulo 3 reporta el check-out de la reserva del primero con dictamen "requiere mantenimiento"
    - **Then** el sistema cancela la reserva del Estudiante con `CANCELADA_POR_RECURSO_NO_DISPONIBLE`, le devuelve el cupo y reporta la cancelación al Módulo 3 con el origen "recurso no disponible"
 
 2. **Scenario**: Varias reservas afectadas
@@ -73,7 +73,7 @@ Como sistema, quiero cancelar automáticamente las reservas confirmadas de un es
 
 ### User Story 2 - Avisarle al titular que su reserva se canceló (Priority: P3)
 
-Como Estudiante o Monitor, quiero enterarme de que mi reserva se canceló porque el espacio quedó en mantenimiento, para no ir hasta allá en vano y tener tiempo de reservar otro espacio.
+Como Estudiante, quiero enterarme de que mi reserva se canceló porque el espacio quedó en mantenimiento, para no ir hasta allá en vano y tener tiempo de reservar otro espacio.
 
 **Why this priority**: Va con la historia 1: cancelar sin avisar deja a la persona igual que antes, solo que ahora el sistema tampoco la espera. El aviso es lo que convierte la cancelación en algo útil para ella.
 

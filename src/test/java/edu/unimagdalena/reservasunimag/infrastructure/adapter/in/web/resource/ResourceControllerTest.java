@@ -160,7 +160,7 @@ class ResourceControllerTest {
                 new ResourceFilter(null, null, null), page, false, false, QUERIED_AT, "Ningún recurso cumple los filtros.",
                 null, SanctionNotice.notVerified()));
 
-        mockMvc.perform(get(QUERY).with(session(Role.MONITOR)))
+        mockMvc.perform(get(QUERY).with(session(Role.ESTUDIANTE)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sanctionNotice.type").value("NOT_VERIFIED"))
                 .andExpect(jsonPath("$.sanctionNotice.reason").doesNotExist())
@@ -209,13 +209,13 @@ class ResourceControllerTest {
                 "x", null, null));
 
         mockMvc.perform(get(QUERY + "&category=ESPACIO&type=SALON&minCapacity=15&page=2")
-                .with(session(Role.MONITOR))).andExpect(status().isOk());
+                .with(session(Role.ESTUDIANTE))).andExpect(status().isOk());
 
         var captor = ArgumentCaptor.forClass(SearchResourcesQuery.class);
         verify(searchResources).search(captor.capture());
         SearchResourcesQuery query = captor.getValue();
         assertThat(query.user()).isEqualTo(new CurrentUser(
-                UUID.fromString("00000000-0000-0000-0000-000000000001"), "2021114001", Role.MONITOR));
+                UUID.fromString("00000000-0000-0000-0000-000000000001"), "2021114001", Role.ESTUDIANTE));
         assertThat(query.slot()).isEqualTo(SLOT);
         assertThat(query.filter()).isEqualTo(new ResourceFilter(ResourceCategory.ESPACIO, "SALON", 15));
         assertThat(query.page().page()).isEqualTo(2);

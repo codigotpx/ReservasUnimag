@@ -15,7 +15,7 @@ Hay tres orígenes de cancelación y el reporte tiene que distinguirlos, porque 
 
 | Origen | Quién la provoca | Qué debe entender el Módulo 3 |
 |---|---|---|
-| Cancelación del titular | El Estudiante o Monitor que reservó | Cumplió: liberó a tiempo. Según [gestionunimag.md](../gestionunimag.md), esto alimenta positivamente su "score" de confianza. |
+| Cancelación del titular | El Estudiante que reservó | Cumplió: liberó a tiempo. Según [gestionunimag.md](../gestionunimag.md), esto alimenta positivamente su "score" de confianza. |
 | Cancelación por prioridad académica | El sistema, al entrar una actividad docente | La persona no tuvo ninguna culpa; no puede penalizársele por esto. |
 | Cancelación por recurso no disponible | El sistema, cuando el recurso pasa a `EN_MANTENIMIENTO` | Tampoco es culpa de la persona; no puede penalizársele por esto. |
 
@@ -26,7 +26,7 @@ Hay tres orígenes de cancelación y el reporte tiene que distinguirlos, porque 
 | Actor | Tipo | Participación |
 |---|---|---|
 | Módulo 3 | Secundario | Recibe el reporte de cancelación; actualiza el cumplimiento de la persona y decide si hay consecuencia. |
-| Estudiante / Monitor | Indirectos | Son los titulares de las reservas canceladas; no ejecutan este caso de uso. |
+| Estudiante | Indirectos | Son los titulares de las reservas canceladas; no ejecutan este caso de uso. |
 
 **Casos de uso relacionados**
 

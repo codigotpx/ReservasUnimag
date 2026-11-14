@@ -8,7 +8,7 @@
 
 ## Contexto
 
-Punto de entrada del Módulo 2. Permite al Estudiante (Monitor, que hereda sus capacidades) y dirección de programa ver el catálogo de recursos físicos de la universidad —espacios como salones, laboratorios y salas de estudio, y activos como libros, microscopios o videobeams— y saber cuáles están realmente disponibles en una fecha y franja horaria.
+Punto de entrada del Módulo 2. Permite al Estudiante y a la Dirección de Programa ver el catálogo de recursos físicos de la universidad —espacios como salones, laboratorios y salas de estudio, y activos como libros, microscopios o videobeams— y saber cuáles están realmente disponibles en una fecha y franja horaria.
 
 Es el único caso de uso del módulo que no arranca desde ningún otro: el estudiante puede entrar, mirar qué hay libre y salir sin hacer nada más. Desde aquí puede continuar hacia `Reservar recursos` si decide apartar algo.
 
@@ -26,7 +26,6 @@ Lo que el estudiante ve es una foto del momento: la disponibilidad se vuelve a c
 | Actor | Tipo | Participación |
 |---|---|---|
 | Estudiante | Primario | Consulta el catálogo filtrando por fecha, franja y tipo de recurso. |
-| Monitor | Primario | Especialización de Estudiante: hereda esta capacidad. |
 | Dirección de Programa | Primario | Consulta el catálogo para ver la ocupación real de la infraestructura. |
 | Módulo 1 | Secundario | Dueño del inventario: aporta el catálogo de recursos con sus atributos y el estado operativo de cada uno. |
 | Módulo 3 | Secundario | Provee, a través de `Consultar sanciones`, si la persona que consulta tiene una sanción vigente. |
@@ -44,7 +43,7 @@ Lo que el estudiante ve es una foto del momento: la disponibilidad se vuelve a c
 
 ### User Story 1 - Consultar recursos disponibles (Priority: P1)
 
-Como Estudiante (o Monitor) y dirección de programa, quiero consultar el catálogo de recursos filtrando por fecha, franja horaria y tipo de recurso, para ver únicamente aquellos que están realmente disponibles y no perder tiempo intentando apartar espacios ocupados o bloqueados por clase.
+Como Estudiante o Dirección de Programa, quiero consultar el catálogo de recursos filtrando por fecha, franja horaria y tipo de recurso, para ver únicamente aquellos que están realmente disponibles y no perder tiempo intentando apartar espacios ocupados o bloqueados por clase.
 
 **Why this priority**: Es la puerta de entrada del módulo: ningún otro caso de uso tiene que ocurrir antes para que esta consulta tenga sentido, y todos los demás parten de aquí o usan la información que aquí se muestra. Por dentro sí se apoya en `Consultar disponibilidad de los recursos` y en el inventario del Módulo 1, pero eso el estudiante no lo ve. Por sí sola ya entrega valor: elimina el recorrido físico por el campus para averiguar qué está libre.
 
@@ -110,7 +109,7 @@ Como Estudiante (o Monitor) y dirección de programa, quiero consultar el catál
 - **FR-002**: El sistema DEBE excluir de la selección estudiantil todo recurso cuyo estado en la franja consultada sea `RESERVADO`, `BLOQUEO_ACADEMICO`, `EN_USO` o `EN_MANTENIMIENTO`.
 - **FR-003**: El sistema DEBE calcular la disponibilidad como la ausencia de intersección con cualquier bloqueo académico, reserva vigente o préstamo abierto sobre el mismo recurso. Un activo prestado está ocupado durante todo su periodo de préstamo, de principio a fin, aunque la franja consultada caiga en mitad de él o en un día distinto al de la entrega.
 - **FR-004**: El sistema DEBE indicar, para cada recurso no disponible, el estado que motiva su exclusión.
-- **FR-005**: El sistema DEBE aplicar al rol Monitor todas las capacidades de consulta del rol Estudiante.
+- **FR-005**: *Retirado.* Aplicaba al Monitor las capacidades del Estudiante; el Monitor ya no es actor del Módulo 2 (ver `pendientes-clarificacion.md`, resuelto el 2026-11-14).
 - **FR-006**: El sistema DEBE obtener del Módulo 1 el catálogo de recursos y sus atributos; el Módulo 2 NO DEBE mantener una copia propia como fuente de verdad.
 - **FR-007**: El sistema DEBE resolver la disponibilidad de cada recurso de la lista mediante `Consultar disponibilidad de los recursos`.
 - **FR-008**: Si el Módulo 1 no está disponible, el sistema NO DEBE presentar como vigente una lista que no pudo comprobar; DEBE informar que la consulta no se puede resolver en ese momento.

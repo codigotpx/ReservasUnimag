@@ -126,7 +126,7 @@ class ReservationControllerTest {
         when(reserveResources.reserve(any())).thenReturn(
                 new ReservationResult(loanReservation(Loan.reserved(7)), BOOK, new Quota(2, 3)));
 
-        mockMvc.perform(post("/api/reservations").with(session(Role.MONITOR))
+        mockMvc.perform(post("/api/reservations").with(session(Role.ESTUDIANTE))
                         .contentType(MediaType.APPLICATION_JSON).content(ASSET_BODY))
                 .andExpect(status().isCreated())
                 .andExpect(content().json(read("api-reservation-asset-201.json"), JsonCompareMode.STRICT));

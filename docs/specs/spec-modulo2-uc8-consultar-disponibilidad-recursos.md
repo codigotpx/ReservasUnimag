@@ -16,7 +16,7 @@ No es lo mismo que `Consultar recursos`. Aquel muestra una lista al estudiante p
 | Actor | Tipo | Participación |
 |---|---|---|
 | Módulo 1 | Secundario | Aporta el estado operativo del recurso: `DISPONIBLE`, `EN_USO` o `EN_MANTENIMIENTO`. La ocupación por reservas y bloqueos no se le pregunta, porque es del Módulo 2. |
-| Estudiante / Monitor | Indirectos | No la piden a mano; ocurre por dentro cuando consultan o reservan. |
+| Estudiante | Indirectos | No la piden a mano; ocurre por dentro cuando consultan o reservan. |
 
 **Casos de uso relacionados**
 

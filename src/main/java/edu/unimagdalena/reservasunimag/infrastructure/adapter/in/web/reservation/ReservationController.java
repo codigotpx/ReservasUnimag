@@ -27,7 +27,7 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 /**
- * UC2 y UC4. Solo reservan Estudiante y Monitor; Dirección de Programa consulta pero no reserva. Cancelar lo puede
+ * UC2 y UC4. Solo reserva el Estudiante; Dirección de Programa consulta pero no reserva. Cancelar lo puede
  * pedir cualquiera con sesión, pero solo sobre lo suyo. La identidad sale del JWT y nunca del cuerpo.
  */
 @RestController
@@ -86,8 +86,8 @@ class ReservationController {
     }
 
     private static void requireCanReserve(CurrentUser user) {
-        if (!user.role().includes(Role.ESTUDIANTE)) {
-            throw new AccessDeniedException("Solo Estudiante y Monitor reservan");
+        if (user.role() != Role.ESTUDIANTE) {
+            throw new AccessDeniedException("Solo el Estudiante reserva");
         }
     }
 }

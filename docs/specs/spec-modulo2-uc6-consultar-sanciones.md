@@ -13,14 +13,14 @@ Existe por una razón muy concreta: cuando alguien intenta reservar y no puede, 
 
 Con eso se cierra el círculo del módulo: el Módulo 2 le reporta al Módulo 3 qué se apartó y las cancelaciones; el Módulo 3 pone de su lado lo que solo él ve —las ausencias que constata y los check-out que recibe—, arma con todo eso el cumplimiento y decide las sanciones; y el Módulo 2 vuelve a leerlas aquí para poder explicárselas a la persona en el momento en que intenta reservar.
 
-**Ninguna persona ejecuta este caso de uso.** Ni el Estudiante, ni el Monitor, ni la Dirección de Programa entran a consultar reportes: lo hace el sistema, por dentro, y lo único que la persona llega a ver es el motivo por el que no pudo reservar.
+**Ninguna persona ejecuta este caso de uso.** Ni el Estudiante ni la Dirección de Programa entran a consultar reportes: lo hace el sistema, por dentro, y lo único que la persona llega a ver es el motivo por el que no pudo reservar.
 
 **Actores**
 
 | Actor | Tipo | Participación |
 |---|---|---|
 | Módulo 3 | Secundario | Provee el reporte de cumplimiento: sanciones vigentes, ausencias y devoluciones con retraso. |
-| Estudiante / Monitor | Indirectos | No lo ejecutan; solo reciben, traducido a un mensaje claro, el motivo por el que no pueden reservar. |
+| Estudiante | Indirectos | No lo ejecutan; solo reciben, traducido a un mensaje claro, el motivo por el que no pueden reservar. |
 
 **Casos de uso relacionados**
 

@@ -33,7 +33,7 @@ import java.util.UUID;
 
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.CLOCK;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.DIRECTOR;
-import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.MONITOR;
+import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.OTHER_STUDENT;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.NOW;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.STUDENT;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.asset;
@@ -169,7 +169,7 @@ class ReportReservationUseCaseTest {
         assertThat(query.find(STUDENT, reservation.id()).resourceName()).isEqualTo("Sala de Estudio 3");
         assertThat(query.find(DIRECTOR, reservation.id()).reservationId()).isEqualTo(reservation.id());
         assertThat(query.find(DIRECTOR, block.id()).academic()).isEqualTo(NETWORKS);
-        assertThatThrownBy(() -> query.find(MONITOR, reservation.id()))
+        assertThatThrownBy(() -> query.find(OTHER_STUDENT, reservation.id()))
                 .isInstanceOf(ReservationNotFoundException.class);
         // Una ficha académica no tiene titular: solo la ve Dirección de Programa.
         assertThatThrownBy(() -> query.find(STUDENT, block.id())).isInstanceOf(ReservationNotFoundException.class);

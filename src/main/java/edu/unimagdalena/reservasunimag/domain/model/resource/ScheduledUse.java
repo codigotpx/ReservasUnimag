@@ -14,7 +14,7 @@ public record ScheduledUse(Kind kind, Instant startsAt, Instant endsAt, String c
         CLASS,
         /** Necesidad extraordinaria (UC3 §3). */
         EXTRAORDINARY,
-        /** Reserva de un estudiante o monitor (UC2). */
+        /** Reserva de un estudiante (UC2). */
         STUDENT_RESERVATION
     }
 

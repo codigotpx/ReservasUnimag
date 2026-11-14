@@ -60,15 +60,6 @@ class AuthFlowIT {
     }
 
     @Test
-    void theMonitorKeepsItsOwnRole() throws Exception {
-        Cookie session = login("monitor@unimagdalena.edu.co", "unimag2026");
-
-        mockMvc.perform(get("/api/auth/me").cookie(session))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.role").value("MONITOR"));
-    }
-
-    @Test
     void wrongPasswordAndUnknownEmailGiveTheSameProblem() throws Exception {
         for (String body : new String[]{
                 "{\"email\": \"estudiante@unimagdalena.edu.co\", \"password\": \"mala\"}",

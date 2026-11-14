@@ -20,7 +20,7 @@ Este caso de uso no informa cómo termina la reserva, y no le falta nada por eso
 | Actor | Tipo | Participación |
 |---|---|---|
 | Módulo 3 | Secundario | Destinatario de la ficha. Con ella supervisa el uso, comprueba la asistencia y arma la matriz de cumplimiento. |
-| Estudiante / Monitor | Indirectos | Son los titulares de las reservas que se informan; no ejecutan este caso de uso. |
+| Estudiante | Indirectos | Son los titulares de las reservas que se informan; no ejecutan este caso de uso. |
 
 **Casos de uso relacionados**
 
@@ -87,7 +87,7 @@ Como sistema, quiero enviarle al Módulo 3 la ficha de cada reserva en cuanto se
 - **FichaDeReserva**: lo que se le manda al Módulo 3 cuando una reserva se confirma. Atributos: reserva, origen (estudiantil o académico), titular —o asignatura, programa y docente si el origen es académico—, recurso, franja horaria o periodo de préstamo, fecha y hora del envío, resultado del envío.
 - **Reserva**: el apartado confirmado que da origen a la ficha.
 - **PeriodoDePrestamo**: lo que se informa cuando el recurso es un activo, con su fecha y hora de vencimiento; es la referencia contra la que el Módulo 3 mide el check-out.
-- **Usuario**: el titular de una reserva estudiantil, siempre un Estudiante o Monitor, sobre el que el Módulo 3 lleva el cumplimiento. Los bloqueos académicos no tienen Usuario titular.
+- **Usuario**: el titular de una reserva estudiantil, siempre un Estudiante, sobre el que el Módulo 3 lleva el cumplimiento. Los bloqueos académicos no tienen Usuario titular.
 
 ## Success Criteria *(mandatory)*
 

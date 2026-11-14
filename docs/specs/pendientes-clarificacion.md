@@ -2,7 +2,7 @@
 
 Lista de decisiones que faltan por definir. Cada entrada dice **qué hay que preguntar** y **exactamente dónde se aplica** una vez se tenga la respuesta, para no volver a rastrear los archivos.
 
-**Última revisión**: 2026-10-30
+**Última revisión**: 2026-11-14
 
 ---
 
@@ -80,23 +80,6 @@ El edge case **Sanción que inicia con reservas vigentes** de UC2 afirma que *"s
 |---|---|---|
 | `spec-modulo2-uc12-recibir-check-out.md` | Edge case **Devolución que nunca llega** | Definir el plazo y la acción. |
 | `spec-modulo2-uc7-actualizar-estado-recursos.md` | Estados del recurso | Puede necesitar un estado o motivo para un recurso dado por perdido. |
-
----
-
-## P-09 — El Monitor se quedó sin capacidad propia
-
-**Estado**: abierto, y más apretado que antes. La comprobación de asistencia, que podía haber sido su capacidad propia, resultó ser del Módulo 3. El último candidato que quedaba —registrar las devoluciones en el punto de préstamo— también se fue con `Recibir check-out`: el check-out lo hace el Módulo 3 y nosotros solo recibimos el aviso, así que ahí ya no hay nada que una persona de este módulo ejecute.
-
-El Monitor es una especialización de Estudiante: hereda todo lo suyo. Lo único que lo distinguía dentro del Módulo 2 era **consultar reportes**, y esa consulta ya no la hace ninguna persona: la ejecuta el sistema y el resultado va al Módulo 3. Tal como quedan el diagrama y los specs, el Monitor no hace nada que un Estudiante no pueda hacer, así que como actor separado ya no aporta.
-
-**Qué preguntar**: ¿qué puede hacer un Monitor que un Estudiante no? Ya no queda ningún candidato dentro del Módulo 2. O se le encuentra una capacidad nueva, o se elimina como actor separado y se deja solo Estudiante.
-
-**Dónde aplicarlo**:
-
-| Archivo | Punto | Qué cambiar |
-|---|---|---|
-| `unimag.drawio` | Actor **Monitor** | Dibujarle una línea propia al caso de uso que lo distinga, o eliminarlo como actor separado. |
-| `spec-modulo2.md` | Tabla de **Actores** | Describir su capacidad propia. |
 
 ---
 
@@ -201,25 +184,6 @@ Ya se corrigió del lado nuestro (UC1 SC-001 pasó a 6 s / 12 s, y UC8 SC-001 a 
 |---|---|---|
 | `spec-modulo2-uc1-consultar-recursos.md` | **SC-001** | Recalcular si el Módulo 1 mejora su compromiso. |
 | `spec-modulo2-uc8-consultar-disponibilidad-recursos.md` | **SC-001** | Igual. |
-
----
-
-## P-18 — ¿El "monitor" del Módulo 1 es el mismo que el nuestro?
-
-**Estado**: abierto. Relacionado con P-09.
-
-El spec del Módulo 1 nombra como actor a *"el monitor de recursos"*, que por el contexto suena a personal que administra el inventario. Nuestro Monitor es una **especialización de Estudiante**. Si son dos roles distintos con el mismo nombre, va a haber confusión en cuanto los dos módulos se junten.
-
-**Qué preguntar**: ¿el "monitor de recursos" del Módulo 1 es el mismo Monitor estudiantil del Módulo 2, o es personal administrativo?
-
-> Si resulta ser el mismo, se cierra P-09 de paso: administrar el inventario sería justamente la capacidad propia que hoy le falta al Monitor.
-
-**Dónde aplicarlo**:
-
-| Archivo | Punto | Qué cambiar |
-|---|---|---|
-| `spec-modulo2.md` | Tabla de **Actores** | Precisar de qué monitor se habla. |
-| `pendientes-clarificacion.md` | **P-09** | Puede cerrarse con la respuesta. |
 
 ---
 
@@ -488,6 +452,8 @@ Dirección de Programa tiene en el menú "Ocupación": la semana de un espacio c
 - **La frase "en tiempo real" del diseño no se usó**: es una foto de lo confirmado al abrirla, no se actualiza sola.
 
 ## Resueltos
+
+- **P-09 y P-18 — El Monitor sale del Módulo 2** — decidido por el equipo. El Monitor no tenía ninguna capacidad propia aquí: heredaba todo de Estudiante, y lo que lo distinguía (consultar reportes, comprobar asistencia, registrar devoluciones) terminó siendo trabajo del Módulo 3. Es un actor de ese módulo, no del nuestro, así que P-18 deja de ser un choque de nombres. Se quitó del diagrama (`unimag.drawio` y `unimag.png`), de las tablas de actores, del enum `Role` y de la jerarquía de roles de Spring Security. UC1 FR-005 queda retirado. La migración `V10__remove_monitor_role.sql` pasa a `ESTUDIANTE` a quien tuviera `MONITOR` y saca el valor del `CHECK`. El usuario de prueba `monitor@` del perfil local pasa a ser `sancionado@`, un Estudiante que conserva la sanción del Módulo 3 falso. *(2026-11-14)*
 
 - **P-11 — Las sanciones sí distinguen entre espacios y activos** — lo dice el edge case **Sanciones que no aplican a lo que se está pidiendo** de UC6, y el equipo lo aplicó en el plan de UC6 al revisar los planes. Cada sanción trae un alcance (`ESPACIOS`, `ACTIVOS` o `TODO`); al confirmar, `RES-003` solo se aplica si el alcance cubre la categoría del recurso que se pide, y un alcance que falta o no se conoce bloquea todo. Implementado con UC6; ver **P-27**. Aplicado en los planes de UC1, UC2 y UC6 y en `contratos-integracion.md`. *(2026-10-30)*
 
