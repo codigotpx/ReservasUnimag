@@ -114,7 +114,7 @@ frontend/src/features/reservations/
 
 | Origen | Quién lo dispara | Comprueba titular y plazo | Estado final | ¿Penaliza? |
 |---|---|---|---|---|
-| `HOLDER` | El Estudiante, Monitor o Dirección de Programa, por HTTP | **Sí** | `CANCELADA` | Lo decide el Módulo 3 con la antelación que le mandamos |
+| `HOLDER` | El Estudiante o Dirección de Programa, por HTTP | **Sí** | `CANCELADA` | Lo decide el Módulo 3 con la antelación que le mandamos |
 | `ACADEMIC_PRIORITY` | UC3, por código | No | `CANCELADA_POR_PRIORIDAD_ACADEMICA` | No (FR-005) |
 | `RESOURCE_UNAVAILABLE` | El mantenimiento del recurso (FR-010) | No | `CANCELADA_POR_RECURSO_NO_DISPONIBLE` | No |
 

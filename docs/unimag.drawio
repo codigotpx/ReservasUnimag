@@ -10,9 +10,6 @@
         <mxCell id="XDqIen84BaYdYMZfqVYr-3" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Estudiante" vertex="1">
           <mxGeometry height="140" width="80" x="140" y="70" as="geometry" />
         </mxCell>
-        <mxCell id="XDqIen84BaYdYMZfqVYr-10" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Monitor" vertex="1">
-          <mxGeometry height="120" width="70" x="145" y="313" as="geometry" />
-        </mxCell>
         <mxCell id="XDqIen84BaYdYMZfqVYr-11" edge="1" parent="1" source="XDqIen84BaYdYMZfqVYr-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
@@ -24,12 +21,6 @@
         </mxCell>
         <mxCell id="XDqIen84BaYdYMZfqVYr-13" parent="1" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" value="Dirección de programa" vertex="1">
           <mxGeometry height="120" width="70" x="145" y="500" as="geometry" />
-        </mxCell>
-        <mxCell id="XDqIen84BaYdYMZfqVYr-14" edge="1" parent="1" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <mxPoint x="179.5" y="300" as="sourcePoint" />
-            <mxPoint x="179.5" y="250" as="targetPoint" />
-          </mxGeometry>
         </mxCell>
         <mxCell id="XDqIen84BaYdYMZfqVYr-16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&amp;lt;&amp;lt;extend&amp;gt;&amp;gt;" vertex="1">
           <mxGeometry height="30" width="60" x="600" y="390" as="geometry" />

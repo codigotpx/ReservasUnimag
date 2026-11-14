@@ -62,7 +62,7 @@ public class SearchResourcesUseCase implements SearchResourcesPort {
             next = resources.isEmpty() ? null : nextFreeSlot.find(resources, query.slot()).orElse(null);
             message = noneSelectableMessage(query.slot(), resources.size(), next != null);
         }
-        SanctionNotice notice = query.user().role().includes(Role.ESTUDIANTE)
+        SanctionNotice notice = query.user().role() == Role.ESTUDIANTE
                 ? sanctions.checkSanctions(query.user()).orElse(null)
                 : null;
 

@@ -195,7 +195,7 @@ class ScheduleControllerTest {
     @Test
     void onlyTheProgramDirectionUploadsSchedules() throws Exception {
         upload(Role.ESTUDIANTE).andExpect(status().isForbidden());
-        mockMvc.perform(post("/api/schedules/" + UPLOAD + "/confirmation").with(session(Role.MONITOR)))
+        mockMvc.perform(post("/api/schedules/" + UPLOAD + "/confirmation").with(session(Role.ESTUDIANTE)))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(validateSchedule, applySchedule);
     }

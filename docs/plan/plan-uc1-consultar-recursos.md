@@ -6,14 +6,14 @@
 
 ## Summary
 
-UC1 es la puerta de entrada del módulo. Estudiante, Monitor y Dirección de Programa consultan el catálogo de recursos filtrando por fecha, franja horaria, tipo y, para espacios, aforo mínimo. Ven **todos** los recursos que cumplen los filtros, cada uno con su estado en esa franja, y solo pueden seleccionar los que están `DISPONIBLE` (FR-002, FR-012).
+UC1 es la puerta de entrada del módulo. Estudiante y Dirección de Programa consultan el catálogo de recursos filtrando por fecha, franja horaria, tipo y, para espacios, aforo mínimo. Ven **todos** los recursos que cumplen los filtros, cada uno con su estado en esa franja, y solo pueden seleccionar los que están `DISPONIBLE` (FR-002, FR-012).
 
 **Enfoque técnico:**
 
 1. El caso de uso `SearchResourcesUseCase` pide el catálogo filtrado al Módulo 1 a través de `InventoryPort`, recorriendo todas sus páginas (UC8 FR-011), y lo ordena por nombre e identificador (FR-014).
 2. Calcula el estado de **todo** el conjunto filtrado con `CheckAvailabilityPort` (el `<<include>>` a UC8). El estado sale de cruzar el estado operativo del Módulo 1 con las ocupaciones que guarda el Módulo 2 (reservas, préstamos y bloqueos), en una sola consulta a PostgreSQL con rangos `tstzrange`.
 3. Pagina en memoria, de 20 en 20 (FR-009). Como el estado se calcula para todo el conjunto, se sabe si **ninguno** es seleccionable (escenario 7) y se puede sugerir la siguiente franja libre.
-4. Si quien consulta es Estudiante o Monitor, consulta sus sanciones con `CheckSanctionsPort` (el `<<include>>` a UC6) y agrega un aviso a la respuesta (FR-016).
+4. Si quien consulta es Estudiante, consulta sus sanciones con `CheckSanctionsPort` (el `<<include>>` a UC6) y agrega un aviso a la respuesta (FR-016).
 5. Si el Módulo 1 no responde, la consulta falla con un error explícito y nunca muestra una lista vieja (FR-008, P-14).
 
 Como UC1 es el primer caso de uso que se implementa, este plan también monta la base compartida del proyecto: dependencias, esquema inicial, seguridad, manejo de errores, reloj y el esqueleto del frontend. De UC8 y UC6 implementa solo la parte que UC1 necesita; la completan [plan-uc8-consultar-disponibilidad-recursos.md](./plan-uc8-consultar-disponibilidad-recursos.md) y [plan-uc6-consultar-sanciones.md](./plan-uc6-consultar-sanciones.md).
@@ -203,7 +203,7 @@ Desde la migración a JPA (2026-11-13) la consulta es `ReservationJpaRepository.
 
 **Sugerencia de la siguiente franja (escenario 7).** Cuando ningún recurso del conjunto filtrado es seleccionable, se prueban franjas de la misma duración que la consultada, que empiezan desde el fin de esa franja en pasos de 30 minutos y llegan hasta las 22:00 del mismo día. Se usa la foto del catálogo ya obtenida y una sola consulta de ocupaciones que cubre el resto del día. Si no hay ninguna, la respuesta lo dice. El paso de 30 minutos y el límite al mismo día son una decisión de este plan, porque el spec no los fija; son parametrizables.
 
-**Sanciones durante la consulta (FR-016).** Solo para los roles `ESTUDIANTE` y `MONITOR`: Dirección de Programa no reserva. Si hay sanción vigente, la respuesta trae un aviso con su motivo y su fecha de fin (UC6 FR-004), pero la lista se muestra igual. Si el Módulo 3 no responde, la consulta **no falla**: trae un aviso de que no se pudo comprobar la situación de la persona (UC6 FR-006), porque la comprobación que decide es la de `Reservar recursos` al confirmar.
+**Sanciones durante la consulta (FR-016).** Solo para el rol `ESTUDIANTE`: Dirección de Programa no reserva. Si hay sanción vigente, la respuesta trae un aviso con su motivo y su fecha de fin (UC6 FR-004), pero la lista se muestra igual. Si el Módulo 3 no responde, la consulta **no falla**: trae un aviso de que no se pudo comprobar la situación de la persona (UC6 FR-006), porque la comprobación que decide es la de `Reservar recursos` al confirmar.
 
 **Contrato con el Módulo 1.** `InventoryPort` expone dos operaciones pensadas desde nuestro lado: `searchCatalog(ResourceFilter)`, que devuelve la ficha de cada recurso con su estado operativo, y `operationalStatus(resourceIds)`. Si el Módulo 1 no filtra por aforo, el filtro se aplica en el caso de uso después de traer el catálogo. El JSON de las dos operaciones, su mapeo hacia el dominio y qué se hace con cada error están en [Contratos §2](#2-módulo-1--inventoryport).
 
@@ -319,7 +319,7 @@ El orden del ejemplo no es casual: es por `name` y, ante nombres iguales, por `i
 | `resources` | arreglo | Como máximo 20 elementos. |
 | `message` | cadena | Solo cuando `anySelectable` es `false` (FR-012). |
 | `nextTimeSlot` | objeto | Solo cuando `anySelectable` es `false` y se encontró una franja con disponibilidad (escenario 7). |
-| `sanctionNotice` | objeto | Solo para `ESTUDIANTE` y `MONITOR`, y solo si hay algo que avisar (FR-016). |
+| `sanctionNotice` | objeto | Solo para `ESTUDIANTE`, y solo si hay algo que avisar (FR-016). |
 
 **Campos de cada recurso**
 
@@ -648,7 +648,7 @@ Sin cookie válida → `401` con el mismo `ProblemDetail` de `no-autenticado`.
 |---|---|
 | `sub` | `usuario.id` (uuid) |
 | `code` | Código institucional; es lo que se le manda al Módulo 3 (UC6 FR-007) |
-| `role` | `ESTUDIANTE`, `MONITOR` o `DIRECCION_PROGRAMA` |
+| `role` | `ESTUDIANTE` o `DIRECCION_PROGRAMA` |
 | `iss`, `iat`, `exp` | Emisor y vigencia de 8 horas |
 
 El `CurrentUser` que reciben los casos de uso se arma con `sub`, `code` y `role`, y nunca llega desde el cuerpo o la URL de la petición.
@@ -776,7 +776,7 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - [ ] T009 [P] Crear `domain/model/reservation/TimeSlot.java`: fecha, hora de inicio y hora de fin en `America/Bogota`; rechaza con `InvalidTimeSlotException` una franja fuera de 06:00 a 22:00, que cruce la medianoche o con inicio ≥ fin (FR-010, FR-011); expone `overlaps(start, end)`
 - [ ] T010 [P] Crear `domain/model/common/Page.java` y `PageRequest.java`, con tamaño por defecto de 20 tomado de `ReservationProperties`
 - [ ] T011 Crear `infrastructure/adapter/in/web/error/GlobalErrorHandler.java`, que traduce `InvalidTimeSlotException` a 400 y `ExternalServiceUnavailableException` a 503 como `ProblemDetail`
-- [ ] T012 Configurar `infrastructure/config/SecurityConfig.java`: validación del JWT desde la cookie `httpOnly`, roles `ESTUDIANTE`, `MONITOR` (hereda de `ESTUDIANTE`, FR-005) y `DIRECCION_PROGRAMA`; y un resolvedor que entrega `CurrentUser` a los controladores
+- [ ] T012 Configurar `infrastructure/config/SecurityConfig.java`: validación del JWT desde la cookie `httpOnly`, roles `ESTUDIANTE` y `DIRECCION_PROGRAMA` (el `MONITOR` que heredaba de `ESTUDIANTE` por FR-005 se retiró el 2026-11-14); y un resolvedor que entrega `CurrentUser` a los controladores
 - [ ] T013 Crear `db/local/R__local_users.sql`, que solo se aplica con el perfil local (`spring.flyway.locations` lo suma), con un usuario por rol, y el login mínimo (`POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`) según [Contratos §4](#4-login-mínimo-t013), para poder probar la consulta. El autorregistro queda para su propio spec
 - [ ] T014 [P] Crear `infrastructure/config/HttpClientsConfig.java` con un `RestClient` por módulo externo, cada uno con su URL base y su timeout
 - [x] T015 [P] Crear `frontend/src/lib/api/client.ts`, que envía la cookie de sesión y convierte los `ProblemDetail` en errores tipados, y el layout del grupo `(app)`, que redirige al login si no hay sesión
@@ -787,7 +787,7 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 
 ## Phase 3: User Story 1 - Consultar recursos disponibles (Priority: P1)
 
-**Goal**: Estudiante, Monitor y Dirección de Programa ven, para una fecha y franja, todos los recursos que cumplen los filtros con su estado, paginados de 20 en 20, y solo los `DISPONIBLE` son seleccionables.
+**Goal**: Estudiante y Dirección de Programa ven, para una fecha y franja, todos los recursos que cumplen los filtros con su estado, paginados de 20 en 20, y solo los `DISPONIBLE` son seleccionables.
 
 **Independent Test**: Con el perfil local, cargar en los adaptadores falsos y en la base recursos con los cinco estados, consultar una franja y verificar que aparecen todos con su estado y que solo los `DISPONIBLE` son seleccionables. No necesita que exista `Reservar recursos`.
 

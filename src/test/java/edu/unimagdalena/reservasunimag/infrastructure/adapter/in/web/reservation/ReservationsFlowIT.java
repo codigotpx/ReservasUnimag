@@ -89,14 +89,14 @@ class ReservationsFlowIT {
     @Test
     void theSameSlotTakenTwiceIsRes004AndTheDenialIsRecorded() throws Exception {
         Cookie student = login("estudiante@unimagdalena.edu.co");
-        Cookie monitorWithoutSanction = login("direccion@unimagdalena.edu.co");
+        Cookie direction = login("direccion@unimagdalena.edu.co");
         reserve(student, space("ESP-0107", "10:00", "12:00")).andExpect(status().isCreated());
 
         reserve(student, space("ESP-0107", "11:00", "13:00"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("RES-004"))
                 .andExpect(jsonPath("$.resourceId").value("ESP-0107"));
-        reserve(monitorWithoutSanction, space("ESP-0107", "11:00", "13:00")).andExpect(status().isForbidden());
+        reserve(direction, space("ESP-0107", "11:00", "13:00")).andExpect(status().isForbidden());
 
         assertThat(jdbc.sql("SELECT count(*) FROM denial WHERE code = 'RES-004'").query(Long.class).single()).isEqualTo(1);
     }
@@ -129,8 +129,8 @@ class ReservationsFlowIT {
     }
 
     @Test
-    void theSanctionedMonitorGetsRes003WithTheEndDate() throws Exception {
-        reserve(login("monitor@unimagdalena.edu.co"), space("ESP-0107", "10:00", "12:00"))
+    void theSanctionedStudentGetsRes003WithTheEndDate() throws Exception {
+        reserve(login("sancionado@unimagdalena.edu.co"), space("ESP-0107", "10:00", "12:00"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("RES-003"))
                 .andExpect(jsonPath("$.sanctionReason").value("Dos ausencias no justificadas en el semestre"))

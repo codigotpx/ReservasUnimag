@@ -136,7 +136,7 @@ Todos salen por la **outbox**: el evento se inserta en `outbox_message` en la mi
 | 2 | `LoanDeclaredLost` viaja por el topic de la **ficha**, que es de otro hecho | UC12 §2 | decidir si va ahí o nace `module2.loan.lost.v1` |
 | 3 | `CAN-001` y `CAN-002` están **al revés** en el diccionario consolidado respecto a UC4 y UC11 | [spec-modulo2.md](../specs/spec-modulo2.md#diccionario-de-errores-consolidado) | corregir el consolidado; hoy `CAN-002` no se emite |
 | 4 | No hay código de error para `EN_MANTENIMIENTO` | UC2 §1 | crear `RES-005`; hoy va `RES-004` con `detectedStatus` para poder migrar |
-| 5 | Falta el spec de **registro e inicio de sesión** | plan general | dominio de correo, datos obligatorios y cómo se asignan `MONITOR` y `DIRECCION_PROGRAMA` |
+| 5 | Falta el spec de **registro e inicio de sesión** | plan general | dominio de correo, datos obligatorios y cómo se asigna `DIRECCION_PROGRAMA` |
 | 6 | Falta el **calendario de festivos** de la universidad | UC2, UC3 | hoy es una lista a mano en `application.properties` |
 | 7 | Nadie fijó cuándo se **purga** la outbox | UC10, UC11 | los historiales propios existen para no depender de eso |
 | 8 | Metas de rendimiento y escala sin número | plan general | depende de P-17 |

@@ -40,7 +40,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.CLOCK;
-import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.MONITOR;
+import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.OTHER_STUDENT;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.NOW;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.STUDENT;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.asset;
@@ -170,16 +170,8 @@ class CancelReservationUseCaseTest {
     }
 
     @Test
-    void aMonitorCancelsTheirOwnReservationLikeAStudent() {
-        Reservation reservation = storeSpace(MONITOR.id(), 10, 12);
-
-        assertThat(useCase.cancelByHolder(MONITOR, reservation.id()).reservation().status())
-                .isEqualTo(ReservationStatus.CANCELADA);
-    }
-
-    @Test
     void someoneElsesReservationIsNotFoundAndNothingChanges() {
-        Reservation reservation = storeSpace(MONITOR.id(), 10, 12);
+        Reservation reservation = storeSpace(OTHER_STUDENT.id(), 10, 12);
 
         assertThatThrownBy(() -> useCase.cancelByHolder(STUDENT, reservation.id()))
                 .isInstanceOf(ReservationNotFoundException.class);

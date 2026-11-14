@@ -36,7 +36,7 @@ import java.util.stream.IntStream;
 
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.CLOCK;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.DIRECTOR;
-import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.MONITOR;
+import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.OTHER_STUDENT;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.NOW;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.STUDENT;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.TEN_TO_TWELVE;
@@ -216,17 +216,15 @@ class SearchResourcesUseCaseTest {
     }
 
     @Test
-    void studentsAndMonitorsGetTheSanctionNoticeAndTheListStillShows() {
+    void aStudentGetsTheSanctionNoticeAndTheListStillShows() {
         catalog.add(space("A", "A", 8));
         sanction = new Sanction("Dos ausencias", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30), SanctionScope.TODO);
 
-        for (CurrentUser user : List.of(STUDENT, MONITOR)) {
-            var result = search(user, NO_FILTER, FIRST_PAGE);
+        var result = search(STUDENT, NO_FILTER, FIRST_PAGE);
 
-            assertThat(result.sanctionNotice().type()).isEqualTo(SanctionNotice.Type.ACTIVE_SANCTION);
-            assertThat(result.sanctionNotice().until()).isEqualTo(LocalDate.of(2026, 9, 30));
-            assertThat(result.page().items()).hasSize(1);
-        }
+        assertThat(result.sanctionNotice().type()).isEqualTo(SanctionNotice.Type.ACTIVE_SANCTION);
+        assertThat(result.sanctionNotice().until()).isEqualTo(LocalDate.of(2026, 9, 30));
+        assertThat(result.page().items()).hasSize(1);
     }
 
     @Test

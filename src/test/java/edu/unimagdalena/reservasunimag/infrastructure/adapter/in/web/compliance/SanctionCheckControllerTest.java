@@ -116,10 +116,8 @@ class SanctionCheckControllerTest {
 
     @Test
     void onlyTheProgramDirectionAudits() throws Exception {
-        for (Role role : new Role[]{Role.ESTUDIANTE, Role.MONITOR}) {
-            mockMvc.perform(get("/api/sanction-checks").with(session(role)))
-                    .andExpect(status().isForbidden());
-        }
+        mockMvc.perform(get("/api/sanction-checks").with(session(Role.ESTUDIANTE)))
+                .andExpect(status().isForbidden());
         verifyNoInteractions(queryChecks);
     }
 

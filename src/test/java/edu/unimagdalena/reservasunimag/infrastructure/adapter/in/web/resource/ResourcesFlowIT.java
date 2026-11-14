@@ -67,8 +67,8 @@ class ResourcesFlowIT {
     }
 
     @Test
-    void theSanctionedMonitorGetsTheNoticeAndTheListAnyway() throws Exception {
-        mockMvc.perform(get(QUERY).cookie(login("monitor@unimagdalena.edu.co")))
+    void theSanctionedStudentGetsTheNoticeAndTheListAnyway() throws Exception {
+        mockMvc.perform(get(QUERY).cookie(login("sancionado@unimagdalena.edu.co")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sanctionNotice.type").value("ACTIVE_SANCTION"))
                 .andExpect(jsonPath("$.resources.length()").value(10));

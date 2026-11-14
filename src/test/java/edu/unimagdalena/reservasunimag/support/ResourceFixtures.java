@@ -28,8 +28,8 @@ public final class ResourceFixtures {
 
     public static final CurrentUser STUDENT =
             new CurrentUser(UUID.fromString("00000000-0000-0000-0000-000000000001"), "2021114001", Role.ESTUDIANTE);
-    public static final CurrentUser MONITOR =
-            new CurrentUser(UUID.fromString("00000000-0000-0000-0000-000000000002"), "2020114002", Role.MONITOR);
+    public static final CurrentUser OTHER_STUDENT =
+            new CurrentUser(UUID.fromString("00000000-0000-0000-0000-000000000002"), "2020114002", Role.ESTUDIANTE);
     public static final CurrentUser DIRECTOR =
             new CurrentUser(UUID.fromString("00000000-0000-0000-0000-000000000003"), "DP-0001",
                     Role.DIRECCION_PROGRAMA);

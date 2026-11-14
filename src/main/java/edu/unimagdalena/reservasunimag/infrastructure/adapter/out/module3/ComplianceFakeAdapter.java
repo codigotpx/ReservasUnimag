@@ -13,8 +13,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Reportes de ejemplo del perfil local. El monitor de prueba ({@code 2020114002}) tiene una sanción vigente, para
- * poder ver el aviso; el resto de las personas está al día.
+ * Reportes de ejemplo del perfil local. El estudiante sancionado de prueba ({@code 2020114002}) tiene una sanción
+ * vigente, para poder ver el aviso; el resto de las personas está al día.
  */
 @Component
 @Profile("local")

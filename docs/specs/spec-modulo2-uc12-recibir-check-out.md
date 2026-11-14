@@ -22,7 +22,7 @@ La división de trabajo queda como en `Recibir reporte de no asistencia`: el Mó
 | Actor                | Tipo       | Participación                                                                                                                                                                                                                                           |
 |----------------------|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Módulo 3             | Secundario | Recibe físicamente el activo, hace el check-out y nos reporta qué préstamo se cierra, con la fecha y la hora reales. Sin ese reporte no hay devolución. Los daños se los reporta directamente al Módulo 1. Después calcula la mora y aplica la sanción. |
-| Estudiante / Monitor | Indirectos | Son quienes devuelven el activo o usan el espacio que después se revisa; no ejecutan este caso de uso.                                                                                                                                                  |
+| Estudiante | Indirectos | Son quienes devuelven el activo o usan el espacio que después se revisa; no ejecutan este caso de uso.                                                                                                                                                  |
 
 **Casos de uso relacionados**
 
@@ -83,7 +83,7 @@ Como sistema, quiero recibir del Módulo 3 el check-out de cada espacio después
    - **Then** el sistema registra la revisión sobre la reserva, con la fecha y hora de la revisión y el dictamen; la franja ya estaba libre desde las 16:00 y el check-out no la cambia
 
 2. **Scenario**: El espacio necesita mantenimiento
-   - **Given** un Monitor tuvo reservado el "Salón 204" el 2026-09-01 de 08:00 a 10:00
+   - **Given** un Estudiante tuvo reservado el "Salón 204" el 2026-09-01 de 08:00 a 10:00
    - **When** el Módulo 3 reporta el check-out de esa reserva con dictamen "requiere mantenimiento"
    - **Then** el sistema registra la revisión sobre la reserva, dejando constancia de que el daño se detectó al terminar ese uso
 

@@ -34,7 +34,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.MONITOR;
+import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.OTHER_STUDENT;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.STUDENT;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.asset;
 import static edu.unimagdalena.reservasunimag.support.ResourceFixtures.at;
@@ -177,7 +177,7 @@ class RegisterUseStartedUseCaseTest {
     void someoneElsesReservationIsNotFound() {
         Reservation reservation = spaceReservation("ESP-0107", 10, 12);
 
-        assertThatThrownBy(() -> useCase.startByHolder(MONITOR, reservation.id()))
+        assertThatThrownBy(() -> useCase.startByHolder(OTHER_STUDENT, reservation.id()))
                 .isInstanceOf(ReservationNotFoundException.class);
     }
 

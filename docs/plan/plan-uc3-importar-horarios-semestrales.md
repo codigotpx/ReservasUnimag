@@ -250,7 +250,7 @@ Se aplican sin repetirlas las **convenciones comunes** de [plan-uc1-consultar-re
 
 | Regla | Detalle |
 |---|---|
-| Solo Dirección de Programa | Los cuatro endpoints exigen el rol `DIRECCION_PROGRAMA`. Un `ESTUDIANTE` o `MONITOR` con sesión válida recibe `403`, no `401`. |
+| Solo Dirección de Programa | Los cuatro endpoints exigen el rol `DIRECCION_PROGRAMA`. Un `ESTUDIANTE` con sesión válida recibe `403`, no `401`. |
 | Validar nunca cambia nada | `POST /api/schedules/validations` es seguro de repetir: guarda la carga y su reporte, pero no crea bloqueos ni cancela reservas. Lo único que cambia es `semester_schedule` y sus filas. |
 | El reporte habla de filas, no de sesiones | Los dictámenes y los errores se reportan **por fila del archivo**, que es lo que la persona puede corregir. Las sesiones expandidas se cuentan, pero no se listan una por una: un semestre son miles. |
 | `row` es el número real del archivo | Empieza en 2, porque la 1 es la cabecera. Así el mensaje de error se puede buscar directamente en el CSV. |

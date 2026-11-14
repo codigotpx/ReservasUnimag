@@ -50,7 +50,7 @@ class SanctionCheckIT {
 
     /** Tiene una sanción vigente en el Módulo 3 falso del perfil local. */
     private static final CurrentUser SANCTIONED = new CurrentUser(
-            UUID.fromString("00000000-0000-0000-0000-000000000002"), "2020114002", Role.MONITOR);
+            UUID.fromString("00000000-0000-0000-0000-000000000002"), "2020114002", Role.ESTUDIANTE);
     private static final LocalDate TOMORROW = LocalDate.now(TimeSlot.ZONE).plusDays(1);
     private static final LocalDate TODAY = LocalDate.now(TimeSlot.ZONE);
 

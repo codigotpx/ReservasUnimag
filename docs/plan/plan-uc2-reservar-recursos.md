@@ -809,7 +809,7 @@ src/test/resources/contracts/
 
 ## Phase 3: User Story 1 - Reservar recursos con validación de reglas (Priority: P1)
 
-**Goal**: Un Estudiante o Monitor aparta un espacio indicando fecha y franja, o un activo indicando cuándo lo recoge, y recibe el identificador de la reserva; cuando no puede, recibe un único código del diccionario de errores que dice exactamente qué regla incumplió.
+**Goal**: Un Estudiante aparta un espacio indicando fecha y franja, o un activo indicando cuándo lo recoge, y recibe el identificador de la reserva; cuando no puede, recibe un único código del diccionario de errores que dice exactamente qué regla incumplió.
 
 **Independent Test**: Con el perfil local, reservar un recurso `DISPONIBLE` y comprobar que la reserva queda `CONFIRMADA` y el recurso aparece ocupado en la consulta de UC1; después forzar cada una de las cuatro denegaciones (bloqueo académico, cupo lleno, sanción vigente y dos peticiones simultáneas) y comprobar el código de cada una. No necesita reportería ni Kafka levantado: la ficha queda en la *outbox*.
 

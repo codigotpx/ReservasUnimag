@@ -90,7 +90,7 @@ class AvailabilityControllerTest {
                 slot, new Availability(DisplayedStatus.BLOQUEO_ACADEMICO, at(1, 10, 0, 0)), at(1, 9, 14, 22)));
 
         mockMvc.perform(get("/api/resources/ESP-0412/availability?date=2026-09-01&start=08:00&end=10:00")
-                        .with(session(Role.MONITOR)))
+                        .with(session(Role.ESTUDIANTE)))
                 .andExpect(status().isOk())
                 .andExpect(content().json(read("api-availability-academic-block.json"), JsonCompareMode.STRICT));
     }

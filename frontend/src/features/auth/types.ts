@@ -1,4 +1,4 @@
-export type Role = "ESTUDIANTE" | "MONITOR" | "DIRECCION_PROGRAMA";
+export type Role = "ESTUDIANTE" | "DIRECCION_PROGRAMA";
 
 /** GET /api/auth/me (UC1 Contratos §4). */
 export interface Profile {
@@ -10,13 +10,12 @@ export interface Profile {
 
 export const ROLE_LABELS: Record<Role, string> = {
   ESTUDIANTE: "Estudiante",
-  MONITOR: "Monitor",
   DIRECCION_PROGRAMA: "Dirección de Programa",
 };
 
-/** Estudiante y Monitor reservan; Dirección de Programa no (UC1 FR-016). */
+/** El Estudiante reserva; Dirección de Programa no (UC1 FR-016). */
 export function canReserve(role: Role): boolean {
-  return role === "ESTUDIANTE" || role === "MONITOR";
+  return role === "ESTUDIANTE";
 }
 
 /** La pantalla de inicio de cada rol después del login. */
