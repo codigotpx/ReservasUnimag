@@ -83,7 +83,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │   └── NoShowMessage.java              # lee los dos tipos del topic: reporte y anulación
     │   └── out/
     │       ├── persistence/
-    │       │   └── AbsencePersistenceAdapter.java   # con JdbcClient; el cierre choca con ReservationAlreadyClosedException
+    │       │   └── AbsencePersistenceAdapter.java   # con JPA desde 2026-11-13; el cierre choca con ReservationAlreadyClosedException
     │       └── messaging/
     │           └── event/NoShowAckEvent.java  # el acuse de FR-002
     └── config/
@@ -391,7 +391,7 @@ src/test/resources/contracts/
 - [ ] T005 [P] Crear `InboxGuard` en `infrastructure/adapter/in/messaging/`: inserta el `eventId` en `inbox_message` dentro de la transacción del caso de uso y distingue "nuevo" de "ya procesado". **Se diseña para compartirlo con UC12**
 - [ ] T006 [P] Crear `Absence`, `NoShowPolicy` —con el borde inclusivo de los 10 minutos y el instante de referencia según la categoría— y `NoShowRejection` con sus tres motivos, en `domain/model/compliance/`
 - [ ] T007 [P] Definir `ReceiveNoShowPort` y `VoidNoShowPort` en `domain/port/in/`, y `AbsenceRepositoryPort` en `domain/port/out/`
-- [ ] T008 [P] Crear `AbsencePersistenceAdapter` con `JdbcClient`, con el `INSERT` que falla por clave repetida y la actualización de la anulación
+- [ ] T008 [P] Crear `AbsencePersistenceAdapter` con `JdbcClient`, con el `INSERT` que falla por clave repetida y la actualización de la anulación (pasó después a JPA, en la migración del 2026-11-13)
 
 **Checkpoint**: el consumidor y la constancia existen
 
@@ -472,4 +472,9 @@ src/test/resources/contracts/
 - La sección **Contratos** es la única fuente del JSON de UC9
 - **Decisiones de los contratos que el spec no fija**: nace el topic de acuse `module2.reservation.no-show-ack.v1`, porque FR-002 y FR-011 piden responderle al Módulo 3 y por Kafka no hay respuesta; un rechazo de negocio **no** va al DLT, porque el evento no está roto; el plazo se mide contra `verifiedAt` y no contra la hora de llegada; el borde de los 10 minutos es inclusivo, igual que el de UC4; un reporte repetido responde `accepted: true` con `duplicate`; y la clave primaria de `absence` pasa a ser `reservation_id`
 - **Propuesta para cerrar un pendiente**: una reserva con ausencia queda **`FINALIZADA`**, y la fila de `absence` es la que explica por qué. Así se libera el recurso sin inventar un estado que obligaría a tocar UC1, UC2 y UC11
+- **Migración a JPA** (2026-11-13, por recomendación de arquitectura): `AbsencePersistenceAdapter` deja `JdbcClient`:
+  - `absence` y `reservation_closure` tienen entidad (`AbsenceJpaEntity`, `ReservationClosureJpaEntity`) y repositorio.
+  - El cierre se inserta con `saveAndFlush`, así que la clave primaria repetida (`23505`) sale en el acto y se sigue traduciendo a `ReservationAlreadyClosedException` antes de escribir la ausencia.
+  - La anulación marca la entidad ya cargada y la escribe el flush, porque nadie más toca `absence` con SQL. El cierre se suelta con un `DELETE` de JPQL que solo borra el de tipo `ABSENCE`.
+  - Los cierres por cancelación siguen escribiéndose con SQL en `CancellationReportPersistenceAdapter` hasta que ese adaptador migre. El puerto no cambia y `AbsenceIT` pasa sin cambios
 - **T020 en el frontend:** la marca sale en el historial de `/my-reservations` como "Ausencia registrada", con el `message` del backend debajo; el tipo `Absence` vive en `features/reservations/types.ts` y no hay `MyReservationsList.tsx` suelto.

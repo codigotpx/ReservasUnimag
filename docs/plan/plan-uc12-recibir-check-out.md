@@ -75,7 +75,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │       ├── PendingReviewsResponse.java
     │   └── out/
     │       ├── persistence/
-    │       │   └── CheckOutPersistenceAdapter.java   # con JdbcClient
+    │       │   └── CheckOutPersistenceAdapter.java   # con JPA (CheckOutJpaRepository) desde 2026-11-13
     │       └── messaging/
     │           └── event/CheckOutAckEvent.java
     └── config/
@@ -413,7 +413,7 @@ src/test/resources/contracts/
 - [ ] T004 [P] Añadir `NO_DEVUELTO_PERDIDO` a `ReservationStatus`, fuera del conjunto que la restricción de exclusión considera ocupado, y documentar la transición desde `CONFIRMADA`
 - [ ] T005 [P] Crear `CheckOut`, `CheckOutKind`, `Verdict` y `CheckOutRejection` en `domain/model/compliance/`
 - [ ] T006 [P] Definir `ReceiveCheckOutPort` y `QueryPendingCheckOutsPort` en `domain/port/in/`, y `CheckOutRepositoryPort` en `domain/port/out/`, con las dos consultas de pendientes
-- [ ] T007 [P] Crear la entidad JPA, el repositorio y `CheckOutPersistenceAdapter`, con el `INSERT` que falla por clave repetida y las dos consultas paginadas
+- [ ] T007 [P] Crear la entidad JPA, el repositorio y `CheckOutPersistenceAdapter`, con el `INSERT` que falla por clave repetida y las dos consultas paginadas (al implementarlo quedó con `JdbcClient`; pasó a JPA en la migración del 2026-11-13)
 
 **Checkpoint**: existe dónde registrar el check-out
 
@@ -513,4 +513,10 @@ src/test/resources/contracts/
 - La sección **Contratos** es la única fuente del JSON de UC12
 - **Decisiones de los contratos que el spec no fija**: el `kind` lo decide la categoría del recurso y no el evento; un dictamen en un activo se **rechaza** en vez de ignorarse, para que el Módulo 3 sepa que no debe mandarlo; los acuses de check-out van por su propio topic y no por el de UC9; el acuse devuelve `dueAt` para que la mora se mida con los dos datos juntos; `slotReleased: false` va explícito en los espacios; el `CHECK` de la tabla es lo que hace imposible guardar un dictamen donde no toca; y el umbral de pérdida corre con un trabajo diario, apagable
 - **La contradicción del spec**: FR-006 dice que el sistema no cierra préstamos por su cuenta y el edge case **Devolución que nunca llega** dice que a los 7 días sí. Se resuelve leyendo FR-006 como válido hasta que ese plazo se cumple, y la Phase 4 queda aislada y desactivable
+- **Migración a JPA** (2026-11-13, por recomendación de arquitectura): `CheckOutPersistenceAdapter` deja `JdbcClient`:
+  - `check_out` tiene entidad (`CheckOutJpaEntity`), y las dos listas de pendientes son `@Query` en JPQL de `CheckOutJpaRepository`, que devuelven la proyección `PendingCheckOutRow` (la reserva, su préstamo y su titular).
+  - Los conteos con `count(*) FILTER (WHERE ...)` quedan como `count(CASE WHEN ... THEN 1 END)` en una proyección `PendingCounts`. Las subconsultas `NOT EXISTS` sobre `check_out` y `absence` siguen igual, ahora sobre las entidades.
+  - La página llega como `Pageable`, que Spring Data aplica como `LIMIT` y `OFFSET`.
+  - Los filtros opcionales de las revisiones ya no arman el `WHERE` concatenando: son una sola consulta en la que cada filtro se apaga con un parámetro `null`. Las fechas llevan `cast(:from AS Instant)`, porque PostgreSQL no evalúa `IS NULL` sobre un parámetro sin tipo.
+  - Se agregó a `CheckOutIT` la prueba de los filtros por día, que antes solo se probaban en el controlador. El puerto no cambia
 - **Lo que cambió en el frontend (T021 y T022):** las dos listas viven en `/pending-reviews`, dentro del módulo de Dirección de Programa, como "Pendientes de check-out", con una pestaña para cada una. Los componentes están en `features/checkout/components/pending-check-outs.tsx`, no en `PendingReturns.tsx` y `PendingReviews.tsx` sueltos. La de devoluciones resalta en rojo los préstamos a menos de 48 horas de `lossThresholdAt`; la de espacios filtra por origen y dice que la revisión es opcional. No hay acciones: el check-out lo registra el Módulo 3.

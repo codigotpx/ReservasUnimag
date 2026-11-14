@@ -15,7 +15,6 @@ import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.re
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
-import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -32,15 +31,6 @@ import java.util.UUID;
  */
 @Component
 class ReservationPersistenceAdapter implements ReservationRepositoryPort {
-
-    /** Código de PostgreSQL para una violación de restricción de exclusión. */
-    private static final String EXCLUSION_VIOLATION = "23P01";
-    /**
-     * Código de un <em>deadlock</em>. Dos inserciones simultáneas que se cruzan pueden esperarse la una a la otra al
-     * comprobar la restricción de exclusión; PostgreSQL aborta a una. Para la persona es lo mismo que perder la
-     * carrera: el recurso acaba de ser tomado.
-     */
-    private static final String DEADLOCK = "40P01";
 
     private final ReservationJpaRepository reservations;
     private final LoanJpaRepository loans;
@@ -79,7 +69,9 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
             // La restricción de exclusión se comprueba al escribir: el flush hace que falle aquí y no al confirmar.
             reservations.saveAndFlush(ReservationMapper.toEntity(reservation));
         } catch (DataAccessException failure) {
-            if (hasSqlState(failure, EXCLUSION_VIOLATION) || hasSqlState(failure, DEADLOCK)) {
+            // Dos inserciones simultáneas que se cruzan pueden esperarse la una a la otra al comprobar la restricción
+            // de exclusión, y PostgreSQL aborta a una: para la persona es lo mismo que perder la carrera.
+            if (SqlStates.has(failure, SqlStates.EXCLUSION_VIOLATION) || SqlStates.has(failure, SqlStates.DEADLOCK)) {
                 throw new ResourceTakenException(reservation.resourceId(), failure);
             }
             throw failure;
@@ -168,14 +160,5 @@ class ReservationPersistenceAdapter implements ReservationRepositoryPort {
     @Override
     public List<Reservation> findUpcomingByResource(String resourceId, Instant now) {
         return reservations.findUpcomingByResource(resourceId, now).stream().map(ReservationMapper::toDomain).toList();
-    }
-
-    private static boolean hasSqlState(Throwable failure, String sqlState) {
-        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
-            if (cause instanceof SQLException sql && sqlState.equals(sql.getSQLState())) {
-                return true;
-            }
-        }
-        return false;
     }
 }
