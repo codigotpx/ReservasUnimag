@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -56,6 +57,8 @@ class RecordDeliveryIT {
             "2021114001", Role.ESTUDIANTE);
 
     @Autowired
+    private ApplicationContext context;
+    @Autowired
     private OutboxPublisher publisher;
     @Autowired
     private ReserveResourcesPort reserveResources;
@@ -93,7 +96,7 @@ class RecordDeliveryIT {
                 new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, maxAttempts, Duration.ofMinutes(25),
                         false),
                 properties.upload());
-        return new OutboxPublisher(jdbc, broken, transactionManager, props);
+        return TestPublishers.of(context, broken, props);
     }
 
     private void makeDue() {

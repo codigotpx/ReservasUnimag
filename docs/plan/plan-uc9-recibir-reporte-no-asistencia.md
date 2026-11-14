@@ -388,7 +388,7 @@ src/test/resources/contracts/
 
 - [ ] T003 Escribir `V4__absence_and_inbox.sql` con la tabla de [Contratos §3](#3-la-tabla-absence): `reservation_id` como clave primaria, `source_event_id` único, los campos de anulación y el índice por `reported_at`
 - [ ] T004 [P] Crear `KafkaConsumerConfig` con el `DefaultErrorHandler`: espera creciente **sin tope** para los errores recuperables —una base caída no debe mandar al DLT un reporte válido— y el envío al DLT `module2.dlt.<topic>` para los que no lo son, con la causa en las cabeceras
-- [ ] T005 [P] Crear `InboxGuard` en `infrastructure/adapter/in/messaging/`: inserta el `eventId` en `inbox_message` dentro de la transacción del caso de uso y distingue "nuevo" de "ya procesado". **Se diseña para compartirlo con UC12**
+- [ ] T005 [P] Crear `InboxGuard` en `infrastructure/adapter/in/messaging/`: inserta el `eventId` en `inbox_message` dentro de la transacción del caso de uso y distingue "nuevo" de "ya procesado". **Se diseña para compartirlo con UC12** (pasó a JPA en la migración del 2026-11-13)
 - [ ] T006 [P] Crear `Absence`, `NoShowPolicy` —con el borde inclusivo de los 10 minutos y el instante de referencia según la categoría— y `NoShowRejection` con sus tres motivos, en `domain/model/compliance/`
 - [ ] T007 [P] Definir `ReceiveNoShowPort` y `VoidNoShowPort` en `domain/port/in/`, y `AbsenceRepositoryPort` en `domain/port/out/`
 - [ ] T008 [P] Crear `AbsencePersistenceAdapter` con `JdbcClient`, con el `INSERT` que falla por clave repetida y la actualización de la anulación (pasó después a JPA, en la migración del 2026-11-13)
@@ -478,3 +478,6 @@ src/test/resources/contracts/
   - La anulación marca la entidad ya cargada y la escribe el flush, porque nadie más toca `absence` con SQL. El cierre se suelta con un `DELETE` de JPQL que solo borra el de tipo `ABSENCE`.
   - Los cierres por cancelación también pasaron a esta entidad cuando migró `CancellationReportPersistenceAdapter` (ver plan de UC11). El puerto no cambia y `AbsenceIT` pasa sin cambios
 - **T020 en el frontend:** la marca sale en el historial de `/my-reservations` como "Ausencia registrada", con el `message` del backend debajo; el tipo `Absence` vive en `features/reservations/types.ts` y no hay `MyReservationsList.tsx` suelto.
+- **Migración a JPA de `InboxGuard`** (2026-11-13): `inbox_message` tiene entidad (`InboxMessageJpaEntity`) y `InboxGuard` usa `InboxMessageJpaRepository.insertIfAbsent`, un `INSERT` de HQL con `ON CONFLICT (eventId) DO NOTHING` (Hibernate 6.5+).
+  - No es un `save()` a propósito: con `save()`, dos entregas simultáneas del mismo evento chocarían con la clave primaria y la segunda abortaría su transacción. Con el `ON CONFLICT`, la segunda no escribe nada y sigue, como antes.
+  - Que la reserva exista se comprueba con `existsById` antes de insertar, en vez de con la subconsulta del SQL. El SQL que genera Hibernate es el mismo `insert ... on conflict(event_id) do nothing`

@@ -1,6 +1,7 @@
 package edu.unimagdalena.reservasunimag.infrastructure.adapter.in.messaging;
 
-import org.springframework.jdbc.core.simple.JdbcClient;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.repository.InboxMessageJpaRepository;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.repository.ReservationJpaRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -13,10 +14,12 @@ import java.util.UUID;
 @Component
 class InboxGuard {
 
-    private final JdbcClient jdbc;
+    private final InboxMessageJpaRepository inbox;
+    private final ReservationJpaRepository reservations;
 
-    InboxGuard(JdbcClient jdbc) {
-        this.jdbc = jdbc;
+    InboxGuard(InboxMessageJpaRepository inbox, ReservationJpaRepository reservations) {
+        this.inbox = inbox;
+        this.reservations = reservations;
     }
 
     /**
@@ -24,16 +27,7 @@ class InboxGuard {
      * {@code reservation_id} nulo en vez de romper la clave foránea: el caso de uso es quien decide qué hacer con ella.
      */
     boolean firstTime(UUID eventId, String topic, String type, UUID reservationId, String payload) {
-        return jdbc.sql("""
-                        INSERT INTO inbox_message (event_id, topic, type, reservation_id, payload)
-                        VALUES (:eventId, :topic, :type, (SELECT id FROM reservation WHERE id = :reservationId),
-                                CAST(:payload AS jsonb))
-                        ON CONFLICT (event_id) DO NOTHING""")
-                .param("eventId", eventId)
-                .param("topic", topic)
-                .param("type", type)
-                .param("reservationId", reservationId)
-                .param("payload", payload)
-                .update() == 1;
+        UUID existing = reservationId != null && reservations.existsById(reservationId) ? reservationId : null;
+        return inbox.insertIfAbsent(eventId, topic, type, existing, payload) == 1;
     }
 }

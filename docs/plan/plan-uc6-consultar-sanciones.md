@@ -67,7 +67,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │   └── SanctionChecksResponse.java
     │   └── out/
     │       ├── persistence/
-    │       │   └── SanctionCheckPersistenceAdapter.java   # JdbcClient, transacción propia
+    │       │   └── SanctionCheckPersistenceAdapter.java   # JPA desde 2026-11-02, transacción propia
     │       └── module3/
     │           ├── ComplianceRestAdapter.java   # (existe, UC1) + alcance, sanción sin fin y person.code
     │           ├── ComplianceFakeAdapter.java   # (existe, UC1)
@@ -319,7 +319,7 @@ Los de la persona al día, la sancionada y la sin historial ya los creó UC1.
 
 - [ ] T002 Escribir `V9__sanction_check.sql` con la tabla de [Contratos §2](#2-la-tabla-sanction_check) y sus dos índices
 - [ ] T003 [P] Crear `SanctionScope` y `SanctionCheck` en `domain/model/compliance/`, y extender `Sanction` con el método de vigencia del borde enunciado arriba
-- [ ] T004 [P] Definir `SanctionCheckRepositoryPort` en `domain/port/out/`, y crear `SanctionCheckPersistenceAdapter` con `JdbcClient` y su transacción propia (`REQUIRES_NEW`), que nunca lanza
+- [ ] T004 [P] Definir `SanctionCheckRepositoryPort` en `domain/port/out/`, y crear `SanctionCheckPersistenceAdapter` con `JdbcClient` y su transacción propia (`REQUIRES_NEW`), que nunca lanza (pasó a JPA en la migración parcial del 2026-11-02)
 
 **Checkpoint**: existe dónde registrar cada consulta
 
@@ -401,3 +401,4 @@ Los de la persona al día, la sancionada y la sin historial ya los creó UC1.
 - **Decisiones de los contratos que el spec no fija**: una sanción sin fecha de fin se trata como **vigente** y se marca el dato que faltó; la vigencia se compara contra hoy y no contra la fecha de la reserva; el registro va en su propia transacción y un fallo suyo no tumba la consulta; las columnas se llaman `answered_*` para que no se confundan con una copia de las sanciones, que FR-005 prohíbe; y el endpoint de auditoría exige un rango de fechas junto al `personCode`, porque sin él sería pedir el expediente de una persona
 - **Decisión explícita de no hacer**: ninguna caché del reporte, por el edge case de la sanción que aparece justo después de consultar
 - **Lo que cambió al implementar** (2026-10-30, ver P-27): migración `V9` y `JdbcClient` en vez de `V10` y JPA; el alcance filtra al confirmar; la columna `resource_category`; `answered` también con `CLEAR`, solo con los conteos; el `askedBy` sale del método y no de quien llama; y la respuesta con otro `person.code` se descarta
+- **Migración parcial a JPA** (2026-11-02, nota agregada el 2026-11-13): `SanctionCheckPersistenceAdapter` dejó `JdbcClient` en el commit de la migración parcial, y este plan no se había corregido. `sanction_check` tiene entidad (`SanctionCheckJpaEntity`, con su `SanctionCheckMapper`), y los filtros opcionales de la auditoría se arman con `Specification` (`SanctionCheckJpaRepository.Filters`). Cada fila sigue en su propia transacción (`TransactionTemplate` con `REQUIRES_NEW`), para que sobreviva al rollback de la reserva denegada

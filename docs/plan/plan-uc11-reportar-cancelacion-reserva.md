@@ -341,7 +341,7 @@ Con este último quedan los tres orígenes como *fixture*: el del titular lo cre
 
 - [ ] T013 [US1] Implementar `ReportCancellationUseCase`: arma el `CancellationReport` desde la cancelación, lo guarda, registra el cierre en `reservation_closure` y encola el evento por `Module3NotifierPort` (depende de T003 a T005)
 - [ ] T014 [US1] Hacer que `CancelReservationUseCase` llame a `ReportCancellationPort` dentro de su transacción, de modo que el `<<include>>` no se pueda omitir (FR-001), y comprobarlo con la prueba de T008
-- [ ] T015 [US1] Extender `OutboxPublisher` para que, al enviar o al fallar, actualice también `delivery_status`, `attempts`, `first_attempt_at`, `delivered_at` y `last_error` del reporte (FR-010)
+- [ ] T015 [US1] Extender `OutboxPublisher` para que, al enviar o al fallar, actualice también `delivery_status`, `attempts`, `first_attempt_at`, `delivered_at` y `last_error` del reporte (FR-010); desde la migración a JPA, con `CancellationReportJpaRepository.markDelivered` y `markFailedAttempt`
 - [ ] T016 [US1] Implementar `CancellationReportController` con los dos endpoints de [Contratos §2 y §3](#2-get-apireservationsreservationidcancellation-report), con la autorización por titular o Dirección de Programa y el nombre del recurso pedido al Módulo 1
 - [ ] T017 [US1] Registrar el bean y la transacción de UC11 en `UseCasesConfig`
 
@@ -398,7 +398,7 @@ Con este último quedan los tres orígenes como *fixture*: el del titular lo cre
 - **Migración a JPA** (2026-11-13, por recomendación de arquitectura): `CancellationReportPersistenceAdapter` deja `JdbcClient`:
   - `cancellation_report` tiene entidad (`CancellationReportJpaEntity`), y las lecturas son `@Query` en JPQL de `CancellationReportJpaRepository`. Devuelven la proyección `CancellationReportRow`, unida al titular y a la *outbox*.
   - El cierre en `reservation_closure` se inserta con la entidad que ya usaba UC9 (`ReservationClosureJpaEntity`) y `saveAndFlush`, así que la clave repetida sigue saliendo como `ReservationAlreadyClosedException` antes de escribir la constancia.
-  - Las columnas de la entrega (`delivery_status`, `attempts`, `first_attempt_at`, `delivered_at`, `last_error`) van mapeadas con `insertable = false, updatable = false`: las pone la base al insertar y las actualiza `OutboxPublisher` con SQL.
-  - El próximo intento se une con `OutboxMessageJpaEntity`, una entidad mínima de solo lectura (`@Immutable`, solo `id`, `status` y `next_attempt_at`), hasta que la *outbox* migre.
+  - Las columnas de la entrega (`delivery_status`, `attempts`, `first_attempt_at`, `delivered_at`, `last_error`) van mapeadas con `insertable = false, updatable = false`: las pone la base al insertar y solo las cambia `OutboxPublisher`, con `UPDATE` de JPQL (`markDelivered`, `markFailedAttempt`).
+  - El próximo intento se une con `OutboxMessageJpaEntity`, que empezó como entidad mínima de solo lectura y quedó completa cuando migró la *outbox* (ver plan de UC2).
   - Los conteos del `summary` con `FILTER` quedan como `count(CASE WHEN ...)` en la proyección `DeliveryCounts`. Los filtros opcionales ya no arman el `WHERE` concatenando: son una sola consulta en la que cada filtro se apaga con un parámetro `null`, y las fechas llevan `cast(:from AS Instant)`. La página llega como `Pageable`.
   - El puerto no cambia y `CancellationReportIT` y `CancellationIT` pasan sin cambios

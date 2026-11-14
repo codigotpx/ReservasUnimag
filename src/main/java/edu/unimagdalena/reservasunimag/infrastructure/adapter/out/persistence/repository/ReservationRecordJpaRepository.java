@@ -5,6 +5,7 @@ import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationOrigi
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.entity.ReservationRecordJpaEntity;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -64,4 +65,23 @@ public interface ReservationRecordJpaRepository extends JpaRepository<Reservatio
     List<ReservationRecordRow> search(@Param("origin") ReservationOrigin origin,
                                       @Param("delivery") DeliveryStatus delivery, @Param("from") Instant from,
                                       @Param("to") Instant to, Pageable page);
+
+    /** El evento salió: cuenta el intento que salió bien (FR-006). */
+    @Modifying
+    @Query("""
+            UPDATE ReservationRecordJpaEntity x
+            SET x.deliveryStatus = SENT, x.deliveredAt = :now, x.attempts = x.attempts + 1,
+                x.firstAttemptAt = coalesce(x.firstAttemptAt, :now), x.lastError = NULL
+            WHERE x.eventId = :eventId""")
+    void markDelivered(@Param("eventId") UUID eventId, @Param("now") Instant now);
+
+    /** Un intento fallido, con la misma cuenta que la <em>outbox</em>; {@code status} es FAILED al agotarlos. */
+    @Modifying
+    @Query("""
+            UPDATE ReservationRecordJpaEntity x
+            SET x.deliveryStatus = :status, x.attempts = :attempts,
+                x.firstAttemptAt = coalesce(x.firstAttemptAt, :now), x.lastError = :error
+            WHERE x.eventId = :eventId""")
+    void markFailedAttempt(@Param("eventId") UUID eventId, @Param("status") DeliveryStatus status,
+                           @Param("attempts") int attempts, @Param("error") String error, @Param("now") Instant now);
 }

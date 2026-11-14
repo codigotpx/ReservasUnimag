@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -49,6 +50,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import({TestcontainersConfiguration.class, KafkaTestcontainersConfiguration.class})
 class OutboxPublisherIT {
 
+    @Autowired
+    private ApplicationContext context;
     @Autowired
     private OutboxPublisher publisher;
     @Autowired
@@ -149,8 +152,8 @@ class OutboxPublisherIT {
                 properties.module1(), properties.module3(), properties.jwt(), properties.kafka(),
                 new ReservationProperties.Outbox(true, Duration.ofHours(1), 4, 10, Duration.ofMinutes(25), false),
                 properties.upload());
-        var first = new OutboxPublisher(jdbc, kafka, transactionManager, smallBatches);
-        var second = new OutboxPublisher(jdbc, kafka, transactionManager, smallBatches);
+        var first = TestPublishers.of(context, kafka, smallBatches);
+        var second = TestPublishers.of(context, kafka, smallBatches);
 
         var pool = Executors.newFixedThreadPool(2);
         try {
