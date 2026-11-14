@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -28,6 +29,8 @@ import static org.mockito.Mockito.when;
 @Import(TestcontainersConfiguration.class)
 class OutboxPublisherRetryIT {
 
+    @Autowired
+    private ApplicationContext context;
     @Autowired
     private JdbcClient jdbc;
     @Autowired
@@ -52,7 +55,7 @@ class OutboxPublisherRetryIT {
                 properties.module1(), properties.module3(), properties.jwt(), properties.kafka(),
                 new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, maxAttempts, Duration.ofMinutes(25), false),
                 properties.upload());
-        return new OutboxPublisher(jdbc, broken, transactionManager, props);
+        return TestPublishers.of(context, broken, props);
     }
 
     private void makeDue() {

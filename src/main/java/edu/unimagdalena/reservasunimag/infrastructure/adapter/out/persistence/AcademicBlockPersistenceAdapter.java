@@ -2,55 +2,36 @@ package edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence;
 
 import edu.unimagdalena.reservasunimag.domain.model.academicblock.AcademicBlock;
 import edu.unimagdalena.reservasunimag.domain.model.academicblock.AcademicData;
-import edu.unimagdalena.reservasunimag.domain.model.academicblock.BlockType;
 import edu.unimagdalena.reservasunimag.domain.port.out.AcademicBlockRepositoryPort;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.entity.AcademicBlockJpaEntity;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.repository.AcademicBlockJpaRepository;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.repository.AcademicBlockRow;
 import org.springframework.stereotype.Component;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-/** La clase de cada bloqueo académico (UC3). Participa en la transacción del caso de uso; no abre ninguna. */
+/**
+ * La clase de cada bloqueo académico (UC3), con JPA. Participa en la transacción del caso de uso; no abre ninguna.
+ * La inserción se envía a la base en el acto, porque otros adaptadores leen {@code academic_block} con SQL en la
+ * misma transacción.
+ */
 @Component
 class AcademicBlockPersistenceAdapter implements AcademicBlockRepositoryPort {
 
-    private static final String SELECT = """
-            SELECT b.reservation_id, r.resource_id, r.starts_at, r.ends_at, b.course_code, b.course, b.group_code,
-                   b.program, b.instructor, b.type, s.academic_term, b.session_key
-            FROM academic_block b
-            JOIN reservation r ON r.id = b.reservation_id
-            LEFT JOIN semester_schedule s ON s.id = b.semester_schedule_id
-            """;
+    private final AcademicBlockJpaRepository blocks;
 
-    private final JdbcClient jdbc;
-
-    AcademicBlockPersistenceAdapter(JdbcClient jdbc) {
-        this.jdbc = jdbc;
+    AcademicBlockPersistenceAdapter(AcademicBlockJpaRepository blocks) {
+        this.blocks = blocks;
     }
 
     @Override
     public void insert(UUID reservationId, UUID scheduleId, AcademicBlock block) {
         AcademicData academic = block.academic();
-        jdbc.sql("""
-                        INSERT INTO academic_block (reservation_id, semester_schedule_id, type, course_code, course,
-                                                    group_code, program, instructor, session_key)
-                        VALUES (:id, :scheduleId, :type, :courseCode, :course, :group, :program, :instructor, :key)""")
-                .param("id", reservationId)
-                .param("scheduleId", scheduleId)
-                .param("type", block.type().name())
-                .param("courseCode", academic.courseCode())
-                .param("course", academic.course())
-                .param("group", academic.group())
-                .param("program", academic.program())
-                .param("instructor", academic.instructor())
-                .param("key", block.sessionKey())
-                .update();
+        blocks.saveAndFlush(new AcademicBlockJpaEntity(reservationId, scheduleId, block.type(), academic.courseCode(),
+                academic.course(), academic.group(), academic.program(), academic.instructor(), block.sessionKey()));
     }
 
     @Override
@@ -58,43 +39,21 @@ class AcademicBlockPersistenceAdapter implements AcademicBlockRepositoryPort {
         if (resourceIds.isEmpty()) {
             return List.of();
         }
-        return jdbc.sql(SELECT + """
-                        WHERE r.status = 'CONFIRMADA' AND r.resource_id IN (:resourceIds)
-                          AND r.occupancy && tstzrange(CAST(:from AS timestamptz), CAST(:to AS timestamptz), '[)')
-                        ORDER BY r.starts_at""")
-                .param("resourceIds", List.copyOf(resourceIds))
-                .param("from", utc(from))
-                .param("to", utc(to))
-                .query(AcademicBlockPersistenceAdapter::toBlock)
-                .list();
+        return blocks.findConfirmed(resourceIds, from, to).stream()
+                .map(AcademicBlockPersistenceAdapter::toBlock)
+                .toList();
     }
 
     @Override
     public List<AcademicBlock> findUpcomingRegular(String academicTerm, Instant now) {
-        return jdbc.sql(SELECT + """
-                        WHERE r.status = 'CONFIRMADA' AND b.type = 'REGULAR' AND s.academic_term = :term
-                          AND r.starts_at > :now
-                        ORDER BY r.starts_at""")
-                .param("term", academicTerm)
-                .param("now", utc(now))
-                .query(AcademicBlockPersistenceAdapter::toBlock)
-                .list();
+        return blocks.findUpcomingRegular(academicTerm, now).stream()
+                .map(AcademicBlockPersistenceAdapter::toBlock)
+                .toList();
     }
 
-    private static AcademicBlock toBlock(ResultSet row, int rowNumber) throws SQLException {
-        return new AcademicBlock(
-                row.getObject("reservation_id", UUID.class),
-                row.getString("resource_id"),
-                row.getObject("starts_at", OffsetDateTime.class).toInstant(),
-                row.getObject("ends_at", OffsetDateTime.class).toInstant(),
-                new AcademicData(row.getString("course_code"), row.getString("course"), row.getString("group_code"),
-                        row.getString("program"), row.getString("instructor")),
-                BlockType.valueOf(row.getString("type")),
-                row.getString("academic_term"),
-                row.getString("session_key"));
-    }
-
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
+    private static AcademicBlock toBlock(AcademicBlockRow row) {
+        return new AcademicBlock(row.reservationId(), row.resourceId(), row.startsAt(), row.endsAt(),
+                new AcademicData(row.courseCode(), row.course(), row.groupCode(), row.program(), row.instructor()),
+                row.type(), row.academicTerm(), row.sessionKey());
     }
 }

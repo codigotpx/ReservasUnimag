@@ -20,7 +20,7 @@ import java.util.UUID;
 
 /**
  * Una fila del historial de UC7 (FR-009). {@code notifiedStatus} lo actualiza después el publicador de la outbox con
- * SQL, en su propia transacción: JPA solo inserta y lee.
+ * un {@code UPDATE} de JPQL, en su propia transacción: la entidad solo se inserta y se lee.
  */
 @Entity
 @Table(name = "status_change")

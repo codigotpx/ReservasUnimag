@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -55,6 +56,8 @@ class UseStartedNotificationIT {
     private static final CurrentUser STUDENT = new CurrentUser(UUID.fromString("00000000-0000-0000-0000-000000000001"),
             "2021114001", Role.ESTUDIANTE);
 
+    @Autowired
+    private ApplicationContext context;
     @Autowired
     private OutboxPublisher publisher;
     @Autowired
@@ -151,7 +154,7 @@ class UseStartedNotificationIT {
                 new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, 1, Duration.ofMinutes(25), false),
                 properties.upload());
 
-        new OutboxPublisher(jdbc, broken, transactionManager, props).publishPending();
+        TestPublishers.of(context, broken, props).publishPending();
 
         assertThat(jdbc.sql("SELECT notified_status FROM status_change").query(String.class).single())
                 .isEqualTo("FAILED");

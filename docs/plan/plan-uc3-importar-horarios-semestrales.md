@@ -137,8 +137,8 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │   ├── ExtraordinaryNeedRequest.java
     │   └── out/
     │       ├── persistence/
-    │       │   ├── ScheduleUploadPersistenceAdapter.java   # con JdbcClient
-    │       │   └── AcademicBlockPersistenceAdapter.java
+    │       │   ├── ScheduleUploadPersistenceAdapter.java   # con JPA (SemesterScheduleJpaRepository) desde 2026-11-13
+    │       │   └── AcademicBlockPersistenceAdapter.java    # con JPA (AcademicBlockJpaRepository) desde 2026-11-13
     │       ├── file/
     │       │   └── CsvScheduleReader.java        # → ScheduleReader
     │       └── messaging/
@@ -967,7 +967,7 @@ Los CSV son también la entrada de `CsvScheduleReaderTest` (T021), así que el f
 - [ ] T026 [US1] Implementar la reconciliación dentro de `SchedulePlanner`, con la `session_key`: reparte en `UNCHANGED`, nuevas y por retirar (FR-007) (depende de T025)
 - [ ] T027 [US1] Implementar `ValidateScheduleUseCase`: lee, expande, clasifica, reconcilia, calcula el `UploadImpact` y guarda la carga con sus filas, **sin tocar ninguna reserva** (depende de T023 a T026)
 - [ ] T028 [US1] Implementar `ApplyScheduleUseCase`: comprueba estado y vigencia, recomprueba el impacto, cancela las desplazadas por `CancelReservationPort` y crea cada sesión por `ReserveResourcesPort` con `origen = ACADEMICO`, todo en una transacción y por lotes (depende de T010, T027)
-- [ ] T029 [P] [US1] Implementar `ScheduleUploadPersistenceAdapter` y `AcademicBlockPersistenceAdapter`, con la consulta de cruces por lote, la búsqueda por `session_key` y la escritura por lotes
+- [ ] T029 [P] [US1] Implementar `ScheduleUploadPersistenceAdapter` y `AcademicBlockPersistenceAdapter`, con la consulta de cruces por lote, la búsqueda por `session_key` y la escritura por lotes (los dos pasaron después a JPA, en la migración del 2026-11-13)
 - [ ] T030 [US1] Registrar los beans y las transacciones de UC3 en `UseCasesConfig`, con la validación en `readOnly` y la aplicación en una sola transacción de escritura (depende de T027 a T029)
 - [ ] T031 [US1] Implementar `ScheduleController` con `POST /api/schedules/validations`, `POST /api/schedules/{uploadId}/confirmation`, `GET /api/schedules` y `GET /api/schedules/{uploadId}`, exactamente como los fija [Contratos §1, §2 y §4](#1-post-apischedulesvalidations), documentado con OpenAPI
 - [x] T032 [P] [US1] Frontend: copiar los tipos de [Contratos §8](#8-tipos-del-frontend) a `frontend/src/features/schedules/types.ts` y escribir `api.ts` con la subida `multipart` y el mapeo a `ScheduleError`
@@ -1047,7 +1047,19 @@ Los CSV son también la entrada de `CsvScheduleReaderTest` (T021), así que el f
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - La sección **Contratos** es la única fuente del JSON y del CSV de UC3: si algo cambia ahí, cambia en los *fixtures*, en el OpenAPI y en los tipos del frontend, no al revés
-- **Lo que cambió al implementar** (P-25): las sesiones entran por la rama académica de UC2 (`AcademicBlockCreator`) y no por `ReserveResourcesUseCase`; al Módulo 1 se le pide la ficha de cada recurso distinto y no el estado por lote; retirar una clase es el origen de cancelación `SCHEDULE_WITHDRAWN`; solo se crean sesiones futuras y una recarga solo retira bloqueos futuros; una clase sobre un activo no crea préstamo; `IMPACT_CHANGED` compara conjuntos y no cuentas; la parte del multipart es `file`; una reserva con la llegada registrada (UC7) tampoco se desplaza y sale como `ASSET_ALREADY_PICKED_UP`; `RowClassifier`, `ScheduleReconciler`, `SemesterSchedule` e `ImportReport` quedaron como `ScheduleRowParser`, `SchedulePlanner`, `ScheduleUpload` y `UploadSummary`; la persistencia va con `JdbcClient`; y la migración es la `V7`
+- **Migración a JPA** (2026-11-13, por recomendación de arquitectura): `AcademicBlockPersistenceAdapter` deja `JdbcClient`:
+  - `academic_block` tiene entidad (`AcademicBlockJpaEntity`) y sus consultas son `@Query` en JPQL de `AcademicBlockJpaRepository`. Devuelven la proyección `AcademicBlockRow`, unida a `ReservationJpaEntity` y a la carga.
+  - Para unir el periodo, `SemesterScheduleJpaEntity` empezó como una entidad mínima de solo lectura. Se completó cuando migró `ScheduleUploadPersistenceAdapter` (ver la nota siguiente).
+  - El cruce con `tstzrange` se escribe `startsAt < :to AND endsAt > :from`. La inserción usa `saveAndFlush`, así que el índice único de `session_key` sigue fallando en el acto.
+  - Soltar la huella al cancelar es un `UPDATE` de JPQL (`releaseSessionKey`), que reemplaza la última consulta nativa de `ReservationPersistenceAdapter`.
+  - El puerto no cambia y `AcademicPriorityIT` pasa sin cambios
+- **Migración a JPA de las cargas** (2026-11-13): `ScheduleUploadPersistenceAdapter` deja `JdbcClient`:
+  - `semester_schedule` y `schedule_upload_row` tienen entidad completa (`SemesterScheduleJpaEntity`, `ScheduleUploadRowJpaEntity`, con clave compuesta). La fila implementa `Persistable` igual que `AssignedIdEntity`, para que guardar miles de filas no haga un `SELECT` antes de cada `INSERT`.
+  - `summary`, `impact`, `result` y `data` siguen en `jsonb`. Van mapeados como texto con `@JdbcTypeCode(SqlTypes.JSON)` y los sigue serializando el adaptador con el `ObjectMapper` de la aplicación, así que el JSON guardado no cambia. `AcademicPriorityIT` comprueba ahora que se guardan como objetos y no como texto entre comillas.
+  - Las lecturas son la proyección `ScheduleUploadRow`, unida al nombre de quien subió la carga.
+  - El bloqueo de la confirmación es `@Lock(PESSIMISTIC_WRITE)` sobre la carga sola, como en las reservas.
+  - `markApplied` y `markExpired` son `UPDATE` de JPQL. El vencimiento solo toca una carga que sigue `VALIDATED`, así que nunca pisa una ya aplicada. El puerto no cambia
+- **Lo que cambió al implementar** (P-25): las sesiones entran por la rama académica de UC2 (`AcademicBlockCreator`) y no por `ReserveResourcesUseCase`; al Módulo 1 se le pide la ficha de cada recurso distinto y no el estado por lote; retirar una clase es el origen de cancelación `SCHEDULE_WITHDRAWN`; solo se crean sesiones futuras y una recarga solo retira bloqueos futuros; una clase sobre un activo no crea préstamo; `IMPACT_CHANGED` compara conjuntos y no cuentas; la parte del multipart es `file`; una reserva con la llegada registrada (UC7) tampoco se desplaza y sale como `ASSET_ALREADY_PICKED_UP`; `RowClassifier`, `ScheduleReconciler`, `SemesterSchedule` e `ImportReport` quedaron como `ScheduleRowParser`, `SchedulePlanner`, `ScheduleUpload` y `UploadSummary`; la persistencia va con `JdbcClient` (los bloqueos académicos pasaron a JPA el 2026-11-13; ver Migración a JPA); y la migración es la `V7`
 - **Decisiones de los contratos que el spec no fija**: el archivo trae clases semanales y el sistema las expande a sesiones; la carga va en dos peticiones, validar y confirmar, con una vigencia de 30 minutos; un choque bloquea la carga entera igual que un error de formato; `IMPACT_CHANGED` rechaza la confirmación en vez de aplicar lo que nadie aprobó; el formato es CSV y no `.xlsx`; y el reporte de validación es la única respuesta del módulo que nombra al titular de una reserva, porque FR-008 exige mostrar cuáles se cancelarían y solo Dirección de Programa la ve
 - **Lo que cambió en el frontend (T032 a T034):**
   - La pantalla sigue `docs/diseno/pantallas/admin-importar-horarios.png` y `admin-importar-horarios-rechazada.png` (frames de Figma corregidos contra este contrato: fechas del periodo, solo CSV, sin "notificación y reubicación", vencimiento y los ocho dictámenes). Vive en `/schedules` dentro del grupo `(direction)`, que tiene su propio layout de escritorio (`components/admin-shell.tsx`) y deja pasar solo a `DIRECCION_PROGRAMA`; tras el login, cada rol va a su inicio.

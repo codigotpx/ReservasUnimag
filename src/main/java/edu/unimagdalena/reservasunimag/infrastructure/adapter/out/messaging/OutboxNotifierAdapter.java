@@ -11,13 +11,10 @@ import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.even
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.ReservationRecordEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.UUID;
 
 /**
@@ -34,14 +31,12 @@ class OutboxNotifierAdapter implements Module3NotifierPort {
     static final String NO_SHOW_ACK = "NO_SHOW_ACK";
     static final String CHECK_OUT_ACK = "CHECK_OUT_ACK";
 
-    private final JdbcClient jdbc;
+    private final OutboxQueue outbox;
     private final ObjectMapper objectMapper;
-    private final ApplicationEventPublisher events;
 
-    OutboxNotifierAdapter(JdbcClient jdbc, ObjectMapper objectMapper, ApplicationEventPublisher events) {
-        this.jdbc = jdbc;
+    OutboxNotifierAdapter(OutboxQueue outbox, ObjectMapper objectMapper) {
+        this.outbox = outbox;
         this.objectMapper = objectMapper;
-        this.events = events;
     }
 
     @Override
@@ -89,15 +84,6 @@ class OutboxNotifierAdapter implements Module3NotifierPort {
     }
 
     private void insert(UUID eventId, String type, UUID reservationId, String payload, Instant now) {
-        jdbc.sql("""
-                        INSERT INTO outbox_message (id, type, reservation_id, payload, created_at, next_attempt_at)
-                        VALUES (:id, :type, :reservationId, CAST(:payload AS jsonb), :now, LEAST(:now, now()))""")
-                .param("id", eventId)
-                .param("type", type)
-                .param("reservationId", reservationId)
-                .param("payload", payload)
-                .param("now", now.atOffset(ZoneOffset.UTC))
-                .update();
-        events.publishEvent(new OutboxMessageEnqueued(eventId));
+        outbox.enqueue(eventId, type, reservationId, payload, now);
     }
 }

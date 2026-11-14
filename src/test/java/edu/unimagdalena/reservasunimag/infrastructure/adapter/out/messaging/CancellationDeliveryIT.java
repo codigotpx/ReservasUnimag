@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -53,6 +54,8 @@ class CancellationDeliveryIT {
     private static final CurrentUser STUDENT = new CurrentUser(UUID.fromString("00000000-0000-0000-0000-000000000001"),
             "2021114001", Role.ESTUDIANTE);
 
+    @Autowired
+    private ApplicationContext context;
     @Autowired
     private OutboxPublisher publisher;
     @Autowired
@@ -94,7 +97,7 @@ class CancellationDeliveryIT {
                 properties.module1(), properties.module3(), properties.jwt(), properties.kafka(),
                 new ReservationProperties.Outbox(true, Duration.ofHours(1), 50, maxAttempts, Duration.ofMinutes(25), false),
                 properties.upload());
-        return new OutboxPublisher(jdbc, broken, transactionManager, props);
+        return TestPublishers.of(context, broken, props);
     }
 
     private void makeDue() {

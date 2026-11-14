@@ -24,7 +24,7 @@ import static edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persist
 
 /**
  * El historial de UC7 (FR-009), con JPA. Participa en la transacción de quien cambió la ocupación; no abre ninguna.
- * El {@code notified_status} lo actualiza después el publicador de la outbox, con SQL y en su propia transacción.
+ * El {@code notified_status} lo actualiza después el publicador de la outbox, con JPQL y en su propia transacción.
  */
 @Component
 class StatusChangePersistenceAdapter implements StatusChangeRepositoryPort {

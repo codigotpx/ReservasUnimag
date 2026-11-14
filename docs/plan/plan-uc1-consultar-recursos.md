@@ -116,7 +116,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │       ├── persistence/
     │       │   ├── entity/UserJpaEntity.java           # JPA solo para app_user
     │       │   ├── repository/UserJpaRepository.java
-    │       │   └── OccupancyPersistenceAdapter.java  # consulta nativa con JdbcClient, sin entidades
+    │       │   └── OccupancyPersistenceAdapter.java  # proyección JPQL de ReservationJpaRepository, sin entidades
     │       ├── module1/
     │       │   ├── InventoryRestAdapter.java
     │       │   ├── InventoryFakeAdapter.java      # perfil local, mientras el Módulo 1 no esté
@@ -196,6 +196,8 @@ WHERE r.status = 'CONFIRMADA'
   AND ( r.occupancy && tstzrange(:starts_at, :ends_at, '[)')
      OR (p.picked_up_at IS NOT NULL AND p.returned_at IS NULL AND r.starts_at < :ends_at) );
 ```
+
+Desde la migración a JPA (2026-11-13) la consulta es `ReservationJpaRepository.findOccupying`, en JPQL, y devuelve la proyección `ReservationRow`. El cruce `r.occupancy && tstzrange(:starts_at, :ends_at, '[)')` se escribe `r.startsAt < :ends_at AND r.endsAt > :starts_at`. Es la misma condición: el fin es exclusivo y `reservation_ends_after_start` asegura que el rango nunca está vacío.
 
 **Paginación.** El Módulo 2 decide el tamaño de página, no el Módulo 1 (FR-009). Cada petición de página repite la consulta con los mismos filtros y el número de página. No se congela nada entre páginas (edge case **Cambio de estado entre páginas**). La respuesta incluye `total`, `page`, `totalPages` y `anySelectable`, con la forma exacta de [Contratos §1](#1-get-apiresources--frontend--módulo-2).
 
@@ -810,7 +812,7 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - [ ] T029 [US1] Implementar `CheckSanctionsUseCase` en modo lectura: obtiene el reporte de una sola persona y traduce la falta de respuesta a "no comprobado" (UC6 FR-001, FR-004, FR-006, FR-007)
 - [ ] T030 [US1] Implementar `NextFreeSlotFinder` según la decisión de diseño (depende de T028)
 - [ ] T031 [US1] Implementar `SearchResourcesUseCase`: catálogo del Módulo 1, filtro de aforo, orden estable, estado de todo el conjunto, paginación, mensaje cuando no hay seleccionables, sugerencia y aviso de sanción (depende de T028 a T030)
-- [ ] T032 [P] [US1] Implementar `OccupancyPersistenceAdapter`, con la consulta nativa de ocupaciones sobre `JdbcClient`, sin entidades: UC1 no modifica nada
+- [ ] T032 [P] [US1] Implementar `OccupancyPersistenceAdapter`, con la consulta nativa de ocupaciones sobre `JdbcClient`, sin entidades: UC1 no modifica nada (pasó después a una proyección JPQL de `ReservationJpaRepository`, en la migración a JPA del 2026-11-13)
 - [ ] T033 [P] [US1] Implementar `InventoryRestAdapter` y sus DTO contra [Contratos §2](#2-módulo-1--inventoryport) (el contrato que pide P-16): recorre todas las páginas del Módulo 1 hasta `max-pages`, aplica el mapeo hacia el dominio y convierte timeouts y errores en `ExternalServiceUnavailableException`
 - [ ] T034 [P] [US1] Implementar `ComplianceRestAdapter` y sus DTO según [Contratos §3](#3-módulo-3--complianceport), con el `404` leído como reporte vacío
 - [ ] T035 [P] [US1] Implementar `InventoryFakeAdapter` y `ComplianceFakeAdapter` para el perfil local, con un catálogo de ejemplo que cubra espacios y activos de varios tipos
@@ -877,4 +879,5 @@ Los adaptadores falsos del perfil local (T035) sirven datos coherentes con estos
 - Verify tests pass
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
+- **Migración a JPA** (2026-11-13, por recomendación de arquitectura): `OccupancyPersistenceAdapter` ya no usa `JdbcClient`. Lee con `ReservationJpaRepository.findOccupying`, una `@Query` en JPQL que devuelve `ReservationRow`, y el cruce de rangos se escribe con `startsAt`/`endsAt` (ver Préstamo vencido y no devuelto). Sigue sin entidades cargadas: es una proyección. `OccupancyPersistenceAdapterIT` pasa sin cambios
 - La sección **Contratos** es la única fuente del JSON de UC1: si algo cambia ahí, cambia en los *fixtures*, en el OpenAPI y en los tipos del frontend, no al revés.

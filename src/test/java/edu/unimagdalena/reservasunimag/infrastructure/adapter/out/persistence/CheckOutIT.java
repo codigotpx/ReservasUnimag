@@ -212,4 +212,25 @@ class CheckOutIT {
                 new PageRequest(1, 20)).page().items()).singleElement()
                 .satisfies(p -> assertThat(p.holder()).isNull());
     }
+
+    @Test
+    void thePendingReviewsCanBeNarrowedByDay() {
+        UUID finished = startedReservation(jdbc, STUDENT.id(), "ESP-0107", 120);
+        // Desde ayer: si la prueba corre poco después de la medianoche de Bogotá, la reserva empezó el día anterior.
+        LocalDate today = LocalDate.now(TimeSlot.ZONE);
+
+        var around = pending.pendingReviews(new PendingReviewFilter(today.minusDays(1), today, null, null),
+                new PageRequest(1, 20));
+        assertThat(around.page().items()).extracting(p -> p.reservation().id()).containsExactly(finished);
+        assertThat(around.student()).isEqualTo(1);
+
+        var later = pending.pendingReviews(new PendingReviewFilter(today.plusDays(1), null, null, null),
+                new PageRequest(1, 20));
+        assertThat(later.page().items()).isEmpty();
+        assertThat(later.student()).isZero();
+
+        var earlier = pending.pendingReviews(new PendingReviewFilter(null, today.minusDays(2), null, null),
+                new PageRequest(1, 20));
+        assertThat(earlier.page().items()).isEmpty();
+    }
 }

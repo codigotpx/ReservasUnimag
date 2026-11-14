@@ -3,15 +3,14 @@ package edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence;
 import edu.unimagdalena.reservasunimag.domain.model.compliance.Absence;
 import edu.unimagdalena.reservasunimag.domain.model.error.ReservationAlreadyClosedException;
 import edu.unimagdalena.reservasunimag.domain.port.out.AbsenceRepositoryPort;
-import org.springframework.dao.DuplicateKeyException;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.entity.AbsenceJpaEntity;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.entity.ReservationClosureJpaEntity;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.repository.AbsenceJpaRepository;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.persistence.repository.ReservationClosureJpaRepository;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -21,49 +20,41 @@ import java.util.stream.Collectors;
 
 /**
  * Las ausencias de UC9 y su cierre en {@code reservation_closure}, que es lo que impide que una reserva quede a la vez
- * ausente y cancelada (UC11 FR-011). Participa en la transacción del caso de uso; no abre ninguna.
+ * ausente y cancelada (UC11 FR-011), con JPA. Participa en la transacción del caso de uso; no abre ninguna.
  */
 @Component
 class AbsencePersistenceAdapter implements AbsenceRepositoryPort {
 
-    private static final String SELECT = """
-            SELECT reservation_id, source_event_id, verified_at, reported_at, resource_released, voided, voided_at,
-                   voided_reason
-            FROM absence
-            """;
+    private static final int MAX_REASON = 500;
 
-    private final JdbcClient jdbc;
+    private final AbsenceJpaRepository absences;
+    private final ReservationClosureJpaRepository closures;
 
-    AbsencePersistenceAdapter(JdbcClient jdbc) {
-        this.jdbc = jdbc;
+    AbsencePersistenceAdapter(AbsenceJpaRepository absences, ReservationClosureJpaRepository closures) {
+        this.absences = absences;
+        this.closures = closures;
     }
 
     @Override
     public void insert(Absence absence) {
         try {
-            jdbc.sql("INSERT INTO reservation_closure (reservation_id, closure_type) VALUES (:id, 'ABSENCE')")
-                    .param("id", absence.reservationId())
-                    .update();
-        } catch (DuplicateKeyException closed) {
-            throw new ReservationAlreadyClosedException(absence.reservationId(), closed);
+            // El flush hace que el cierre repetido falle aquí, antes de escribir la ausencia.
+            closures.saveAndFlush(new ReservationClosureJpaEntity(absence.reservationId(),
+                    ReservationClosureJpaEntity.Type.ABSENCE));
+        } catch (DataAccessException failure) {
+            if (SqlStates.has(failure, SqlStates.UNIQUE_VIOLATION)) {
+                throw new ReservationAlreadyClosedException(absence.reservationId(), failure);
+            }
+            throw failure;
         }
-        jdbc.sql("""
-                        INSERT INTO absence (reservation_id, source_event_id, verified_at, reported_at, resource_released)
-                        VALUES (:id, :sourceEventId, :verifiedAt, :reportedAt, :released)""")
-                .param("id", absence.reservationId())
-                .param("sourceEventId", absence.sourceEventId())
-                .param("verifiedAt", utc(absence.verifiedAt()))
-                .param("reportedAt", utc(absence.reportedAt()))
-                .param("released", absence.resourceReleased())
-                .update();
+        absences.saveAndFlush(new AbsenceJpaEntity(absence.reservationId(), absence.sourceEventId(),
+                absence.verifiedAt(), absence.reportedAt(), absence.resourceReleased(), absence.voided(),
+                absence.voidedAt(), absence.voidedReason()));
     }
 
     @Override
     public Optional<Absence> findByReservation(UUID reservationId) {
-        return jdbc.sql(SELECT + "WHERE reservation_id = :id")
-                .param("id", reservationId)
-                .query(AbsencePersistenceAdapter::toAbsence)
-                .optional();
+        return absences.findById(reservationId).map(AbsencePersistenceAdapter::toAbsence);
     }
 
     @Override
@@ -71,45 +62,21 @@ class AbsencePersistenceAdapter implements AbsenceRepositoryPort {
         if (reservationIds.isEmpty()) {
             return Map.of();
         }
-        return jdbc.sql(SELECT + "WHERE reservation_id IN (:ids) AND NOT voided")
-                .param("ids", reservationIds)
-                .query(AbsencePersistenceAdapter::toAbsence)
-                // list() y no stream(): el Stream de JdbcClient deja abierta la conexión hasta que alguien lo cierre.
-                .list()
-                .stream()
+        return absences.findByReservationIdInAndVoidedFalse(reservationIds).stream()
+                .map(AbsencePersistenceAdapter::toAbsence)
                 .collect(Collectors.toMap(Absence::reservationId, Function.identity()));
     }
 
     @Override
     public void markVoided(UUID reservationId, Instant voidedAt, String reason) {
-        jdbc.sql("UPDATE absence SET voided = true, voided_at = :at, voided_reason = :reason WHERE reservation_id = :id")
-                .param("at", utc(voidedAt))
-                .param("reason", reason == null || reason.length() <= 500 ? reason : reason.substring(0, 500))
-                .param("id", reservationId)
-                .update();
-        jdbc.sql("DELETE FROM reservation_closure WHERE reservation_id = :id AND closure_type = 'ABSENCE'")
-                .param("id", reservationId)
-                .update();
+        String kept = reason == null || reason.length() <= MAX_REASON ? reason : reason.substring(0, MAX_REASON);
+        absences.findById(reservationId).ifPresent(absence -> absence.markVoided(voidedAt, kept));
+        closures.deleteOfType(reservationId, ReservationClosureJpaEntity.Type.ABSENCE);
     }
 
-    private static Absence toAbsence(ResultSet row, int rowNumber) throws SQLException {
-        return new Absence(
-                row.getObject("reservation_id", UUID.class),
-                row.getObject("source_event_id", UUID.class),
-                instant(row, "verified_at"),
-                instant(row, "reported_at"),
-                row.getBoolean("resource_released"),
-                row.getBoolean("voided"),
-                instant(row, "voided_at"),
-                row.getString("voided_reason"));
-    }
-
-    private static Instant instant(ResultSet row, String column) throws SQLException {
-        OffsetDateTime value = row.getObject(column, OffsetDateTime.class);
-        return value == null ? null : value.toInstant();
-    }
-
-    private static OffsetDateTime utc(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
+    private static Absence toAbsence(AbsenceJpaEntity entity) {
+        return new Absence(entity.getReservationId(), entity.getSourceEventId(), entity.getVerifiedAt(),
+                entity.getReportedAt(), entity.isResourceReleased(), entity.isVoided(), entity.getVoidedAt(),
+                entity.getVoidedReason());
     }
 }
