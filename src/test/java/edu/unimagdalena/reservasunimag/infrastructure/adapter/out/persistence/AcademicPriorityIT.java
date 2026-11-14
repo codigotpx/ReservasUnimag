@@ -128,6 +128,20 @@ class AcademicPriorityIT {
     }
 
     @Test
+    void theReportIsStoredAsJsonObjectsAndNotAsQuotedText() {
+        ScheduleUpload validated = validate(NETWORKS + SEMINAR);
+        applySchedule.confirm(DIRECTOR, validated.id());
+
+        assertThat(jdbc.sql("""
+                        SELECT jsonb_typeof(summary) || ',' || jsonb_typeof(impact) || ',' || jsonb_typeof(result)
+                        FROM semester_schedule""").query(String.class).single())
+                .isEqualTo("object,object,object");
+        assertThat(count("SELECT count(*) FROM schedule_upload_row WHERE jsonb_typeof(data) <> 'object'")).isZero();
+        assertThat(count("SELECT count(*) FROM schedule_upload_row WHERE data->>'courseCode' IS NOT NULL"))
+                .isEqualTo(count("SELECT count(*) FROM schedule_upload_row"));
+    }
+
+    @Test
     void afterTheUploadAStudentCannotReserveAClassSlot() {
         applySchedule.confirm(DIRECTOR, validate(NETWORKS).id());
 
