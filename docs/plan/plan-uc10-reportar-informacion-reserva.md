@@ -65,7 +65,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │   └── ReservationRecordsResponse.java
     │   └── out/
     │       ├── persistence/
-    │       │   └── ReservationRecordPersistenceAdapter.java   # JdbcClient, como el resto del módulo
+    │       │   └── ReservationRecordPersistenceAdapter.java   # con JPA (ReservationRecordJpaRepository) desde 2026-11-13
     │       └── messaging/
     │           ├── OutboxMessageEnqueued.java      # nuevo: el aviso de que algo quedó en la outbox
     │           ├── OutboxNotifierAdapter.java      # (existe) usa el eventId de la ficha y avisa
@@ -272,7 +272,7 @@ Los dos de UC2 se renombran a `event-reservation-record-created-{student,academi
 - [ ] T002 Escribir `V8__reservation_record.sql` con la tabla de [Contratos §4](#4-la-tabla-reservation_record), su clave primaria, las dos restricciones de FR-008 y sus dos índices
 - [ ] T003 [P] Crear `ReservationRecordReport` en `domain/model/reservation/`, con el `Delivery` que se saca de `CancellationReport` para compartirlo, con los invariantes: `holder_user_id` nulo si y solo si el origen es `ACADEMICO`, `sanctionable` falso en ese caso
 - [ ] T004 [P] Definir `ReservationRecordRepositoryPort` en `domain/port/out/`
-- [ ] T005 [P] Crear `ReservationRecordPersistenceAdapter` con `JdbcClient`, con el `INSERT` que falla por clave repetida y la actualización del resultado del envío
+- [ ] T005 [P] Crear `ReservationRecordPersistenceAdapter` con `JdbcClient`, con el `INSERT` que falla por clave repetida y la actualización del resultado del envío (pasó después a JPA, en la migración del 2026-11-13; la actualización del envío sigue en `OutboxPublisher`)
 
 **Checkpoint**: existe dónde guardar la constancia de cada ficha
 
@@ -350,3 +350,10 @@ Los dos de UC2 se renombran a `event-reservation-record-created-{student,academi
 - Commit after each task or logical group
 - Este plan **no redefine el evento**: su contrato vive en UC2, y lo que aquí se añade es la constancia de haberlo enviado
 - **Decisiones de los contratos que el spec no fija**: el historial va en su propia tabla y no se unifica con el de UC11, porque los datos del negocio no son los mismos; la clave primaria es el `reservation_id`, de modo que la base garantiza FR-005; el publicador se dispara al confirmar la transacción además del `Scheduled`, porque los 5 s de SC-002 no caben en el intervalo del reloj; y el `instructor` viaja en el evento pero no en el endpoint de auditoría
+- **Migración a JPA** (2026-11-13, por recomendación de arquitectura): `ReservationRecordPersistenceAdapter` deja `JdbcClient`:
+  - `reservation_record` tiene entidad (`ReservationRecordJpaEntity`), y las lecturas son `@Query` en JPQL de `ReservationRecordJpaRepository`. Devuelven la proyección `ReservationRecordRow`, unida al titular, a la clase del bloqueo académico (`AcademicBlockJpaEntity`) y a la *outbox*.
+  - La inserción usa `saveAndFlush`, y la clave repetida (`23505`) sigue saliendo como `IllegalStateException`.
+  - Las columnas de la entrega (`delivery_status`, `attempts`, `first_attempt_at`, `delivered_at`, `last_error`) van mapeadas con `insertable = false, updatable = false`: las pone la base al insertar y las actualiza `OutboxPublisher` con SQL.
+  - El próximo intento se une con `OutboxMessageJpaEntity`, una entidad mínima de solo lectura (`@Immutable`, solo `id`, `status` y `next_attempt_at`), hasta que la *outbox* migre.
+  - Los conteos del `summary` con `FILTER` quedan como `count(CASE WHEN ...)` en la proyección `DeliveryCounts`. Los filtros opcionales ya no arman el `WHERE` concatenando: son una sola consulta en la que cada filtro se apaga con un parámetro `null`, y las fechas llevan `cast(:from AS Instant)`. La página llega como `Pageable`.
+  - El puerto no cambia y `ReservationRecordIT` pasa sin cambios

@@ -476,5 +476,5 @@ src/test/resources/contracts/
   - `absence` y `reservation_closure` tienen entidad (`AbsenceJpaEntity`, `ReservationClosureJpaEntity`) y repositorio.
   - El cierre se inserta con `saveAndFlush`, así que la clave primaria repetida (`23505`) sale en el acto y se sigue traduciendo a `ReservationAlreadyClosedException` antes de escribir la ausencia.
   - La anulación marca la entidad ya cargada y la escribe el flush, porque nadie más toca `absence` con SQL. El cierre se suelta con un `DELETE` de JPQL que solo borra el de tipo `ABSENCE`.
-  - Los cierres por cancelación siguen escribiéndose con SQL en `CancellationReportPersistenceAdapter` hasta que ese adaptador migre. El puerto no cambia y `AbsenceIT` pasa sin cambios
+  - Los cierres por cancelación también pasaron a esta entidad cuando migró `CancellationReportPersistenceAdapter` (ver plan de UC11). El puerto no cambia y `AbsenceIT` pasa sin cambios
 - **T020 en el frontend:** la marca sale en el historial de `/my-reservations` como "Ausencia registrada", con el `message` del backend debajo; el tipo `Absence` vive en `features/reservations/types.ts` y no hay `MyReservationsList.tsx` suelto.

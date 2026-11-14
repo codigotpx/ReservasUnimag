@@ -80,7 +80,7 @@ src/main/java/edu/unimagdalena/reservasunimag/
     │   │   └── CancellationReportController.java   # GET de auditoría
     │   └── out/
     │       ├── persistence/
-    │       │   └── CancellationReportPersistenceAdapter.java
+    │       │   └── CancellationReportPersistenceAdapter.java   # con JPA (CancellationReportJpaRepository) desde 2026-11-13
     │       └── messaging/
     │           ├── OutboxPublisher.java            # (existe) + marcar el reporte
     │           └── event/ReservationCancelledEvent.java   # (existe) sin cambios
@@ -315,7 +315,7 @@ Con este último quedan los tres orígenes como *fixture*: el del titular lo cre
 - [ ] T002 Escribir `V3__cancellation_report.sql` con la tabla de [Contratos §4](#4-la-tabla-cancellation_report), sus dos índices, y la tabla `reservation_closure` con su clave primaria y su `CHECK` de tipo
 - [ ] T003 [P] Crear `CancellationReport` y `DeliveryStatus` en `domain/model/reservation/`, con los invariantes del spec: `notice_minutes` solo con origen `HOLDER`, y `attributable_to_person` en `false` para los otros dos
 - [ ] T004 [P] Definir `ReportCancellationPort` en `domain/port/in/` y `CancellationReportRepositoryPort` en `domain/port/out/`, incluido el registro del cierre en `reservation_closure`
-- [ ] T005 [P] Crear la entidad JPA, el repositorio Spring Data y `CancellationReportPersistenceAdapter`, con el `INSERT` que falla por clave primaria repetida y la actualización del resultado del envío
+- [ ] T005 [P] Crear la entidad JPA, el repositorio Spring Data y `CancellationReportPersistenceAdapter`, con el `INSERT` que falla por clave primaria repetida y la actualización del resultado del envío (al implementarlo quedó con `JdbcClient`; pasó a JPA en la migración del 2026-11-13, y la actualización del envío sigue en `OutboxPublisher`)
 
 **Checkpoint**: existe dónde guardar la constancia
 
@@ -395,3 +395,10 @@ Con este último quedan los tres orígenes como *fixture*: el del titular lo cre
 - Commit after each task or logical group
 - Este plan **no redefine el evento**: su contrato vive en UC3 y UC4, y aquí solo se documenta la tabla de las tres formas
 - **Decisiones de los contratos que el spec no fija**: `cancellation_report` es una tabla aparte de la *outbox*, con `reservation_id` como clave primaria para que la base garantice FR-007; la exclusión mutua con la ausencia se sostiene con la tabla `reservation_closure` y no con un `if`; `noticeMinutes` se **omite** en las cancelaciones automáticas en vez de enviarse en cero; `delivery.lastError` es el único campo de la API que viaja como `null`; y el `summary` del listado cuenta sobre el filtro y no sobre la página
+- **Migración a JPA** (2026-11-13, por recomendación de arquitectura): `CancellationReportPersistenceAdapter` deja `JdbcClient`:
+  - `cancellation_report` tiene entidad (`CancellationReportJpaEntity`), y las lecturas son `@Query` en JPQL de `CancellationReportJpaRepository`. Devuelven la proyección `CancellationReportRow`, unida al titular y a la *outbox*.
+  - El cierre en `reservation_closure` se inserta con la entidad que ya usaba UC9 (`ReservationClosureJpaEntity`) y `saveAndFlush`, así que la clave repetida sigue saliendo como `ReservationAlreadyClosedException` antes de escribir la constancia.
+  - Las columnas de la entrega (`delivery_status`, `attempts`, `first_attempt_at`, `delivered_at`, `last_error`) van mapeadas con `insertable = false, updatable = false`: las pone la base al insertar y las actualiza `OutboxPublisher` con SQL.
+  - El próximo intento se une con `OutboxMessageJpaEntity`, una entidad mínima de solo lectura (`@Immutable`, solo `id`, `status` y `next_attempt_at`), hasta que la *outbox* migre.
+  - Los conteos del `summary` con `FILTER` quedan como `count(CASE WHEN ...)` en la proyección `DeliveryCounts`. Los filtros opcionales ya no arman el `WHERE` concatenando: son una sola consulta en la que cada filtro se apaga con un parámetro `null`, y las fechas llevan `cast(:from AS Instant)`. La página llega como `Pageable`.
+  - El puerto no cambia y `CancellationReportIT` y `CancellationIT` pasan sin cambios
