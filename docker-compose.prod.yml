@@ -1,0 +1,100 @@
+# Producción en la VM: backend, PostgreSQL, Kafka y Caddy (HTTPS). El frontend va en Vercel.
+#   cp .env.example .env      # y llenar los valores
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Lo único que queda abierto a internet: 80 y 443 (Caddy) y 9092 (Kafka, para los Módulos 1 y 3).
+# Ver docs/plan/plan-arquitectura.md, Despliegue.
+name: reservasunimag
+
+services:
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?falta DOMAIN en .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Los certificados de Let's Encrypt: si se pierden, Caddy los vuelve a pedir y hay un límite semanal
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
+
+  backend:
+    build: .
+    image: reservasunimag-backend
+    restart: unless-stopped
+    # Sin puertos publicados: solo Caddy le habla, por la red interna
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-reservasunimag}
+      DB_USERNAME: ${POSTGRES_USER:-reservas}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+      JWT_SECRET: ${JWT_SECRET:?falta JWT_SECRET en .env}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      MODULE1_BASE_URL: ${MODULE1_BASE_URL:?falta MODULE1_BASE_URL en .env}
+      MODULE3_BASE_URL: ${MODULE3_BASE_URL:?falta MODULE3_BASE_URL en .env}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17.6-alpine
+    restart: unless-stopped
+    # Sin puertos publicados: para entrar, docker compose -f docker-compose.prod.yml exec postgres psql -U reservas
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-reservasunimag}
+      POSTGRES_USER: ${POSTGRES_USER:-reservas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD en .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Broker compartido con los Módulos 1 y 3, sin autenticación (decidido el 2026-11-19).
+  # Dos listeners: INTERNAL para nuestro backend dentro de Docker y EXTERNAL, publicado, para los otros módulos.
+  kafka:
+    image: apache/kafka:3.9.1
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+    environment:
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:-r3s3rv4sUn1m4gKafka01A}
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://${KAFKA_PUBLIC_HOST:?falta KAFKA_PUBLIC_HOST en .env}:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      # Un solo broker: no hay réplicas posibles
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Los topics se crean al primer uso con 3 particiones, igual a spring.kafka.listener.concurrency
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+    volumes:
+      # Se monta /var/lib/kafka y no data/ porque la imagen ya trae la carpeta con dueño appuser
+      - kafka-data:/var/lib/kafka
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:29092 > /dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  postgres-data:
+  kafka-data:
+  caddy-data:
+  caddy-config:

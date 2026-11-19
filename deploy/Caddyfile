@@ -1,0 +1,6 @@
+# HTTPS automático con Let's Encrypt para el backend. DOMAIN llega de .env por docker-compose.prod.yml.
+# Sin dominio propio sirve uno de sslip.io con la IP de la VM, por ejemplo 20-30-40-50.sslip.io.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy backend:8080
+}
