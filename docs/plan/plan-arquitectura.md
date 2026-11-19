@@ -529,6 +529,8 @@ Los parámetros del negocio (cupo de 3, ventana de 06:00 a 22:00, 10 minutos de 
 
 **Decidido el 2026-11-19.** El broker de Kafka lo alojamos nosotros: los Módulos 1 y 3 se conectan a él para publicar y consumir.
 
+**Producción sigue a `main`.** Lo que corre en Vercel y en la VM es lo entregado: a `main` solo entran `release/*` y `hotfix/*`, y `develop` queda para lo que está en desarrollo. La primera entrega desplegada es la 0.1.0.
+
 | Pieza | Dónde | Cómo |
 |---|---|---|
 | Frontend | Vercel | `BACKEND_URL` apunta al backend; el *rewrite* de `/api/*` mantiene un solo origen para la cookie |

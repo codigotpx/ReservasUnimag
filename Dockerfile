@@ -16,8 +16,9 @@ RUN --mount=type=cache,target=/root/.gradle ./gradlew dependencies --no-daemon -
 COPY src/main src/main
 RUN --mount=type=cache,target=/root/.gradle ./gradlew bootJar --no-daemon -q
 
-# El bootJar se parte en capas: las dependencias cambian poco y así no se vuelven a subir en cada versión
-RUN cp build/libs/*-SNAPSHOT.jar application.jar \
+# El bootJar se parte en capas: las dependencias cambian poco y así no se vuelven a subir en cada versión.
+# Se toma el jar que no es -plain, sin depender de la versión de build.gradle
+RUN find build/libs -name '*.jar' ! -name '*-plain.jar' -exec cp {} application.jar \; \
     && java -Djarmode=tools -jar application.jar extract --layers --launcher --destination extracted
 
 # --- 2. Imagen final: solo el JRE y la aplicación, con un usuario sin privilegios
