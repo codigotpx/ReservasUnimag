@@ -36,3 +36,4 @@ out/
 ### Variables de despliegue ###
 .env*
 !.env.example
+.vercel
