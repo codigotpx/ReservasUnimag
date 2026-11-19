@@ -1,0 +1,11 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/reservation-denied",
+  "title": "Reserva denegada",
+  "status": 409,
+  "detail": "Tienes 3 de 3 reservas activas. La próxima se libera el 2026-09-01 a las 12:00.",
+  "instance": "/api/reservations",
+  "code": "RES-002",
+  "active": 3,
+  "max": 3,
+  "nextRelease": "2026-09-01T12:00:00-05:00"
+}

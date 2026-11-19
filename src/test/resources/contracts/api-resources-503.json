@@ -1,0 +1,8 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/inventory-unavailable",
+  "title": "Inventario no disponible",
+  "status": 503,
+  "detail": "La información de recursos no está disponible en este momento. Intenta de nuevo en unos minutos.",
+  "instance": "/api/resources",
+  "module": "MODULO_1"
+}

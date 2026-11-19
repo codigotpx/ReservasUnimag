@@ -1,0 +1,17 @@
+{
+  "content": [
+    {
+      "id": "ACT-001200",
+      "name": "Videobeam V-02",
+      "category": "ACTIVO",
+      "type": "VIDEOBEAM",
+      "operationalStatus": "DISPONIBLE",
+      "location": "Almacén de Audiovisuales",
+      "condition": "REGULAR"
+    }
+  ],
+  "page": 3,
+  "size": 2,
+  "totalPages": 3,
+  "total": 5
+}

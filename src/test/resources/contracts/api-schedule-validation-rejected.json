@@ -1,0 +1,63 @@
+{
+  "uploadId": "b4d9f0c2-7a16-4e38-95bd-2f8c1e0a7d45",
+  "academicTerm": "2026-2",
+  "term": { "start": "2026-08-10", "end": "2026-12-05" },
+  "status": "REJECTED",
+  "validatedAt": "2026-10-02T15:44:02-05:00",
+  "applicable": false,
+  "requiresConfirmation": false,
+  "summary": {
+    "rowsRead": 312,
+    "rowsOk": 307,
+    "rowsUnchanged": 0,
+    "rowsWithBlockingVerdict": 5,
+    "sessionsToCreate": 0,
+    "sessionsSkippedNonBusinessDay": 0,
+    "blocksToWithdraw": 0,
+    "reservationsToCancel": 0
+  },
+  "rows": [
+    {
+      "row": 23,
+      "resourceId": "ESP-9999",
+      "course": "Física II",
+      "courseCode": "FI-202",
+      "group": "2",
+      "dayOfWeek": "MIERCOLES",
+      "start": "10:00",
+      "end": "12:00",
+      "verdict": "REJECTED_RESOURCE",
+      "sessions": 0,
+      "problem": "El recurso ESP-9999 no existe en el inventario.",
+      "column": "resource_id"
+    },
+    {
+      "row": 41,
+      "resourceId": "ESP-0412",
+      "course": "Sistemas Operativos",
+      "courseCode": "IS-404",
+      "group": "1",
+      "dayOfWeek": "LUNES",
+      "start": "9:3",
+      "end": "11:30",
+      "verdict": "REJECTED_FORMAT",
+      "sessions": 0,
+      "problem": "La columna start_time no tiene el formato HH:mm.",
+      "column": "start_time"
+    },
+    {
+      "row": 58,
+      "resourceId": "ESP-0412",
+      "course": "Arquitectura de Computadores",
+      "courseCode": "IS-301",
+      "group": "1",
+      "dayOfWeek": "LUNES",
+      "start": "09:00",
+      "end": "11:00",
+      "verdict": "ACADEMIC_CLASH",
+      "sessions": 0,
+      "problem": "Se cruza con otra clase ya bloqueada en este recurso: IS-402 grupo 1.",
+      "conflictingBlock": { "course": "Redes de Computadores", "courseCode": "IS-402", "group": "1" }
+    }
+  ]
+}

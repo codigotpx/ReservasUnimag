@@ -1,0 +1,8 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/inventory-unavailable",
+  "title": "Inventario no disponible",
+  "status": 503,
+  "detail": "No se pudo comprobar la disponibilidad en este momento. No se puede confirmar que el recurso esté libre.",
+  "instance": "/api/resources/ESP-0107/availability",
+  "module": "MODULO_1"
+}

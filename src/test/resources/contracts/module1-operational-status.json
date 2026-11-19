@@ -1,0 +1,8 @@
+{
+  "statuses": [
+    { "resourceId": "ESP-0412", "operationalStatus": "DISPONIBLE" },
+    { "resourceId": "ESP-0107", "operationalStatus": "EN_USO" },
+    { "resourceId": "ACT-000912", "operationalStatus": "EN_MANTENIMIENTO", "statusReason": "Reparación de lente" }
+  ],
+  "notFound": ["ESP-9999"]
+}

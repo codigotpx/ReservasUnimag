@@ -1,0 +1,7 @@
+course_code,course,group,program,instructor,resource_id,day_of_week,start_time,end_time
+FI-202,Física II,2,Ingeniería Civil,Nombre del instructor,ESP-9999,MIERCOLES,10:00,12:00
+IS-404,Sistemas Operativos,1,Ingeniería de Sistemas,Nombre del instructor,ESP-0412,LUNES,9:3,11:30
+IS-402,Redes de Computadores,1,Ingeniería de Sistemas,Nombre del instructor,ESP-0412,LUNES,08:00,10:00
+IS-301,Arquitectura de Computadores,1,Ingeniería de Sistemas,Nombre del instructor,ESP-0412,LUNES,09:00,11:00
+BI-101,Biología Celular,1,Biología,Nombre del instructor,ACT-000912,MARTES,08:00,10:00
+MA-101,Cálculo I,3,Ingeniería de Sistemas,Nombre del instructor,ESP-0305,DOMINGO,06:00,08:00

@@ -1,0 +1,16 @@
+{
+  "eventId": "c9b2f536-8a41-4d07-95ec-3f1a0d7b2e58",
+  "type": "ResourceUseStarted",
+  "version": 1,
+  "occurredAt": "2026-09-01T10:03:51-05:00",
+  "source": "MODULE_2",
+  "data": {
+    "resourceId": "ESP-0107",
+    "resourceCategory": "ESPACIO",
+    "reservationId": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+    "occupancy": { "start": "2026-09-01T10:00:00-05:00", "end": "2026-09-01T12:00:00-05:00" },
+    "newStatus": "EN_USO",
+    "useEndsAt": "2026-09-01T12:00:00-05:00",
+    "reason": "USE_STARTED"
+  }
+}

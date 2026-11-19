@@ -1,0 +1,12 @@
+{
+  "eventId": "2e6c0a95-4d17-4b83-a5f9-7c1e3b8d0f42",
+  "type": "CheckOutRegistered",
+  "version": 1,
+  "occurredAt": "2026-09-09T16:42:11-05:00",
+  "data": {
+    "reservationId": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+    "occurredAt": "2026-09-09T16:40:00-05:00",
+    "verdict": "REQUIERE_MANTENIMIENTO",
+    "damageDescription": "La lente del objetivo 40x está rayada."
+  }
+}

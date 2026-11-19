@@ -1,0 +1,17 @@
+{
+  "reports": [
+    {
+      "reservationId": "a1b2c3d4-5e6f-4789-9abc-def012345678",
+      "eventId": "f2b8c4d1-6e39-4a70-95c8-3d1e7a0f2b56",
+      "cancellationOrigin": "ACADEMIC_PRIORITY",
+      "status": "CANCELADA_POR_PRIORIDAD_ACADEMICA",
+      "attributableToPerson": false,
+      "cancelledAt": "2026-09-10T15:47:35-05:00",
+      "resource": { "id": "ESP-0301", "name": "Auditorio Menor", "category": "ESPACIO" },
+      "holder": { "code": "2019114045", "name": "Nombre del estudiante" },
+      "delivery": { "status": "FAILED", "attempts": 10, "lastError": "Connection refused" }
+    }
+  ],
+  "pagination": { "page": 1, "pageSize": 20, "totalPages": 1, "total": 1 },
+  "summary": { "total": 1, "sent": 0, "pending": 0, "failed": 1 }
+}

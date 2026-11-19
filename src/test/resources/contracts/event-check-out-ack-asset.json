@@ -1,0 +1,17 @@
+{
+  "eventId": "e1c8b350-7d24-4a96-b0f3-5c2e9a1d7b48",
+  "type": "CheckOutAcknowledged",
+  "version": 1,
+  "occurredAt": "2026-09-09T16:42:14-05:00",
+  "data": {
+    "reservationId": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+    "sourceEventId": "7b3e9c41-5a28-4f60-93d7-1e8a0c2f5b64",
+    "kind": "ASSET_RETURN",
+    "accepted": true,
+    "occurredAt": "2026-09-09T16:40:00-05:00",
+    "receivedAt": "2026-09-09T16:42:14-05:00",
+    "dueAt": "2026-09-10T22:00:00-05:00",
+    "loanClosed": true,
+    "quotaReleased": true
+  }
+}

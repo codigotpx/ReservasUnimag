@@ -1,0 +1,14 @@
+{
+  "eventId": "7d3a9c5e-1f28-4b60-a4e7-8c2d0b6f9e13",
+  "type": "NoShowReportAcknowledged",
+  "version": 1,
+  "occurredAt": "2026-09-10T14:12:40-05:00",
+  "data": {
+    "reservationId": "a1b2c3d4-5e6f-4789-9abc-def012345678",
+    "sourceEventId": "d5f1b382-6c09-4a47-83de-2b7a9e0c1d58",
+    "accepted": false,
+    "rejection": "RESERVATION_CANCELLED",
+    "reservationStatus": "CANCELADA_POR_PRIORIDAD_ACADEMICA",
+    "detail": "La reserva se canceló por prioridad académica, así que no corresponde ninguna ausencia."
+  }
+}

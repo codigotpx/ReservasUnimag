@@ -1,0 +1,15 @@
+{
+  "reservations": [
+    {
+      "id": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+      "resourceId": "ESP-0107",
+      "category": "ESPACIO",
+      "status": "CONFIRMADA",
+      "start": "2026-09-01T10:00:00-05:00",
+      "end": "2026-09-01T12:00:00-05:00",
+      "cancellable": true
+    }
+  ],
+  "quota": { "used": 1, "max": 3 },
+  "catalogUnavailable": true
+}

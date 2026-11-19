@@ -1,0 +1,69 @@
+{
+  "uploadId": "7e2a4c81-3f95-4d60-b8a7-1c9e5d0f2a63",
+  "academicTerm": "2026-2",
+  "term": { "start": "2026-08-10", "end": "2026-12-05" },
+  "status": "VALIDATED",
+  "validatedAt": "2026-10-02T15:40:11-05:00",
+  "expiresAt": "2026-10-02T16:10:11-05:00",
+  "applicable": true,
+  "requiresConfirmation": true,
+  "summary": {
+    "rowsRead": 312,
+    "rowsOk": 300,
+    "rowsUnchanged": 12,
+    "rowsWithBlockingVerdict": 0,
+    "sessionsToCreate": 4680,
+    "sessionsSkippedNonBusinessDay": 96,
+    "blocksToWithdraw": 0,
+    "reservationsToCancel": 3
+  },
+  "rows": [
+    {
+      "row": 2,
+      "resourceId": "ESP-0412",
+      "resourceName": "Laboratorio de Redes",
+      "course": "Redes de Computadores",
+      "courseCode": "IS-402",
+      "group": "1",
+      "dayOfWeek": "LUNES",
+      "start": "08:00",
+      "end": "10:00",
+      "verdict": "OK",
+      "sessions": 16
+    },
+    {
+      "row": 7,
+      "resourceId": "ESP-0301",
+      "resourceName": "Auditorio Menor",
+      "course": "Seminario de Investigación",
+      "courseCode": "IS-510",
+      "group": "1",
+      "dayOfWeek": "JUEVES",
+      "start": "14:00",
+      "end": "16:00",
+      "verdict": "DISPLACES_RESERVATIONS",
+      "sessions": 16,
+      "affectedReservations": [
+        {
+          "reservationId": "a1b2c3d4-5e6f-4789-9abc-def012345678",
+          "holder": { "code": "2019114045", "name": "Nombre del estudiante" },
+          "start": "2026-09-10T14:00:00-05:00",
+          "end": "2026-09-10T16:00:00-05:00",
+          "category": "ESPACIO"
+        }
+      ]
+    },
+    {
+      "row": 19,
+      "resourceId": "ESP-0107",
+      "course": "Cálculo I",
+      "courseCode": "MA-101",
+      "group": "3",
+      "dayOfWeek": "MARTES",
+      "start": "06:00",
+      "end": "08:00",
+      "verdict": "UNCHANGED",
+      "sessions": 16
+    }
+  ]
+}

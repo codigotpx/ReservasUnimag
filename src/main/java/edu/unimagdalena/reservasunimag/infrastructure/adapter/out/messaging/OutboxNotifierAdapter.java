@@ -1,0 +1,89 @@
+package edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging;
+
+import edu.unimagdalena.reservasunimag.domain.model.compliance.CheckOutAck;
+import edu.unimagdalena.reservasunimag.domain.model.compliance.NoShowAck;
+import edu.unimagdalena.reservasunimag.domain.model.reservation.CancellationReport;
+import edu.unimagdalena.reservasunimag.domain.model.reservation.ReservationRecord;
+import edu.unimagdalena.reservasunimag.domain.port.out.Module3NotifierPort;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.CheckOutAckEvent;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.NoShowAckEvent;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.ReservationCancelledEvent;
+import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.messaging.event.ReservationRecordEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
+
+import java.time.Instant;
+import java.util.UUID;
+
+/**
+ * Deja el evento en {@code outbox_message}, en la transacción que esté en curso: si la reserva se deshace, el
+ * evento también. El {@code payload} es el JSON completo del contrato, así que republicar es reenviar el mismo texto.
+ */
+@Component
+class OutboxNotifierAdapter implements Module3NotifierPort {
+
+    private static final Logger log = LoggerFactory.getLogger(OutboxNotifierAdapter.class);
+
+    static final String RESERVATION_RECORD = "RESERVATION_RECORD";
+    static final String CANCELLATION = "CANCELLATION";
+    static final String NO_SHOW_ACK = "NO_SHOW_ACK";
+    static final String CHECK_OUT_ACK = "CHECK_OUT_ACK";
+
+    private final OutboxQueue outbox;
+    private final ObjectMapper objectMapper;
+
+    OutboxNotifierAdapter(OutboxQueue outbox, ObjectMapper objectMapper) {
+        this.outbox = outbox;
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
+    public void reservationCreated(ReservationRecord record) {
+        // El id de la fila es el eventId de la ficha: identifica el hecho, no el intento de envío (UC10 FR-005).
+        insert(record.eventId(), RESERVATION_RECORD, record.reservation().id(),
+                objectMapper.writeValueAsString(ReservationRecordEvent.from(record)), record.occurredAt());
+        // Sin datos personales más allá del identificador (plan de UC10, T017).
+        log.info("Ficha de la reserva {} encolada: origen {}, sancionable {}, evento {}", record.reservation().id(),
+                record.reservation().origin(), record.sanctionable(), record.eventId());
+    }
+
+    @Override
+    public void reservationCancelled(CancellationReport report) {
+        insert(report.eventId(), CANCELLATION, report.reservationId(),
+                objectMapper.writeValueAsString(ReservationCancelledEvent.from(report)), report.cancelledAt());
+        // Sin datos personales más allá del identificador (plan de UC4, T023).
+        log.info("Cancelación de la reserva {} encolada: origen {}, antelación {} min, evento {}",
+                report.reservationId(), report.origin(),
+                report.noticeMinutes() == null ? "-" : report.noticeMinutes(), report.eventId());
+    }
+
+    @Override
+    public void noShowAcknowledged(NoShowAck ack) {
+        UUID eventId = UUID.randomUUID();
+        insert(eventId, NO_SHOW_ACK, ack.reservation().id(),
+                objectMapper.writeValueAsString(NoShowAckEvent.from(eventId, ack)), ack.occurredAt());
+        // Sin el note ni el verifiedBy del Módulo 3 (plan de UC9, T023).
+        log.info("No asistencia de la reserva {} (reporte {}): {}", ack.reservation().id(), ack.sourceEventId(),
+                ack.accepted() ? (ack.duplicate() ? "repetida" : "registrada") : "rechazada, " + ack.rejection());
+    }
+
+    @Override
+    public void checkOutAcknowledged(CheckOutAck ack) {
+        UUID eventId = UUID.randomUUID();
+        insert(eventId, CHECK_OUT_ACK, ack.reservation().id(),
+                objectMapper.writeValueAsString(CheckOutAckEvent.from(eventId, ack)), ack.occurredAt());
+        // El dictamen no va en claro al log (plan de UC12, T028); sí el desfase entre lo que pasó y cuándo llegó.
+        log.info("Check-out de la reserva {} (evento {}): {}", ack.reservation().id(), ack.sourceEventId(),
+                ack.accepted()
+                        ? (ack.duplicate() ? "repetido" : ack.checkOut().kind() + " aplicado, llegó "
+                        + java.time.Duration.between(ack.checkOut().occurredAt(), ack.checkOut().receivedAt())
+                        .toSeconds() + " s después")
+                        : "rechazado, " + ack.rejection());
+    }
+
+    private void insert(UUID eventId, String type, UUID reservationId, String payload, Instant now) {
+        outbox.enqueue(eventId, type, reservationId, payload, now);
+    }
+}

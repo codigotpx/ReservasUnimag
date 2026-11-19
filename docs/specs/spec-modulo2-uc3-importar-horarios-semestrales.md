@@ -20,7 +20,7 @@ Además de la carga del semestre completo, la Dirección de Programa puede regis
 | **Recurso** | Cualquier espacio o activo que se pueda apartar: salón, laboratorio, sala de estudio, auditorio, videobeam. |
 | **Franja horaria** | Un día con una hora de inicio y una de fin. Por ejemplo: 10 de septiembre, de 14:00 a 16:00. |
 | **Bloqueo académico** | Marca que pone el sistema sobre un recurso en una franja para indicar que allí hay clase o actividad docente. Mientras esté puesta, ningún estudiante puede apartar ese recurso en esa franja. El sistema la registra con el estado `BLOQUEO_ACADEMICO`. |
-| **Reserva estudiantil** | Apartado hecho por un estudiante o monitor. Pesa menos que un bloqueo académico. Una reserva vigente deja el recurso en estado `RESERVADO`; solo pasa a `EN_USO` cuando llega la franja y la persona se presenta. |
+| **Reserva estudiantil** | Apartado hecho por un estudiante. Pesa menos que un bloqueo académico. Una reserva vigente deja el recurso en estado `RESERVADO`; solo pasa a `EN_USO` cuando llega la franja y la persona se presenta. |
 | **Carga académica del semestre** | El archivo con todas las clases del periodo: qué asignatura, en qué salón, qué día y a qué hora. |
 | **Necesidad extraordinaria** | Actividad docente que no estaba en el horario original y que se registra ya empezado el semestre. |
 | **Reporte de importación** | Resumen que devuelve el sistema al terminar de leer el archivo: cuántas clases quedaron cargadas, cuántas filas se rechazaron y por qué. |

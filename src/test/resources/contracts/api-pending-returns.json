@@ -1,0 +1,16 @@
+{
+  "loans": [
+    {
+      "reservationId": "4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+      "resourceId": "ACT-004512",
+      "resourceName": "Libro de Cálculo I",
+      "holder": { "code": "2019114045", "name": "Nombre del estudiante" },
+      "pickup": "2026-09-01T14:30:00-05:00",
+      "dueAt": "2026-09-10T22:00:00-05:00",
+      "overdueDays": 3,
+      "lossThresholdAt": "2026-09-17T22:00:00-05:00"
+    }
+  ],
+  "pagination": { "page": 1, "pageSize": 20, "totalPages": 1, "total": 1 },
+  "summary": { "total": 1, "overdue": 1, "nearLossThreshold": 0 }
+}

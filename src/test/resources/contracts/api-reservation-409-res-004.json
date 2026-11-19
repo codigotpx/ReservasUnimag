@@ -1,0 +1,9 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/reservation-denied",
+  "title": "Reserva denegada",
+  "status": 409,
+  "detail": "El recurso acaba de ser tomado por otra solicitud. Vuelve a consultar la disponibilidad.",
+  "instance": "/api/reservations",
+  "code": "RES-004",
+  "resourceId": "ESP-0107"
+}

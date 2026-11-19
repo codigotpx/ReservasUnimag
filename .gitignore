@@ -32,3 +32,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Variables de despliegue ###
+.env*
+!.env.example
+.vercel

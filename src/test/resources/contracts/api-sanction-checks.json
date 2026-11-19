@@ -1,0 +1,41 @@
+{
+  "checks": [
+    {
+      "id": "e4a9c712-8b35-4d06-91fe-2c7d0b8a3f54",
+      "personCode": "2019114045",
+      "askedBy": "RESERVE_RESOURCES",
+      "resourceCategory": "ESPACIO",
+      "askedAt": "2026-09-03T09:14:22-05:00",
+      "outcome": "SANCTIONED",
+      "answered": {
+        "sanctionReason": "Dos ausencias no justificadas en el semestre",
+        "endsOn": "2026-09-15",
+        "scope": "ESPACIOS",
+        "endDateMissing": false,
+        "absenceCount": 2,
+        "lateReturns": 1
+      },
+      "durationMs": 312
+    },
+    {
+      "id": "3b6d1f80-52c4-4e7a-9d18-a0f4c2e7b915",
+      "personCode": "2019114045",
+      "askedBy": "SEARCH_RESOURCES",
+      "askedAt": "2026-09-03T09:14:10-05:00",
+      "outcome": "CLEAR",
+      "answered": { "absenceCount": 2, "lateReturns": 1 },
+      "durationMs": 280
+    },
+    {
+      "id": "a7f2e508-3c91-4b47-86da-0e5b1d9c2f68",
+      "personCode": "2019114045",
+      "askedBy": "SEARCH_RESOURCES",
+      "askedAt": "2026-09-03T09:14:05-05:00",
+      "outcome": "NOT_VERIFIED",
+      "failureDetail": "Connection refused",
+      "durationMs": 1500
+    }
+  ],
+  "pagination": { "page": 1, "pageSize": 20, "totalPages": 1, "total": 3 },
+  "summary": { "total": 3, "clear": 1, "sanctioned": 1, "noHistory": 0, "notVerified": 1 }
+}

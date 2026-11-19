@@ -1,0 +1,10 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/cancellation-denied",
+  "title": "La reserva ya no es cancelable",
+  "status": 409,
+  "detail": "Ya tienes este activo en tu poder, así que no se cancela: hay que devolverlo. El préstamo se cierra cuando se registre la devolución.",
+  "instance": "/api/reservations/4b8e2a16-9c37-4d58-b1fa-6e0c74d9b2a3",
+  "code": "CAN-001",
+  "reason": "ASSET_ALREADY_PICKED_UP",
+  "pickedUpAt": "2026-09-03T14:35:00-05:00"
+}

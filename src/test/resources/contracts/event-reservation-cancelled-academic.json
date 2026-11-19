@@ -1,0 +1,29 @@
+{
+  "eventId": "f2b8c4d1-6e39-4a70-95c8-3d1e7a0f2b56",
+  "type": "ReservationCancelled",
+  "version": 1,
+  "occurredAt": "2026-10-02T15:47:35-05:00",
+  "data": {
+    "reservationId": "a1b2c3d4-5e6f-4789-9abc-def012345678",
+    "status": "CANCELADA_POR_PRIORIDAD_ACADEMICA",
+    "cancellationOrigin": "ACADEMIC_PRIORITY",
+    "reason": "La franja se asignó a actividad docente: IS-510 grupo 1.",
+    "attributableToPerson": false,
+    "cancelledAt": "2026-10-02T15:47:35-05:00",
+    "resource": {
+      "id": "ESP-0301",
+      "name": "Auditorio Menor",
+      "category": "ESPACIO"
+    },
+    "holder": {
+      "userId": "5f1b9c2d-7a34-4e81-b0f6-3c8d1e9a4b72",
+      "code": "2019114045",
+      "name": "Nombre del estudiante",
+      "role": "ESTUDIANTE"
+    },
+    "releasedTime": {
+      "start": "2026-09-10T14:00:00-05:00",
+      "end": "2026-09-10T16:00:00-05:00"
+    }
+  }
+}

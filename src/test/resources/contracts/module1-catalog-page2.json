@@ -1,0 +1,30 @@
+{
+  "content": [
+    {
+      "id": "ESP-0107",
+      "name": "Sala de Estudio 3",
+      "category": "ESPACIO",
+      "type": "SALA_DE_ESTUDIO",
+      "operationalStatus": "EN_USO",
+      "location": "Biblioteca, piso 1",
+      "faculty": "Biblioteca Central",
+      "maxCapacity": 8,
+      "equipment": ["AIRE_ACONDICIONADO"]
+    },
+    {
+      "id": "ESP-0108",
+      "name": "Sala de Estudio 4",
+      "category": "ESPACIO",
+      "type": "SALA_DE_ESTUDIO",
+      "operationalStatus": "DISPONIBLE",
+      "location": "Biblioteca, piso 1",
+      "faculty": "Biblioteca Central",
+      "maxCapacity": 8,
+      "equipment": []
+    }
+  ],
+  "page": 2,
+  "size": 2,
+  "totalPages": 3,
+  "total": 5
+}

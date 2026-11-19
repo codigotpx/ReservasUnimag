@@ -1,0 +1,31 @@
+{
+  "timeSlot": { "date": "2026-09-01", "start": "10:00", "end": "12:00" },
+  "filters": { "category": "ESPACIO", "type": "LABORATORIO", "minCapacity": 20 },
+  "pagination": { "page": 1, "pageSize": 20, "totalPages": 1, "total": 1 },
+  "anySelectable": false,
+  "catalogTruncated": false,
+  "queriedAt": "2026-09-01T09:14:22-05:00",
+  "message": "El único recurso que cumple los filtros no está disponible entre las 10:00 y las 12:00.",
+  "nextTimeSlot": { "date": "2026-09-01", "start": "14:00", "end": "16:00" },
+  "sanctionNotice": {
+    "type": "ACTIVE_SANCTION",
+    "reason": "Dos ausencias no justificadas en el semestre",
+    "until": "2026-09-30",
+    "message": "Tienes una sanción vigente hasta el 2026-09-30. Puedes consultar los recursos, pero no podrás confirmar una reserva."
+  },
+  "resources": [
+    {
+      "id": "ESP-0412",
+      "name": "Laboratorio de Redes",
+      "category": "ESPACIO",
+      "type": "LABORATORIO",
+      "location": "Bloque 7, piso 2",
+      "faculty": "Ingeniería",
+      "maxCapacity": 30,
+      "equipment": ["PROYECTOR"],
+      "status": "BLOQUEO_ACADEMICO",
+      "selectable": false,
+      "reason": "El recurso está reservado para actividad docente en la franja consultada."
+    }
+  ]
+}

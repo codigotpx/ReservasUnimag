@@ -1,0 +1,19 @@
+{
+  "reservationId": "5d2f8a41-7b63-4e90-a1c4-8f3e2b6d9c07",
+  "record": {
+    "eventId": "8d41b6c0-2f93-4a7e-8c15-9b0e3d7f2a68",
+    "origin": "ACADEMICO",
+    "sanctionable": false,
+    "sentAt": "2026-08-30T09:14:22-05:00",
+    "resource": { "id": "ESP-0412", "name": "Laboratorio de Redes", "category": "ESPACIO" },
+    "academic": { "course": "Redes de Computadores", "courseCode": "IS-402", "program": "Ingeniería de Sistemas" },
+    "occupancy": { "start": "2026-09-07T08:00:00-05:00", "end": "2026-09-07T10:00:00-05:00" },
+    "delivery": {
+      "status": "PENDING",
+      "attempts": 2,
+      "firstAttemptAt": "2026-08-30T09:14:25-05:00",
+      "nextAttemptAt": "2026-08-30T09:15:25-05:00",
+      "lastError": "Connection refused"
+    }
+  }
+}

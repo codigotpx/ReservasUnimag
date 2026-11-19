@@ -1,0 +1,9 @@
+{
+  "type": "https://reservasunimag.unimagdalena.edu.co/errors/use-start-rejected",
+  "title": "No se pudo registrar el inicio de uso",
+  "status": 409,
+  "detail": "Tu reserva empieza a las 10:00. Puedes registrar tu llegada desde las 09:50.",
+  "instance": "/api/reservations/9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45/start-use",
+  "code": "USO-002",
+  "windowOpensAt": "2026-09-01T09:50:00-05:00"
+}

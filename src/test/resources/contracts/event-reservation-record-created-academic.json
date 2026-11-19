@@ -1,0 +1,27 @@
+{
+  "eventId": "8d41b6c0-2f93-4a7e-8c15-9b0e3d7f2a68",
+  "type": "ReservationRecordCreated",
+  "version": 1,
+  "occurredAt": "2026-08-30T09:14:22-05:00",
+  "data": {
+    "reservationId": "b7c2e418-3d65-4f09-a2b8-1e5c9d0a7f34",
+    "origin": "ACADEMICO",
+    "sanctionable": false,
+    "resource": {
+      "id": "ESP-0412",
+      "name": "Laboratorio de Redes",
+      "category": "ESPACIO",
+      "type": "LABORATORIO",
+      "location": "Bloque 7, piso 2"
+    },
+    "academic": {
+      "course": "Redes de Computadores",
+      "program": "Ingeniería de Sistemas",
+      "instructor": "Nombre del instructor"
+    },
+    "occupancy": {
+      "start": "2026-09-01T08:00:00-05:00",
+      "end": "2026-09-01T10:00:00-05:00"
+    }
+  }
+}

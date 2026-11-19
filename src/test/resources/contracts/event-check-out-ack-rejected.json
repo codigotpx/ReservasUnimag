@@ -1,0 +1,14 @@
+{
+  "eventId": "5c9a2e74-0b18-4f36-8d5e-1a7f3c9b6e20",
+  "type": "CheckOutAcknowledged",
+  "version": 1,
+  "occurredAt": "2026-09-01T11:50:08-05:00",
+  "data": {
+    "reservationId": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+    "sourceEventId": "c4b1a826-3e57-4d09-96fa-8d2e0b7c1f35",
+    "accepted": false,
+    "rejection": "SLOT_NOT_FINISHED",
+    "detail": "La franja de esta reserva termina a las 12:00. La revisión se admite después de esa hora.",
+    "acceptedFrom": "2026-09-01T12:00:00-05:00"
+  }
+}

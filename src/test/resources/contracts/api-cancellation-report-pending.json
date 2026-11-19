@@ -1,0 +1,20 @@
+{
+  "reservationId": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+  "eventId": "d4c9e2f1-7a83-4b60-91c5-2e8d0f3a1b57",
+  "cancellationOrigin": "HOLDER",
+  "status": "CANCELADA",
+  "reason": "Cancelada por el titular.",
+  "attributableToPerson": true,
+  "noticeMinutes": 1486,
+  "cancelledAt": "2026-08-31T09:14:22-05:00",
+  "resource": { "id": "ESP-0107", "name": "Sala de Estudio 3", "category": "ESPACIO" },
+  "holder": { "code": "2019114045", "name": "Nombre del estudiante" },
+  "releasedTime": { "start": "2026-09-01T10:00:00-05:00", "end": "2026-09-01T12:00:00-05:00" },
+  "delivery": {
+    "status": "PENDING",
+    "attempts": 3,
+    "firstAttemptAt": "2026-08-31T09:14:27-05:00",
+    "nextAttemptAt": "2026-08-31T09:16:27-05:00",
+    "lastError": "Connection refused"
+  }
+}

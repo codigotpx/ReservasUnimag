@@ -1,0 +1,17 @@
+{
+  "eventId": "b4d7e219-6a03-4c58-9f12-0e8b5c3a7d61",
+  "type": "CheckOutAcknowledged",
+  "version": 1,
+  "occurredAt": "2026-09-01T12:15:42-05:00",
+  "data": {
+    "reservationId": "9f3c1d7e-5b42-4a19-8c0d-2f7e6a1b3c45",
+    "sourceEventId": "a5f2d738-9b61-4c05-87ea-3d0c1b9f4e26",
+    "kind": "SPACE_REVIEW",
+    "accepted": true,
+    "occurredAt": "2026-09-01T12:10:00-05:00",
+    "receivedAt": "2026-09-01T12:15:42-05:00",
+    "verdict": "REQUIERE_MANTENIMIENTO",
+    "verdictRecorded": true,
+    "slotReleased": false
+  }
+}

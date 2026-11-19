@@ -1,0 +1,13 @@
+# La imagen solo necesita Gradle y src/main
+.git
+.github
+.gradle
+.idea
+build
+frontend
+docs
+src/test
+*.md
+.env*
+docker-compose*.yml
+deploy

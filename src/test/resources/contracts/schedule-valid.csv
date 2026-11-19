@@ -1,0 +1,4 @@
+course_code,course,group,program,instructor,resource_id,day_of_week,start_time,end_time
+IS-402,Redes de Computadores,1,Ingeniería de Sistemas,Nombre del instructor,ESP-0412,LUNES,08:00,10:00
+IS-510,Seminario de Investigación,1,Ingeniería de Sistemas,Nombre del instructor,ESP-0201,JUEVES,14:00,16:00
+IC-110,"Dibujo Técnico, taller",1,Ingeniería Civil,,ESP-0305,VIERNES,14:00,17:00

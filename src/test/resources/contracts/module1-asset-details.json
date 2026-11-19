@@ -1,0 +1,11 @@
+{
+  "id": "ACT-004512",
+  "name": "Libro de Cálculo I",
+  "category": "ACTIVO",
+  "type": "LIBRO",
+  "operationalStatus": "DISPONIBLE",
+  "location": "Biblioteca, estantería C-4",
+  "assetTag": "ACT-004512",
+  "condition": "BUENO",
+  "loanTermBusinessDays": 7
+}
