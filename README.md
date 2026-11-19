@@ -172,6 +172,9 @@ cp .env.example .env      # y llenar los valores
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+Producción sigue a `main`: cada merge a `main` despliega el backend en la VM con el workflow
+`.github/workflows/deploy.yml`, y Vercel despliega el frontend por su cuenta.
+
 El despliegue completo (Vercel para el frontend; backend, PostgreSQL y Kafka en una VM) está en
 [plan-arquitectura.md](docs/plan/plan-arquitectura.md#despliegue).
 

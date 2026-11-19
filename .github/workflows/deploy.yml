@@ -1,0 +1,48 @@
+name: Despliegue
+
+# Producción sigue a main: cada merge de una release/* o un hotfix/* despliega el backend en la VM de Azure.
+# El frontend no pasa por aquí: Vercel lo despliega solo desde main.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Un despliegue a la vez, y el que llega después espera en vez de cancelar al que va a la mitad
+concurrency:
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+jobs:
+  desplegar:
+    name: desplegar
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Preparar la clave SSH
+        env:
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          VM_KNOWN_HOSTS: ${{ secrets.VM_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VM_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # La clave solo puede correr un comando en la VM: traer origin/main y ejecutar deploy/deploy.sh.
+      # Por eso no se le pasa ningún comando aquí.
+      - name: Desplegar en la VM
+        run: ssh -i ~/.ssh/deploy_key -o BatchMode=yes "${{ vars.VM_USER }}@${{ vars.VM_HOST }}"
+
+      - name: Comprobar que el backend responde
+        env:
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+        run: |
+          # Sin sesión, /api/** responde 401: eso confirma que Caddy y Spring están arriba
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$BACKEND_URL/api/reservations" || true)
+            if [ "$code" = "401" ]; then echo "El backend responde ($code)."; exit 0; fi
+            echo "Intento $i: $code"; sleep 10
+          done
+          echo "::error::El backend no respondió 401 en 5 minutos."
+          exit 1
