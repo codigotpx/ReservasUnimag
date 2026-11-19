@@ -204,7 +204,8 @@ ReservasUnimag/
 ├── Dockerfile, .dockerignore                imagen del backend para producción
 ├── docker-compose.yml                       PostgreSQL y Kafka para desarrollo
 ├── docker-compose.prod.yml, .env.example    producción en la VM: backend, PostgreSQL, Kafka y Caddy
-├── deploy/Caddyfile                         HTTPS del backend
+├── deploy/                                 Caddyfile (HTTPS del backend) y deploy.sh (despliegue en la VM)
+├── .github/workflows/                       ci.yml, branch-policy.yml y deploy.yml (despliegue continuo)
 ├── docs/                                    specs, planes y diagramas
 ├── README.md
 └── CONTRIBUTING.md
@@ -547,6 +548,9 @@ Los parámetros del negocio (cupo de 3, ventana de 06:00 a 22:00, 10 minutos de 
   - **El backend y PostgreSQL** no publican puertos: solo se alcanzan por la red interna de Docker.
   - **Kafka** tiene dos listeners: `INTERNAL` (`kafka:29092`) para el backend y `EXTERNAL` (puerto 9092, anunciado como `KAFKA_PUBLIC_HOST`) para los Módulos 1 y 3. Los topics se crean al primer uso con 3 particiones, igual a la concurrencia de los consumidores.
   - Los datos de PostgreSQL, Kafka y los certificados viven en volúmenes, y sobreviven a reinicios.
+- **Despliegue continuo.** El workflow `deploy.yml` corre en cada push a `main` (o a mano, con *Run workflow*). Entra por SSH a la VM, que trae `origin/main` y ejecuta `deploy/deploy.sh`: recompila el backend, recrea solo lo que cambió y borra las imágenes viejas. Después comprueba que `/api/**` responda 401 por HTTPS. El frontend no pasa por ahí, porque Vercel lo despliega solo desde `main`.
+  - **La clave de GitHub solo puede desplegar.** En `~/.ssh/authorized_keys` de la VM está atada con `command=...,restrict` a un único comando, así que no abre una consola ni reenvía puertos. Ese comando, que trae `main` y luego llama al script, vive en la VM y no en el repo, para que el script que se ejecuta sea siempre el de la versión recién traída.
+  - **En GitHub:** los secretos `VM_SSH_KEY` y `VM_KNOWN_HOSTS`, y las variables `VM_HOST`, `VM_USER` y `BACKEND_URL`.
 - **El firewall va en el proveedor de la nube.** Docker abre los puertos publicados por su cuenta y se salta `ufw`, así que las reglas (80, 443, 22 y 9092 solo para las IP de los otros módulos) se ponen en el firewall del proveedor, por ejemplo el grupo de seguridad de red en Azure.
 
 ## Pendientes que afectan la arquitectura
