@@ -154,6 +154,27 @@ Compilar el empaquetado:
 
 En Windows, usar `gradlew.bat` en lugar de `./gradlew`.
 
+### Imagen de producción
+
+El `Dockerfile` construye el backend con el perfil `prod`. Ese perfil toma los secretos y las direcciones de
+variables de entorno, y no arranca si falta alguna. La lista completa está al inicio de
+`src/main/resources/application-prod.properties`.
+
+```bash
+docker build -t reservasunimag .
+docker run --env-file .env.prod -p 8080:8080 reservasunimag
+```
+
+En la VM, `docker-compose.prod.yml` levanta el backend, PostgreSQL, Kafka y Caddy (HTTPS):
+
+```bash
+cp .env.example .env      # y llenar los valores
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+El despliegue completo (Vercel para el frontend; backend, PostgreSQL y Kafka en una VM) está en
+[plan-arquitectura.md](docs/plan/plan-arquitectura.md#despliegue).
+
 ### Cargar un horario de prueba
 
 Con el perfil local, la Dirección de Programa (`direccion@unimagdalena.edu.co`, contraseña

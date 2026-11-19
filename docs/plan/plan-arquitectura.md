@@ -26,6 +26,7 @@ Este documento llega hasta la organización de carpetas y el modelo de datos. La
 | **Documentación de la API** | OpenAPI (springdoc) |
 | **Pruebas** | JUnit 5, Testcontainers (PostgreSQL y Kafka), WireMock para los Módulos 1 y 3, ArchUnit para la regla de dependencias |
 | **Build** | Gradle con Groovy DSL (backend) y npm (frontend) |
+| **Despliegue** | Imagen Docker del backend con el perfil `prod`; el frontend en Vercel. Ver [Despliegue](#despliegue) |
 | **Zona horaria** | `America/Bogota`. Todas las fechas se guardan como `timestamptz`. |
 | **Ventana de operación** | 06:00 a 22:00, sin franjas que crucen la medianoche |
 | **Metas de rendimiento** | NEEDS CLARIFICATION: depende de P-17 (los tiempos de respuesta entre módulos no cuadran). |
@@ -155,7 +156,7 @@ Los cuatro primeros nacieron con este plan; los acuses y el del inicio de uso lo
 - **Errores recuperables**: el broker no responde, la base está caída, el Módulo 1 no contesta cuando UC12 consulta el recurso. El `DefaultErrorHandler` reintenta con espera creciente sin mover el *offset*; el consumidor se queda parado en ese evento, que es lo correcto, porque saltárselo rompería el orden de la reserva.
 - **Errores no recuperables**: el JSON no se puede deserializar, falta un campo obligatorio, el `reservation_id` no existe o la reserva está en un estado que no admite el reporte. Estos no mejoran con reintentos, así que el evento va al *dead letter topic* `module2.dlt.<source-topic>` con la causa en las cabeceras, se registra y el consumidor sigue. Del lado que publicamos no hace falta DLT porque el evento se queda en `outbox_message`; aquí sí, porque es la única copia que tenemos del evento que llegó.
 - **Concurrencia igual al número de particiones del topic**, para no perder el orden por reserva dentro de una partición.
-- **No exponemos endpoints de integración.** UC9 y UC12 entran solo por Kafka, así que `/api/integration/module3/**` y su API key ya no existen: quien autentica es el broker (SASL más TLS), con las credenciales en variables de entorno, no en `application.properties`.
+- **No exponemos endpoints de integración.** UC9 y UC12 entran solo por Kafka, así que `/api/integration/module3/**` y su API key ya no existen: el broker no pide autenticación, igual que las llamadas REST entre módulos. El broker lo alojamos nosotros (ver [Despliegue](#despliegue)).
 
 #### Local y pruebas
 
@@ -188,7 +189,7 @@ reservations.outbox.max-attempts=10
 - Contraseñas con **BCrypt**. El login devuelve un **JWT** firmado por el backend, con el id y el rol del usuario.
 - El JWT viaja en una **cookie `httpOnly`**. El frontend llama al backend a través de un *rewrite* de Next.js (`/api/*` → Spring), para que todo quede en el mismo origen sin configurar CORS y el token no quede expuesto a JavaScript.
 - **Roles**: `ESTUDIANTE` y `DIRECCION_PROGRAMA`. El Monitor es actor del Módulo 3, no de este (V10 retiró `MONITOR`). La autorización por rol se aplica en el adaptador web; el caso de uso recibe el usuario ya identificado.
-- **No hay API key ni endpoints de integración**: UC9 y UC12 entran por Kafka, y ahí quien autentica es el broker (SASL más TLS), con las credenciales en variables de entorno.
+- **No hay API key ni endpoints de integración**: UC9 y UC12 entran por Kafka, que no pide autenticación entre módulos (ver [Despliegue](#despliegue)).
 - Por eso `/api/**` queda entero detrás del JWT: todo lo que llega por HTTP es el frontend.
 
 ## Organización de carpetas
@@ -200,6 +201,10 @@ ReservasUnimag/
 ├── build.gradle, settings.gradle, gradlew   backend (Spring Boot), en la raíz
 ├── src/                                     código y pruebas del backend
 ├── frontend/                                frontend (Next.js), con su propio package.json
+├── Dockerfile, .dockerignore                imagen del backend para producción
+├── docker-compose.yml                       PostgreSQL y Kafka para desarrollo
+├── docker-compose.prod.yml, .env.example    producción en la VM: backend, PostgreSQL, Kafka y Caddy
+├── deploy/Caddyfile                         HTTPS del backend
 ├── docs/                                    specs, planes y diagramas
 ├── README.md
 └── CONTRIBUTING.md
@@ -260,8 +265,11 @@ src/main/java/edu/unimagdalena/reservasunimag/
                                          propiedades (cupo, ventana, plazos), Clock
 
 src/main/resources/
-├── application.properties
-└── db/migration/                        V1__initial_schema.sql, V2__..., ...
+├── application.properties               valores comunes y parámetros del negocio
+├── application-local.properties         perfil local: usuarios de prueba de db/local, cookie sin Secure
+├── application-prod.properties          perfil prod: secretos y direcciones por variables de entorno
+├── db/migration/                        V1__initial_schema.sql, V2__..., ...
+└── db/local/                            R__local_users.sql, solo con el perfil local
 
 src/test/java/edu/unimagdalena/reservasunimag/
 ├── domain/model/                        pruebas unitarias de las reglas
@@ -517,6 +525,28 @@ La inserción va en la misma transacción que el caso de uso. Si choca con la cl
 
 Los parámetros del negocio (cupo de 3, ventana de 06:00 a 22:00, 10 minutos de no-show, 2 horas por franja) van en `application.properties`, no en tablas, mientras nadie necesite cambiarlos en caliente.
 
+## Despliegue
+
+**Decidido el 2026-11-19.** El broker de Kafka lo alojamos nosotros: los Módulos 1 y 3 se conectan a él para publicar y consumir.
+
+| Pieza | Dónde | Cómo |
+|---|---|---|
+| Frontend | Vercel | `BACKEND_URL` apunta al backend; el *rewrite* de `/api/*` mantiene un solo origen para la cookie |
+| Backend | Una VM, con la imagen del `Dockerfile` | Perfil `prod`, detrás de un proxy con HTTPS |
+| PostgreSQL | La misma VM | Con `btree_gist`, que la imagen oficial de PostgreSQL ya trae |
+| Kafka | La misma VM | Sin autenticación: un listener interno para nuestro backend y uno público para los Módulos 1 y 3 |
+
+- **Por qué una VM y no un PaaS gratuito.** El backend no puede dormirse: la *outbox*, el inicio de uso de las clases y los consumidores de Kafka corren solos, sin que nadie haga una petición. Además, el broker es compartido con los otros dos módulos.
+- **La imagen.** El `Dockerfile` compila con `./gradlew bootJar` sin correr las pruebas (ya las corre el CI y necesitan Docker por Testcontainers), parte el jar en capas, corre con un usuario sin privilegios y con `TZ=America/Bogota`, y activa el perfil `prod`.
+- **El perfil `prod`.** Todo lo que cambia entre entornos o es secreto llega por variables de entorno: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `KAFKA_BOOTSTRAP_SERVERS`, `MODULE1_BASE_URL` y `MODULE3_BASE_URL`. Ninguna tiene valor por defecto, así que si falta una la aplicación no arranca, en vez de arrancar con un valor de desarrollo. Flyway solo aplica `db/migration` (los usuarios de prueba de `db/local` no llegan) y tiene el `clean` deshabilitado. Swagger está apagado salvo con `SWAGGER_ENABLED=true`.
+- **Kafka sin autenticación** (decidido el 2026-11-19). Ni SASL ni TLS: los otros módulos solo necesitan la dirección del broker, igual que con REST. Como cualquiera que llegue al puerto público puede leer y escribir, el firewall de la VM debería abrirlo solo a las IP de los Módulos 1 y 3 cuando las conozcamos.
+- **`docker-compose.prod.yml`.** Levanta los cuatro servicios en la VM con `restart: unless-stopped`, y las variables salen de un `.env` que se copia de `.env.example` y no se sube al repo.
+  - **Caddy** publica el 80 y el 443 y saca el certificado de Let's Encrypt para `DOMAIN`. Sin dominio propio sirve uno de sslip.io con la IP de la VM.
+  - **El backend y PostgreSQL** no publican puertos: solo se alcanzan por la red interna de Docker.
+  - **Kafka** tiene dos listeners: `INTERNAL` (`kafka:29092`) para el backend y `EXTERNAL` (puerto 9092, anunciado como `KAFKA_PUBLIC_HOST`) para los Módulos 1 y 3. Los topics se crean al primer uso con 3 particiones, igual a la concurrencia de los consumidores.
+  - Los datos de PostgreSQL, Kafka y los certificados viven en volúmenes, y sobreviven a reinicios.
+- **El firewall va en el proveedor de la nube.** Docker abre los puertos publicados por su cuenta y se salta `ufw`, así que las reglas (80, 443, 22 y 9092 solo para las IP de los otros módulos) se ponen en el firewall del proveedor, por ejemplo el grupo de seguridad de red en Azure.
+
 ## Pendientes que afectan la arquitectura
 
 | Pendiente | Qué afecta |
@@ -529,6 +559,6 @@ Los parámetros del negocio (cupo de 3, ventana de 06:00 a 22:00, 10 minutos de 
 | P-08 | Qué pasa con un préstamo que nunca se devuelve: hoy la ocupación dura hasta el check-out |
 | UC9 | En qué estado queda una reserva con ausencia. La lista de estados de UC2 no tiene uno propio: NEEDS CLARIFICATION |
 | UC9, UC12 | Qué hacemos con un evento que no encaja con el estado de la reserva, por ejemplo un check-out de una reserva ya finalizada: hoy va al DLT |
-| Registro | Spec de registro e inicio de sesión: dominio de correo permitido, datos obligatorios y cómo se asigna el rol `DIRECCION_PROGRAMA`, que no puede salir del autorregistro |
+| Registro | Spec de registro e inicio de sesión: dominio de correo permitido, datos obligatorios y cómo se asigna el rol `DIRECCION_PROGRAMA`, que no puede salir del autorregistro. En producción no hay usuarios de prueba, así que el primero de Dirección de Programa hoy habría que crearlo a mano en la base |
 | Escala | Usuarios concurrentes y volumen de recursos esperados |
 | P-29 | La pantalla de ocupación de espacios de Dirección de Programa (`GET /api/resources/{id}/occupancy`): no sale de ningún caso de uso y sus decisiones están por confirmar |
