@@ -36,7 +36,7 @@ Tres cosas que no cambian en ningún caso de uso:
 
 ### Al Módulo 1 — `InventoryPort`
 
-Las tres operaciones son **nuestra propuesta** mientras P-16 siga abierto. Las llamadas entre módulos van sin autenticación: no entra en el alcance del proyecto.
+Las tres operaciones fueron **nuestra propuesta** mientras P-16 siguió abierto. La API que publicó el Módulo 1 es otra: ver [La API real del Módulo 1](#la-api-real-del-módulo-1-2026-11-20).
 
 | Operación | Quién la usa | Contrato | Nota |
 |---|---|---|---|
@@ -50,6 +50,21 @@ Lo que hay que cerrar con ellos:
 - **`loanTermBusinessDays`** en cada activo. Sin ese campo, FR-012 de UC2 no se puede implementar y la reserva responde `503 INCOMPLETE_RESOURCE_DETAILS`. Valores hablados: Libro 7, Kit de dibujo 3, Videobeam 1, Microscopio 0 (`0` = uso en sitio, distinto de que falte).
 - Si `EN_MANTENIMIENTO` trae **fechas** o es un estado sin horizonte (P-20.3). Hoy, sin fechas, un recurso en mantenimiento bloquea todas sus franjas futuras.
 - Un `resourceId` que vuelva en `notFound` lo tratamos como **no comprobable**, nunca como disponible.
+
+### La API real del Módulo 1 (2026-11-20)
+
+El Módulo 1 publicó su API y **no sigue la propuesta de arriba**. Adaptamos `InventoryRestAdapter` a lo que hay, sin tocar el puerto ni los casos de uso:
+
+| Nuestra propuesta | Lo que tienen | Cómo lo resolvemos |
+|---|---|---|
+| Sin autenticación | HTTP Basic en toda la API | `MODULE1_USERNAME` y `MODULE1_PASSWORD`; vacíos, se llama sin autenticación |
+| `GET /api/v1/resources` con filtros, páginas desde 1 | `GET /api/v1/recursos?page&size`, páginas desde 0, sin filtros y sin `totalPages` (solo `totalElements`) | se recorre el catálogo entero y se filtra aquí por categoría, tipo y aforo |
+| `GET /api/v1/resources/{id}` | `GET /api/v1/recursos/{id}`, con `id` UUID; un id que no es UUID da `400` | `400` y `404` son "no existe" |
+| `POST /api/v1/resources/operational-status` | no existe | sale del mismo catálogo completo; si el catálogo se trunca, la respuesta es "no disponible" |
+| Campos en inglés | `id`, `codigo`, `nombre`, `tipo` (`ESPACIO`/`ACTIVO`), `estado`, `estadoFisico`, `facultad`, `ubicacion`, `aforoMaximo`, `plazoDevolucion`, `tipoActivo`, `equipamiento` | `type` es `tipoActivo` en un activo y nulo en un espacio, que no trae subtipo; `loanTermBusinessDays` es `plazoDevolucion` |
+| `operationalStatus` con tres valores | `estado` con cinco: también `RESERVADO` y `BLOQUEO_ACADEMICO` (P-20.4 sigue sin cerrar de su lado) | esos dos son estados que calcula este módulo con sus reservas: se leen como `DISPONIBLE` y la disponibilidad la decide el cruce con las reservas |
+
+El `resource_id` que guardamos es su `id` (UUID), no el `codigo`, porque la ficha solo se pide por `id`. Sus servidores están en Render gratis, que se duerme: `MODULE1_TIMEOUT` y `MODULE3_TIMEOUT` permiten subir los timeouts sin una release.
 
 ### Al Módulo 3 — `CompliancePort`
 

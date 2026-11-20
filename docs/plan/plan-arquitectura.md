@@ -109,7 +109,7 @@ Registrarse e iniciar sesión no están en el diagrama de casos de uso. Aparecen
 
 | Dirección | Con quién | Cómo | Puerto |
 |---|---|---|---|
-| Salida | Módulo 1: catálogo y estado operativo | REST síncrono con RestClient, con timeout; la política ante caídas depende de P-14 | `InventoryPort` |
+| Salida | Módulo 1: catálogo y estado operativo | REST síncrono con RestClient, con timeout y HTTP Basic, que su API exige (ver [contratos-integracion.md](./contratos-integracion.md#la-api-real-del-módulo-1-2026-11-20)); la política ante caídas depende de P-14 | `InventoryPort` |
 | Salida | Módulo 3: sanciones vigentes | REST síncrono con timeout; la política ante caídas depende de P-10 | `CompliancePort` |
 | Salida | Módulo 3: ficha de reserva (UC10) y cancelación (UC11) | **Kafka**: el evento se guarda en la *outbox*, en la misma transacción que la reserva, y un publicador lo lleva al topic | `Module3NotifierPort` |
 | Salida | Módulo 1: inicio de uso de un recurso (UC7) | **Kafka**, por la misma *outbox*. Es lo único que le mandamos: el resto de su estado operativo se lo reporta el Módulo 3 | `InventoryStatusNotifierPort` |
