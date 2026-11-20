@@ -9,8 +9,6 @@ import edu.unimagdalena.reservasunimag.domain.model.resource.ResourceCategory;
 import edu.unimagdalena.reservasunimag.domain.model.resource.ResourceFilter;
 import edu.unimagdalena.reservasunimag.domain.port.out.InventoryPort;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.module1.dto.CatalogPageDto;
-import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.module1.dto.OperationalStatusRequestDto;
-import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.module1.dto.OperationalStatusResponseDto;
 import edu.unimagdalena.reservasunimag.infrastructure.adapter.out.module1.dto.ResourceDto;
 import edu.unimagdalena.reservasunimag.infrastructure.config.ReservationProperties;
 import org.slf4j.Logger;
@@ -20,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,17 +26,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 
 /**
- * Cliente del Módulo 1 según UC1 Contratos §2. Sin reintentos y sin autenticación. Cualquier falla —timeout,
- * 4xx, 5xx, cuerpo ilegible, un valor fuera del contrato— sale como {@link ExternalServiceUnavailableException},
- * porque sin catálogo no hay nada que mostrar (FR-008). No se registran datos personales: solo duración y resultado.
+ * Cliente del Módulo 1 contra su API real ({@code /api/v1/recursos}, en español y con HTTP Basic), que no es la
+ * propuesta de UC1 Contratos §2: ver contratos-integracion.md, "La API real del Módulo 1". Sin reintentos. Cualquier
+ * falla —timeout, 4xx, 5xx, cuerpo ilegible, un valor fuera de lo conocido— sale como
+ * {@link ExternalServiceUnavailableException}, porque sin catálogo no hay nada que mostrar (FR-008).
+ *
+ * <p>El Módulo 1 no filtra ni tiene estado por lote: los filtros se aplican aquí y el lote sale del catálogo
+ * completo. {@code RESERVADO} y {@code BLOQUEO_ACADEMICO} son estados que calcula este módulo con sus reservas, así
+ * que para nosotros el recurso está {@code DISPONIBLE} y la disponibilidad la decide el cruce con las reservas.
  */
 @Component
 @Profile("!local")
 class InventoryRestAdapter implements InventoryPort {
 
     private static final Logger log = LoggerFactory.getLogger(InventoryRestAdapter.class);
+
+    private static final Set<String> OUR_STATES = Set.of("RESERVADO", "BLOQUEO_ACADEMICO");
 
     private final RestClient client;
     private final int pageSize;
@@ -52,50 +60,53 @@ class InventoryRestAdapter implements InventoryPort {
     @Override
     public Catalog searchCatalog(ResourceFilter filter) {
         long startedAt = System.nanoTime();
-        List<Resource> resources = new ArrayList<>();
-        boolean truncated = false;
         try {
-            for (int page = 1; ; page++) {
-                CatalogPageDto body = fetchPage(filter, page);
-                if (body == null || body.content() == null) {
-                    throw new ContractViolation("la página " + page + " llegó sin contenido");
-                }
-                body.content().forEach(dto -> resources.add(toDomain(dto)));
-                if (page >= body.totalPages()) {
-                    break;
-                }
-                if (page >= maxPages) {
-                    truncated = true;
-                    break;
-                }
-            }
+            Catalog all = readCatalog();
+            List<Resource> matching = all.resources().stream().filter(matches(filter)).toList();
+            log.info("Módulo 1: catálogo de {} recursos ({} con el filtro) en {} ms{}", all.resources().size(),
+                    matching.size(), millisSince(startedAt), all.truncated() ? " (truncado)" : "");
+            return new Catalog(matching, all.truncated());
         } catch (RestClientException | ContractViolation failure) {
             log.error("Módulo 1: catálogo falló tras {} ms: {}", millisSince(startedAt), failure.getMessage());
             throw new ExternalServiceUnavailableException(ExternalModule.MODULO_1,
                     "No se pudo leer el catálogo del Módulo 1", failure);
         }
-        log.info("Módulo 1: catálogo de {} recursos en {} ms{}", resources.size(), millisSince(startedAt),
-                truncated ? " (truncado)" : "");
-        return new Catalog(resources, truncated);
     }
 
-    private CatalogPageDto fetchPage(ResourceFilter filter, int page) {
+    private Catalog readCatalog() {
+        List<Resource> resources = new ArrayList<>();
+        for (int page = 0; ; page++) {
+            CatalogPageDto body = fetchPage(page);
+            if (body == null || body.content() == null) {
+                throw new ContractViolation("la página " + page + " llegó sin contenido");
+            }
+            body.content().forEach(dto -> resources.add(toDomain(dto)));
+            int size = body.size() > 0 ? body.size() : pageSize;
+            long totalPages = (body.totalElements() + size - 1) / size;
+            if (page + 1 >= totalPages || body.content().isEmpty()) {
+                return new Catalog(resources, false);
+            }
+            if (page + 1 >= maxPages) {
+                return new Catalog(resources, true);
+            }
+        }
+    }
+
+    private CatalogPageDto fetchPage(int page) {
         return client.get()
-                .uri(uri -> {
-                    uri.path("/api/v1/resources");
-                    if (filter.category() != null) {
-                        uri.queryParam("category", filter.category().name());
-                    }
-                    if (filter.type() != null) {
-                        uri.queryParam("type", filter.type());
-                    }
-                    if (filter.minCapacity() != null) {
-                        uri.queryParam("minCapacity", filter.minCapacity());
-                    }
-                    return uri.queryParam("page", page).queryParam("size", pageSize).build();
-                })
+                .uri(uri -> uri.path("/api/v1/recursos")
+                        .queryParam("page", page)
+                        .queryParam("size", pageSize)
+                        .build())
                 .retrieve()
                 .body(CatalogPageDto.class);
+    }
+
+    private static Predicate<Resource> matches(ResourceFilter filter) {
+        return resource -> (filter.category() == null || filter.category() == resource.category())
+                && (filter.type() == null || filter.type().equalsIgnoreCase(resource.type()))
+                && (filter.minCapacity() == null
+                    || (resource.maxCapacity() != null && resource.maxCapacity() >= filter.minCapacity()));
     }
 
     @Override
@@ -103,7 +114,7 @@ class InventoryRestAdapter implements InventoryPort {
         long startedAt = System.nanoTime();
         try {
             ResourceDto body = client.get()
-                    .uri("/api/v1/resources/{id}", resourceId)
+                    .uri("/api/v1/recursos/{id}", resourceId)
                     .retrieve()
                     .body(ResourceDto.class);
             if (body == null) {
@@ -111,7 +122,8 @@ class InventoryRestAdapter implements InventoryPort {
             }
             log.info("Módulo 1: ficha de un recurso en {} ms", millisSince(startedAt));
             return Optional.of(toDomain(body));
-        } catch (HttpClientErrorException.NotFound unknown) {
+        } catch (HttpClientErrorException.NotFound | HttpClientErrorException.BadRequest unknown) {
+            // El Módulo 1 contesta 400 a un id que no es UUID: para nosotros es igual que no existir
             log.info("Módulo 1: el recurso no existe ({} ms)", millisSince(startedAt));
             return Optional.empty();
         } catch (RestClientException | ContractViolation failure) {
@@ -128,19 +140,16 @@ class InventoryRestAdapter implements InventoryPort {
         }
         long startedAt = System.nanoTime();
         try {
-            OperationalStatusResponseDto body = client.post()
-                    .uri("/api/v1/resources/operational-status")
-                    .body(new OperationalStatusRequestDto(List.copyOf(resourceIds)))
-                    .retrieve()
-                    .body(OperationalStatusResponseDto.class);
-            if (body == null || body.statuses() == null) {
-                throw new ContractViolation("la respuesta de estado operativo llegó sin contenido");
+            Catalog all = readCatalog();
+            if (all.truncated()) {
+                throw new ContractViolation("el catálogo no cabe en " + maxPages + " páginas");
             }
+            Set<String> wanted = Set.copyOf(resourceIds);
             Map<String, OperationalStatus> statuses = new HashMap<>();
-            body.statuses().forEach(entry ->
-                    statuses.put(required(entry.resourceId(), "resourceId"), status(entry.operationalStatus())));
-            if (body.notFound() != null && !body.notFound().isEmpty()) {
-                log.warn("Módulo 1: {} recursos ya no existen en el inventario", body.notFound().size());
+            all.resources().stream().filter(resource -> wanted.contains(resource.id()))
+                    .forEach(resource -> statuses.put(resource.id(), resource.operationalStatus()));
+            if (statuses.size() < wanted.size()) {
+                log.warn("Módulo 1: {} recursos ya no existen en el inventario", wanted.size() - statuses.size());
             }
             log.info("Módulo 1: estado operativo de {} recursos en {} ms", statuses.size(), millisSince(startedAt));
             return statuses;
@@ -153,34 +162,49 @@ class InventoryRestAdapter implements InventoryPort {
 
     private static Resource toDomain(ResourceDto dto) {
         String id = required(dto.id(), "id");
-        String name = required(dto.name(), "name");
-        String type = required(dto.type(), "type");
-        String location = required(dto.location(), "location");
-        OperationalStatus status = status(dto.operationalStatus());
-        ResourceCategory category = parseCategory(dto.category());
+        String name = required(dto.nombre(), "nombre");
+        String location = required(dto.ubicacion(), "ubicacion");
+        OperationalStatus status = status(dto.estado());
+        ResourceCategory category = parseCategory(dto.tipo());
         if (category == ResourceCategory.ACTIVO) {
-            return Resource.asset(id, name, type, location, status, dto.condition(), dto.loanTermBusinessDays());
+            return Resource.asset(id, name, dto.tipoActivo(), location, status, dto.estadoFisico(),
+                    dto.plazoDevolucion());
         }
-        if (dto.maxCapacity() == null) {
-            throw new ContractViolation("el espacio " + id + " llegó sin maxCapacity");
+        if (dto.aforoMaximo() == null) {
+            throw new ContractViolation("el espacio " + id + " llegó sin aforoMaximo");
         }
-        return Resource.space(id, name, type, location, status, dto.faculty(), dto.maxCapacity(), dto.equipment());
+        return Resource.space(id, name, null, location, status, dto.facultad(), dto.aforoMaximo(),
+                equipment(dto.equipamiento()));
+    }
+
+    /** Texto tal cual, o el {@code nombre} si el Módulo 1 manda objetos. */
+    private static List<String> equipment(List<JsonNode> items) {
+        if (items == null) {
+            return List.of();
+        }
+        return items.stream()
+                .map(item -> item.isString() ? item.asString()
+                        : item.hasNonNull("nombre") ? item.get("nombre").asString() : item.toString())
+                .toList();
     }
 
     private static ResourceCategory parseCategory(String value) {
         try {
-            return ResourceCategory.valueOf(required(value, "category"));
+            return ResourceCategory.valueOf(required(value, "tipo"));
         } catch (IllegalArgumentException unknown) {
-            throw new ContractViolation("category desconocida: " + value);
+            throw new ContractViolation("tipo desconocido: " + value);
         }
     }
 
-    /** Un valor que no sea de los tres del Módulo 1 —p. ej. {@code RESERVADO}— rompe el reparto de estados. */
     private static OperationalStatus status(String value) {
+        String estado = required(value, "estado");
+        if (OUR_STATES.contains(estado)) {
+            return OperationalStatus.DISPONIBLE;
+        }
         try {
-            return OperationalStatus.valueOf(required(value, "operationalStatus"));
+            return OperationalStatus.valueOf(estado);
         } catch (IllegalArgumentException unknown) {
-            throw new ContractViolation("operationalStatus desconocido: " + value);
+            throw new ContractViolation("estado desconocido: " + value);
         }
     }
 

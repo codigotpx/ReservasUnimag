@@ -1,31 +1,35 @@
 {
   "content": [
     {
-      "id": "ESP-0412",
-      "name": "Laboratorio de Redes",
-      "category": "ESPACIO",
-      "type": "LABORATORIO",
-      "operationalStatus": "DISPONIBLE",
-      "location": "Bloque 7, piso 2",
-      "faculty": "Ingeniería",
-      "maxCapacity": 30,
-      "equipment": ["PROYECTOR", "AIRE_ACONDICIONADO"]
+      "id": "c3e864b1-3199-4f34-8617-f2b217d9be5c",
+      "codigo": "ESP-002",
+      "nombre": "Laboratorio de Redes",
+      "tipo": "ESPACIO",
+      "estado": "DISPONIBLE",
+      "estadoFisico": null,
+      "facultad": "Ingeniería",
+      "ubicacion": "Bloque 7, piso 2",
+      "aforoMaximo": 30,
+      "plazoDevolucion": null,
+      "fechaRegistro": "2026-11-17T21:24:57.750446",
+      "tipoActivo": null
     },
     {
-      "id": "ACT-000912",
-      "name": "Microscopio M-014",
-      "category": "ACTIVO",
-      "type": "MICROSCOPIO",
-      "operationalStatus": "EN_MANTENIMIENTO",
-      "statusReason": "Reparación de lente",
-      "location": "Laboratorio de Biología",
-      "assetTag": "ACT-000912",
-      "condition": "BUENO",
-      "loanTermBusinessDays": 3
+      "id": "22d6bbf2-c0ac-4505-bb9b-38cddd0a43cb",
+      "codigo": "ACT-001",
+      "nombre": "Microscopio óptico",
+      "tipo": "ACTIVO",
+      "estado": "EN_MANTENIMIENTO",
+      "estadoFisico": "OPTIMO",
+      "facultad": null,
+      "ubicacion": "Bloque 2",
+      "aforoMaximo": null,
+      "plazoDevolucion": 3,
+      "fechaRegistro": "2026-11-17T21:24:57.750446",
+      "tipoActivo": "MICROSCOPIO"
     }
   ],
-  "page": 1,
+  "page": 0,
   "size": 2,
-  "totalPages": 3,
-  "total": 5
+  "totalElements": 5
 }

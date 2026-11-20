@@ -7,15 +7,26 @@ import org.springframework.web.client.RestClient;
 
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
-/** Un {@link RestClient} por módulo externo, cada uno con su URL base y su timeout. Sin autenticación entre módulos. */
+/**
+ * Un {@link RestClient} por módulo externo, cada uno con su URL base y su timeout. El Módulo 3 va sin autenticación;
+ * el Módulo 1 lleva HTTP Basic cuando hay credenciales, porque su API real lo exige.
+ */
 @Configuration(proxyBeanMethods = false)
 class HttpClientsConfig {
 
     @Bean
     RestClient module1RestClient(RestClient.Builder builder, ReservationProperties properties) {
-        return build(builder, properties.module1().baseUrl(), properties.module1().timeout());
+        ReservationProperties.Module1 module1 = properties.module1();
+        RestClient.Builder withAuth = builder.clone();
+        if (module1.hasCredentials()) {
+            withAuth.defaultHeaders(headers ->
+                    headers.setBasicAuth(module1.username(), module1.password() == null ? "" : module1.password(),
+                            StandardCharsets.UTF_8));
+        }
+        return build(withAuth, module1.baseUrl(), module1.timeout());
     }
 
     @Bean

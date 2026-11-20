@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
-/** Una página de {@code GET /api/v1/resources} (UC1 Contratos §2.1). */
+/** Página de {@code GET /api/v1/recursos} del Módulo 1. {@code page} empieza en 0 y no trae {@code totalPages}. */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record CatalogPageDto(List<ResourceDto> content, int page, int size, int totalPages, long total) {
+public record CatalogPageDto(List<ResourceDto> content, int page, int size, long totalElements) {
 }

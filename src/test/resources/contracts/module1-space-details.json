@@ -1,11 +1,19 @@
 {
-  "id": "ESP-0107",
-  "name": "Sala de Estudio 3",
-  "category": "ESPACIO",
-  "type": "SALA_DE_ESTUDIO",
-  "operationalStatus": "EN_MANTENIMIENTO",
-  "location": "Biblioteca, piso 1",
-  "faculty": "Biblioteca Central",
-  "maxCapacity": 8,
-  "equipment": ["AIRE_ACONDICIONADO"]
+  "id": "5a0e7c12-8d43-4b9f-a1e6-3f2c9d7b0e41",
+  "codigo": "ESP-003",
+  "nombre": "Sala de Estudio 3",
+  "tipo": "ESPACIO",
+  "estado": "EN_MANTENIMIENTO",
+  "estadoFisico": null,
+  "facultad": "Biblioteca Central",
+  "ubicacion": "Biblioteca, piso 2",
+  "aforoMaximo": 8,
+  "plazoDevolucion": null,
+  "equipamiento": [
+    "AIRE_ACONDICIONADO",
+    {
+      "nombre": "PROYECTOR",
+      "cantidad": 1
+    }
+  ]
 }
