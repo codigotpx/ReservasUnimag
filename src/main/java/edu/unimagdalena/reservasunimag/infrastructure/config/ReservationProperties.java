@@ -37,10 +37,15 @@ public record ReservationProperties(
     /**
      * {@code pageSize} es el tamaño de página que se le pide al Módulo 1 y {@code maxPages} el tope de páginas del
      * catálogo que se recorren por consulta (UC8 FR-011). {@code notifyUseStarted} es la válvula del aviso de inicio
-     * de uso (UC7 FR-004): apagada, el inicio se registra sin avisar.
+     * de uso (UC7 FR-004): apagada, el inicio se registra sin avisar. {@code username} y {@code password} son el
+     * HTTP Basic que exige la API real del Módulo 1; vacíos, se llama sin autenticación.
      */
     public record Module1(@NotNull URI baseUrl, @NotNull Duration timeout, @Min(1) int pageSize,
-                          @Min(1) int maxPages, boolean notifyUseStarted) {
+                          @Min(1) int maxPages, boolean notifyUseStarted, String username, String password) {
+
+        public boolean hasCredentials() {
+            return username != null && !username.isBlank();
+        }
     }
 
     public record Module3(@NotNull URI baseUrl, @NotNull Duration timeout) {

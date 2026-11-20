@@ -472,6 +472,8 @@ Un `404` no existe en este endpoint: una consulta sin resultados es `200` con `t
 
 ### 2. Módulo 1 — `InventoryPort`
 
+> **2026-11-20**: esta fue nuestra propuesta. El Módulo 1 publicó otra API (`/api/v1/recursos`, en español, con HTTP Basic y sin estado por lote) y el adaptador se escribió contra esa: ver [contratos-integracion.md, La API real del Módulo 1](./contratos-integracion.md#la-api-real-del-módulo-1-2026-11-20).
+
 Lo que sigue es **nuestra propuesta de contrato**, la misma que P-16 les pidió por escrito. Mientras no respondan, el adaptador real se escribe contra esto, el `InventoryFakeAdapter` lo imita y WireMock lo simula en T022; si el contrato final difiere, cambia solo `InventoryRestAdapter` y sus DTO. Las llamadas entre módulos van sin autenticación: es un proyecto de curso y no entra en el alcance.
 
 #### 2.1 Catálogo filtrado — `GET /api/v1/resources`

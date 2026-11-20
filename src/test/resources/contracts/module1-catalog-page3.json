@@ -1,17 +1,21 @@
 {
   "content": [
     {
-      "id": "ACT-001200",
-      "name": "Videobeam V-02",
-      "category": "ACTIVO",
-      "type": "VIDEOBEAM",
-      "operationalStatus": "DISPONIBLE",
-      "location": "Almacén de Audiovisuales",
-      "condition": "REGULAR"
+      "id": "e2d7a9c4-1b36-4f08-9c5e-7a4b0d2e6f18",
+      "codigo": "ACT-002",
+      "nombre": "Portátil Lenovo",
+      "tipo": "ACTIVO",
+      "estado": "BLOQUEO_ACADEMICO",
+      "estadoFisico": "NUEVO",
+      "facultad": null,
+      "ubicacion": "Bloque 2",
+      "aforoMaximo": null,
+      "plazoDevolucion": null,
+      "fechaRegistro": "2026-11-17T21:24:57.750446",
+      "tipoActivo": "PORTATIL"
     }
   ],
-  "page": 3,
+  "page": 2,
   "size": 2,
-  "totalPages": 3,
-  "total": 5
+  "totalElements": 5
 }

@@ -1,10 +1,15 @@
 {
-  "id": "ACT-004512",
-  "name": "Libro de Cálculo I",
-  "category": "ACTIVO",
-  "type": "LIBRO",
-  "operationalStatus": "DISPONIBLE",
-  "location": "Biblioteca, estantería C-4",
-  "assetTag": "ACT-004512",
-  "condition": "BUENO"
+  "id": "7f3a2c91-4e6b-4d05-8a17-0c9e5b2d3f64",
+  "codigo": "ACT-004",
+  "nombre": "Libro de Cálculo I",
+  "tipo": "ACTIVO",
+  "estado": "DISPONIBLE",
+  "estadoFisico": "OPTIMO",
+  "facultad": null,
+  "ubicacion": "Biblioteca, estantería C-4",
+  "aforoMaximo": null,
+  "plazoDevolucion": null,
+  "fechaRegistro": "2026-11-17T21:24:57.750446",
+  "tipoActivo": "LIBRO",
+  "equipamiento": []
 }

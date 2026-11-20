@@ -25,18 +25,24 @@ import static edu.unimagdalena.reservasunimag.support.ContractFixtures.propertie
 import static edu.unimagdalena.reservasunimag.support.ContractFixtures.read;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/** Contra la API real del Módulo 1: {@code /api/v1/recursos}, en español, con páginas desde 0. */
 class InventoryRestAdapterTest {
 
     private static final ResourceFilter NO_FILTER = new ResourceFilter(null, null, null);
+    private static final String CATALOG = "/api/v1/recursos";
+
+    private static final String LAB = "c3e864b1-3199-4f34-8617-f2b217d9be5c";
+    private static final String MICROSCOPE = "22d6bbf2-c0ac-4505-bb9b-38cddd0a43cb";
+    private static final String STUDY_ROOM = "5a0e7c12-8d43-4b9f-a1e6-3f2c9d7b0e41";
+    private static final String AUDITORIUM = "9b4f1e26-0c57-4d83-b2a9-6e1d8c3f7a05";
+    private static final String LAPTOP = "e2d7a9c4-1b36-4f08-9c5e-7a4b0d2e6f18";
+    private static final String BOOK = "7f3a2c91-4e6b-4d05-8a17-0c9e5b2d3f64";
 
     private WireMockServer module1;
 
@@ -61,56 +67,69 @@ class InventoryRestAdapterTest {
     }
 
     private void stubPage(int page, String fixture) {
-        module1.stubFor(get(urlPathEqualTo("/api/v1/resources"))
+        module1.stubFor(get(urlPathEqualTo(CATALOG))
                 .withQueryParam("page", equalTo(String.valueOf(page)))
                 .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody(read(fixture))));
     }
 
     private void stubAllPages() {
-        stubPage(1, "module1-catalog-page1.json");
-        stubPage(2, "module1-catalog-page2.json");
-        stubPage(3, "module1-catalog-page3.json");
+        stubPage(0, "module1-catalog-page1.json");
+        stubPage(1, "module1-catalog-page2.json");
+        stubPage(2, "module1-catalog-page3.json");
     }
 
     @Test
     void mapsTheCatalogOfASpaceAndAnAsset() {
-        stubPage(1, "module1-catalog-page1.json");
-        module1.stubFor(get(urlPathEqualTo("/api/v1/resources")).withQueryParam("page", equalTo("2"))
-                .willReturn(aResponse().withHeader("Content-Type", "application/json")
-                        .withBody(read("module1-catalog-empty.json"))));
-        // El adaptador para en totalPages; la primera página dice 3, así que sirve páginas vacías de relleno.
-        stubPage(3, "module1-catalog-empty.json");
+        stubAllPages();
 
         Catalog catalog = adapter(10, Duration.ofSeconds(2)).searchCatalog(NO_FILTER);
 
         Resource space = catalog.resources().get(0);
-        assertThat(space.id()).isEqualTo("ESP-0412");
+        assertThat(space.id()).isEqualTo(LAB);
+        assertThat(space.name()).isEqualTo("Laboratorio de Redes");
         assertThat(space.category()).isEqualTo(ResourceCategory.ESPACIO);
         assertThat(space.operationalStatus()).isEqualTo(OperationalStatus.DISPONIBLE);
+        assertThat(space.location()).isEqualTo("Bloque 7, piso 2");
+        assertThat(space.faculty()).isEqualTo("Ingeniería");
         assertThat(space.maxCapacity()).isEqualTo(30);
-        assertThat(space.equipment()).containsExactly("PROYECTOR", "AIRE_ACONDICIONADO");
+        assertThat(space.equipment()).isEmpty();
         assertThat(space.condition()).isNull();
 
         Resource asset = catalog.resources().get(1);
-        assertThat(asset.id()).isEqualTo("ACT-000912");
+        assertThat(asset.id()).isEqualTo(MICROSCOPE);
         assertThat(asset.category()).isEqualTo(ResourceCategory.ACTIVO);
+        assertThat(asset.type()).isEqualTo("MICROSCOPIO");
         assertThat(asset.operationalStatus()).isEqualTo(OperationalStatus.EN_MANTENIMIENTO);
-        assertThat(asset.condition()).isEqualTo("BUENO");
+        assertThat(asset.condition()).isEqualTo("OPTIMO");
         assertThat(asset.loanTermBusinessDays()).isEqualTo(3);
         assertThat(asset.maxCapacity()).isNull();
     }
 
     @Test
-    void walksEveryPageOfTheCatalog() {
+    void walksEveryPageOfTheCatalogFromPageZero() {
         stubAllPages();
 
         Catalog catalog = adapter(10, Duration.ofSeconds(2)).searchCatalog(NO_FILTER);
 
         assertThat(catalog.resources()).extracting(Resource::id)
-                .containsExactly("ESP-0412", "ACT-000912", "ESP-0107", "ESP-0108", "ACT-001200");
+                .containsExactly(LAB, MICROSCOPE, STUDY_ROOM, AUDITORIUM, LAPTOP);
         assertThat(catalog.truncated()).isFalse();
         assertThat(catalog.resources().get(4).loanTermBusinessDays()).isNull();
-        module1.verify(3, getRequestedFor(urlPathEqualTo("/api/v1/resources")));
+        module1.verify(3, getRequestedFor(urlPathEqualTo(CATALOG)));
+        module1.verify(getRequestedFor(urlPathEqualTo(CATALOG))
+                .withQueryParam("page", equalTo("0")).withQueryParam("size", equalTo("2")));
+    }
+
+    @Test
+    void theStatesThisModuleComputesAreAvailableForInventory() {
+        stubAllPages();
+
+        Catalog catalog = adapter(10, Duration.ofSeconds(2)).searchCatalog(NO_FILTER);
+
+        // RESERVADO y BLOQUEO_ACADEMICO salen de nuestras reservas: el cruce de disponibilidad los decide aquí
+        assertThat(catalog.resources().get(3).operationalStatus()).isEqualTo(OperationalStatus.DISPONIBLE);
+        assertThat(catalog.resources().get(4).operationalStatus()).isEqualTo(OperationalStatus.DISPONIBLE);
+        assertThat(catalog.resources().get(2).operationalStatus()).isEqualTo(OperationalStatus.EN_USO);
     }
 
     @Test
@@ -121,27 +140,25 @@ class InventoryRestAdapterTest {
 
         assertThat(catalog.resources()).hasSize(4);
         assertThat(catalog.truncated()).isTrue();
-        module1.verify(2, getRequestedFor(urlPathEqualTo("/api/v1/resources")));
+        module1.verify(2, getRequestedFor(urlPathEqualTo(CATALOG)));
     }
 
     @Test
-    void sendsTheFiltersAndThePageSizeToInventory() {
-        stubPage(1, "module1-catalog-empty.json");
+    void filtersHereBecauseInventoryDoesNotFilter() {
+        stubAllPages();
+        InventoryRestAdapter adapter = adapter(10, Duration.ofSeconds(2));
 
-        adapter(10, Duration.ofSeconds(2))
-                .searchCatalog(new ResourceFilter(ResourceCategory.ESPACIO, "LABORATORIO", 20));
-
-        module1.verify(getRequestedFor(urlPathEqualTo("/api/v1/resources"))
-                .withQueryParam("category", equalTo("ESPACIO"))
-                .withQueryParam("type", equalTo("LABORATORIO"))
-                .withQueryParam("minCapacity", equalTo("20"))
-                .withQueryParam("page", equalTo("1"))
-                .withQueryParam("size", equalTo("2")));
+        assertThat(adapter.searchCatalog(new ResourceFilter(ResourceCategory.ESPACIO, null, 20)).resources())
+                .extracting(Resource::id).containsExactly(LAB, AUDITORIUM);
+        assertThat(adapter.searchCatalog(new ResourceFilter(ResourceCategory.ACTIVO, null, null)).resources())
+                .extracting(Resource::id).containsExactly(MICROSCOPE, LAPTOP);
+        assertThat(adapter.searchCatalog(new ResourceFilter(null, "portatil", null)).resources())
+                .extracting(Resource::id).containsExactly(LAPTOP);
     }
 
     @Test
     void anEmptyCatalogIsAnEmptyListNotAnError() {
-        stubPage(1, "module1-catalog-empty.json");
+        stubPage(0, "module1-catalog-empty.json");
 
         Catalog catalog = adapter(10, Duration.ofSeconds(2)).searchCatalog(NO_FILTER);
 
@@ -150,26 +167,26 @@ class InventoryRestAdapterTest {
     }
 
     @Test
-    void anOperationalStatusThatIsNotInventorysIsAContractError() {
-        module1.stubFor(get(urlPathEqualTo("/api/v1/resources")).willReturn(aResponse()
+    void anUnknownStateIsAContractError() {
+        module1.stubFor(get(urlPathEqualTo(CATALOG)).willReturn(aResponse()
                 .withHeader("Content-Type", "application/json")
-                .withBody(read("module1-catalog-page2.json").replace("\"EN_USO\"", "\"RESERVADO\""))));
+                .withBody(read("module1-catalog-page2.json").replace("\"EN_USO\"", "\"DADO_DE_BAJA\""))));
 
         assertUnavailable(() -> adapter(10, Duration.ofSeconds(2)).searchCatalog(NO_FILTER));
     }
 
     @Test
     void aMissingRequiredFieldIsAContractError() {
-        module1.stubFor(get(urlPathEqualTo("/api/v1/resources")).willReturn(aResponse()
+        module1.stubFor(get(urlPathEqualTo(CATALOG)).willReturn(aResponse()
                 .withHeader("Content-Type", "application/json")
-                .withBody(read("module1-catalog-page2.json").replace("\"name\": \"Sala de Estudio 3\",", ""))));
+                .withBody(read("module1-catalog-page2.json").replace("\"nombre\": \"Sala de Estudio 3\",", ""))));
 
         assertUnavailable(() -> adapter(10, Duration.ofSeconds(2)).searchCatalog(NO_FILTER));
     }
 
     @Test
     void anUnreadableBodyIsUnavailable() {
-        module1.stubFor(get(urlPathEqualTo("/api/v1/resources")).willReturn(aResponse()
+        module1.stubFor(get(urlPathEqualTo(CATALOG)).willReturn(aResponse()
                 .withHeader("Content-Type", "application/json").withBody("{no es json")));
 
         assertUnavailable(() -> adapter(10, Duration.ofSeconds(2)).searchCatalog(NO_FILTER));
@@ -177,8 +194,8 @@ class InventoryRestAdapterTest {
 
     @Test
     void every4xxAnd5xxStatusIsUnavailable() {
-        for (int status : new int[]{400, 401, 403, 500, 503}) {
-            module1.stubFor(get(urlPathEqualTo("/api/v1/resources")).willReturn(aResponse().withStatus(status)));
+        for (int status : new int[]{400, 401, 403, 404, 500, 503}) {
+            module1.stubFor(get(urlPathEqualTo(CATALOG)).willReturn(aResponse().withStatus(status)));
 
             assertUnavailable(() -> adapter(10, Duration.ofSeconds(2)).searchCatalog(NO_FILTER));
         }
@@ -186,7 +203,7 @@ class InventoryRestAdapterTest {
 
     @Test
     void aTimeoutIsUnavailable() {
-        module1.stubFor(get(urlPathEqualTo("/api/v1/resources")).willReturn(aResponse()
+        module1.stubFor(get(urlPathEqualTo(CATALOG)).willReturn(aResponse()
                 .withFixedDelay(1500).withHeader("Content-Type", "application/json")
                 .withBody(read("module1-catalog-empty.json"))));
 
@@ -201,130 +218,136 @@ class InventoryRestAdapterTest {
         assertUnavailable(() -> adapter.searchCatalog(NO_FILTER));
     }
 
+    // --- Estado por lote: el Módulo 1 no lo tiene, sale del catálogo ------------------------------------------
+
     @Test
-    void readsTheOperationalStatusOfABatchAndLeavesOutWhatInventoryDoesNotKnow() {
-        module1.stubFor(post(urlPathEqualTo("/api/v1/resources/operational-status"))
-                .withRequestBody(equalToJson("{\"resourceIds\": [\"ESP-0412\", \"ESP-0107\", \"ACT-000912\", \"ESP-9999\"]}"))
-                .willReturn(aResponse().withHeader("Content-Type", "application/json")
-                        .withBody(read("module1-operational-status.json"))));
+    void readsTheOperationalStatusOfABatchFromTheCatalogAndLeavesOutWhatInventoryDoesNotKnow() {
+        stubAllPages();
 
         Map<String, OperationalStatus> statuses = adapter(10, Duration.ofSeconds(2))
-                .operationalStatus(List.of("ESP-0412", "ESP-0107", "ACT-000912", "ESP-9999"));
+                .operationalStatus(List.of(LAB, STUDY_ROOM, MICROSCOPE, "00000000-0000-0000-0000-000000000000"));
 
         assertThat(statuses).containsOnly(
-                Map.entry("ESP-0412", OperationalStatus.DISPONIBLE),
-                Map.entry("ESP-0107", OperationalStatus.EN_USO),
-                Map.entry("ACT-000912", OperationalStatus.EN_MANTENIMIENTO));
+                Map.entry(LAB, OperationalStatus.DISPONIBLE),
+                Map.entry(STUDY_ROOM, OperationalStatus.EN_USO),
+                Map.entry(MICROSCOPE, OperationalStatus.EN_MANTENIMIENTO));
+    }
+
+    @Test
+    void aTruncatedCatalogCannotAnswerABatch() {
+        stubAllPages();
+
+        assertUnavailable(() -> adapter(2, Duration.ofSeconds(2)).operationalStatus(List.of(LAPTOP)));
     }
 
     @Test
     void doesNotCallInventoryForAnEmptyBatch() {
         assertThat(adapter(10, Duration.ofSeconds(2)).operationalStatus(List.of())).isEmpty();
-        module1.verify(0, postRequestedFor(urlPathEqualTo("/api/v1/resources/operational-status")));
+        module1.verify(0, getRequestedFor(urlPathEqualTo(CATALOG)));
     }
 
-    // --- La ficha de un recurso (UC2 Contratos §4) ------------------------------------------------------------
+    // --- La ficha de un recurso ------------------------------------------------------------------------------
 
     private void stubDetails(String resourceId, String fixture) {
-        module1.stubFor(get(urlPathEqualTo("/api/v1/resources/" + resourceId))
+        module1.stubFor(get(urlPathEqualTo(CATALOG + "/" + resourceId))
                 .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody(read(fixture))));
     }
 
     @Test
     void readsTheDetailsOfAnAssetWithItsLoanTerm() {
-        stubDetails("ACT-004512", "module1-asset-details.json");
+        stubDetails(BOOK, "module1-asset-details.json");
 
-        Resource asset = adapter(10, Duration.ofSeconds(2)).details("ACT-004512").orElseThrow();
+        Resource asset = adapter(10, Duration.ofSeconds(2)).details(BOOK).orElseThrow();
 
-        assertThat(asset.id()).isEqualTo("ACT-004512");
+        assertThat(asset.id()).isEqualTo(BOOK);
         assertThat(asset.name()).isEqualTo("Libro de Cálculo I");
         assertThat(asset.category()).isEqualTo(ResourceCategory.ACTIVO);
         assertThat(asset.type()).isEqualTo("LIBRO");
         assertThat(asset.location()).isEqualTo("Biblioteca, estantería C-4");
         assertThat(asset.operationalStatus()).isEqualTo(OperationalStatus.DISPONIBLE);
-        assertThat(asset.condition()).isEqualTo("BUENO");
+        assertThat(asset.condition()).isEqualTo("OPTIMO");
         assertThat(asset.loanTermBusinessDays()).isEqualTo(7);
         assertThat(asset.maxCapacity()).isNull();
-        module1.verify(1, getRequestedFor(urlPathEqualTo("/api/v1/resources/ACT-004512")));
+        module1.verify(1, getRequestedFor(urlPathEqualTo(CATALOG + "/" + BOOK)));
     }
 
     @Test
-    void readsTheDetailsOfASpaceWithItsOperationalStatus() {
-        stubDetails("ESP-0107", "module1-space-details.json");
+    void readsTheDetailsOfASpaceWithItsEquipment() {
+        stubDetails(STUDY_ROOM, "module1-space-details.json");
 
-        Resource space = adapter(10, Duration.ofSeconds(2)).details("ESP-0107").orElseThrow();
+        Resource space = adapter(10, Duration.ofSeconds(2)).details(STUDY_ROOM).orElseThrow();
 
         assertThat(space.category()).isEqualTo(ResourceCategory.ESPACIO);
         assertThat(space.operationalStatus()).isEqualTo(OperationalStatus.EN_MANTENIMIENTO);
         assertThat(space.faculty()).isEqualTo("Biblioteca Central");
         assertThat(space.maxCapacity()).isEqualTo(8);
-        assertThat(space.equipment()).containsExactly("AIRE_ACONDICIONADO");
+        assertThat(space.equipment()).containsExactly("AIRE_ACONDICIONADO", "PROYECTOR");
         assertThat(space.loanTermBusinessDays()).isNull();
     }
 
     @Test
     void aMissingLoanTermIsKeptMissingAndNeverDefaulted() {
         // Ficha incompleta (P-16): la decide UC2 con INCOMPLETE_RESOURCE_DETAILS, no el adaptador con un valor nuestro.
-        stubDetails("ACT-004512", "module1-asset-details-no-term.json");
+        stubDetails(BOOK, "module1-asset-details-no-term.json");
 
-        Resource asset = adapter(10, Duration.ofSeconds(2)).details("ACT-004512").orElseThrow();
-
-        assertThat(asset.loanTermBusinessDays()).isNull();
+        assertThat(adapter(10, Duration.ofSeconds(2)).details(BOOK).orElseThrow().loanTermBusinessDays()).isNull();
     }
 
     @Test
     void aLoanTermOfZeroIsOnSiteUseAndNotMissing() {
-        module1.stubFor(get(urlPathEqualTo("/api/v1/resources/ACT-000913")).willReturn(aResponse()
+        module1.stubFor(get(urlPathEqualTo(CATALOG + "/" + BOOK)).willReturn(aResponse()
                 .withHeader("Content-Type", "application/json")
-                .withBody(read("module1-asset-details.json").replace("ACT-004512", "ACT-000913")
-                        .replace("\"loanTermBusinessDays\": 7", "\"loanTermBusinessDays\": 0"))));
+                .withBody(read("module1-asset-details.json").replace("\"plazoDevolucion\": 7", "\"plazoDevolucion\": 0"))));
 
-        assertThat(adapter(10, Duration.ofSeconds(2)).details("ACT-000913").orElseThrow().loanTermBusinessDays())
-                .isZero();
+        assertThat(adapter(10, Duration.ofSeconds(2)).details(BOOK).orElseThrow().loanTermBusinessDays()).isZero();
     }
 
     @Test
-    void anUnknownResourceIsEmptyAndNotAnError() {
-        module1.stubFor(get(urlPathEqualTo("/api/v1/resources/ESP-9999")).willReturn(aResponse().withStatus(404)));
+    void anUnknownOrMalformedIdIsEmptyAndNotAnError() {
+        module1.stubFor(get(urlPathEqualTo(CATALOG + "/" + LAB)).willReturn(aResponse().withStatus(404)));
+        // El Módulo 1 contesta 400 a un id que no es UUID
+        module1.stubFor(get(urlPathEqualTo(CATALOG + "/ESP-9999")).willReturn(aResponse().withStatus(400)));
 
+        assertThat(adapter(10, Duration.ofSeconds(2)).details(LAB)).isEmpty();
         assertThat(adapter(10, Duration.ofSeconds(2)).details("ESP-9999")).isEmpty();
     }
 
     @Test
     void anyOtherStatusOfTheDetailsIsUnavailable() {
-        for (int status : new int[]{400, 401, 403, 500, 503}) {
-            module1.stubFor(get(urlPathEqualTo("/api/v1/resources/ESP-0107")).willReturn(aResponse().withStatus(status)));
+        for (int status : new int[]{401, 403, 500, 503}) {
+            module1.stubFor(get(urlPathEqualTo(CATALOG + "/" + STUDY_ROOM)).willReturn(aResponse().withStatus(status)));
 
-            assertUnavailable(() -> adapter(10, Duration.ofSeconds(2)).details("ESP-0107"));
+            assertUnavailable(() -> adapter(10, Duration.ofSeconds(2)).details(STUDY_ROOM));
         }
     }
 
     @Test
     void brokenDetailsAreAContractErrorAndUnavailable() {
+        String details = read("module1-space-details.json");
         for (String body : new String[]{
                 "",
                 "{no es json",
-                read("module1-space-details.json").replace("\"EN_MANTENIMIENTO\"", "\"RESERVADO\""),
-                read("module1-space-details.json").replace("\"name\": \"Sala de Estudio 3\",", ""),
-                read("module1-space-details.json").replace("\"ESPACIO\"", "\"OTRA\""),
-                read("module1-space-details.json").replace("\"maxCapacity\": 8,", "")}) {
-            module1.stubFor(get(urlPathEqualTo("/api/v1/resources/ESP-0107")).willReturn(aResponse()
+                details.replace("\"EN_MANTENIMIENTO\"", "\"DADO_DE_BAJA\""),
+                details.replace("\"nombre\": \"Sala de Estudio 3\",", ""),
+                details.replace("\"ESPACIO\"", "\"OTRA\""),
+                details.replace("\"aforoMaximo\": 8,", "")}) {
+            module1.stubFor(get(urlPathEqualTo(CATALOG + "/" + STUDY_ROOM)).willReturn(aResponse()
                     .withHeader("Content-Type", "application/json").withBody(body)));
 
-            assertUnavailable(() -> adapter(10, Duration.ofSeconds(2)).details("ESP-0107"));
+            assertUnavailable(() -> adapter(10, Duration.ofSeconds(2)).details(STUDY_ROOM));
         }
     }
 
     @Test
     void aSlowOrAbsentModule1IsUnavailableForTheDetails() {
-        module1.stubFor(get(urlPathEqualTo("/api/v1/resources/ESP-0107")).willReturn(aResponse()
+        module1.stubFor(get(urlPathEqualTo(CATALOG + "/" + STUDY_ROOM)).willReturn(aResponse()
                 .withFixedDelay(1500).withHeader("Content-Type", "application/json")
                 .withBody(read("module1-space-details.json"))));
-        assertUnavailable(() -> adapter(10, Duration.ofMillis(300)).details("ESP-0107"));
+        assertUnavailable(() -> adapter(10, Duration.ofMillis(300)).details(STUDY_ROOM));
 
         InventoryRestAdapter adapter = adapter(10, Duration.ofSeconds(1));
         module1.stop();
-        assertUnavailable(() -> adapter.details("ESP-0107"));
+        assertUnavailable(() -> adapter.details(STUDY_ROOM));
     }
 
     private static void assertUnavailable(org.assertj.core.api.ThrowableAssert.ThrowingCallable call) {
