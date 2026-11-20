@@ -58,7 +58,7 @@ El Módulo 1 publicó su API y **no sigue la propuesta de arriba**. Adaptamos `I
 | Nuestra propuesta | Lo que tienen | Cómo lo resolvemos |
 |---|---|---|
 | Sin autenticación | HTTP Basic en toda la API | `MODULE1_USERNAME` y `MODULE1_PASSWORD`; vacíos, se llama sin autenticación |
-| `GET /api/v1/resources` con filtros, páginas desde 1 | `GET /api/v1/recursos?page&size`, páginas desde 0, sin filtros y sin `totalPages` (solo `totalElements`) | se recorre el catálogo entero y se filtra aquí por categoría, tipo y aforo |
+| `GET /api/v1/resources` con filtros, páginas desde 1 | `GET /api/v1/recursos?page&size`, páginas desde 0, `size` de 20 como máximo (más da `400`), sin filtros y sin `totalPages` (solo `totalElements`) | se recorre el catálogo entero de a 20 y se filtra aquí por categoría, tipo y aforo |
 | `GET /api/v1/resources/{id}` | `GET /api/v1/recursos/{id}`, con `id` UUID; un id que no es UUID da `400` | `400` y `404` son "no existe" |
 | `POST /api/v1/resources/operational-status` | no existe | sale del mismo catálogo completo; si el catálogo se trunca, la respuesta es "no disponible" |
 | Campos en inglés | `id`, `codigo`, `nombre`, `tipo` (`ESPACIO`/`ACTIVO`), `estado`, `estadoFisico`, `facultad`, `ubicacion`, `aforoMaximo`, `plazoDevolucion`, `tipoActivo`, `equipamiento` | `type` es `tipoActivo` en un activo y nulo en un espacio, que no trae subtipo; `loanTermBusinessDays` es `plazoDevolucion` |
