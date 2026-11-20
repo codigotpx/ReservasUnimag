@@ -37,7 +37,8 @@ class AvailabilityController {
     ResponseEntity<AvailabilityResponse> check(
             @PathVariable String resourceId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-1            @RequestParam @DateTimeFormat(pattern = "HH:mm") LocalTime end) {
+            @RequestParam @DateTimeFormat(pattern = "HH:mm") LocalTime start,
+            @RequestParam @DateTimeFormat(pattern = "HH:mm") LocalTime end) {
         TimeSlot slot = new TimeSlot(date, start, end);
         long started = System.nanoTime();
         AvailabilityAnswer answer = availability.check(resourceId, slot);
