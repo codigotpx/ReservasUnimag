@@ -11,6 +11,7 @@ export function TypeChips({
   value?: string;
   onChange: (type: string | undefined) => void;
 }) {
+  if (TYPES_BY_CATEGORY[category].length === 0) return null;
   const options: { code?: string; label: string }[] = [
     { label: "Todos" },
     ...TYPES_BY_CATEGORY[category].map((code) => ({ code, label: codeLabel(code) })),

@@ -209,7 +209,7 @@ export function ConfirmReservation({
           {statusLabel(status, resource.category)}
         </span>
       </div>
-      <p className="mt-1 text-gray-500">{codeLabel(resource.type)}</p>
+      {resource.type && <p className="mt-1 text-gray-500">{codeLabel(resource.type)}</p>}
 
       {isAsset ? (
         <AssetLoan resource={resource} date={slot.date} pickup={pickup} due={currentDue} />

@@ -1,12 +1,23 @@
 import type { Category, DisplayedStatus } from "./types";
 
 /**
- * Los tipos del filtro, por categoría. Es la misma lista de reservations.resource-types del backend:
- * el plan de UC1 no agrega un endpoint de tipos mientras el Módulo 1 no publique el suyo (P-16).
+ * Los tipos del filtro, por categoría. Son los tipos de activo del catálogo del Módulo 1 (GET /api/v1/catalogos),
+ * escritos tal cual porque el backend filtra comparando el nombre. Los espacios del Módulo 1 no tienen subtipo, así
+ * que no hay filtro por tipo de espacio. Es la misma lista de reservations.resource-types del backend.
  */
 export const TYPES_BY_CATEGORY: Record<Category, string[]> = {
-  ESPACIO: ["LABORATORIO", "SALON", "SALA_DE_ESTUDIO", "AUDITORIO"],
-  ACTIVO: ["PORTATIL", "VIDEOBEAM", "MICROSCOPIO", "LIBRO"],
+  ESPACIO: [],
+  ACTIVO: [
+    "Cómputo Universitario",
+    "Cómputo Alto Rendimiento",
+    "Multimedia",
+    "Audiovisual Producción",
+    "Equipo de Laboratorio",
+    "Laboratorio Clínico",
+    "Equipo Técnico",
+    "Mobiliario Universitario",
+    "GENERAL",
+  ],
 };
 
 export const CATEGORY_LABELS: Record<Category, string> = {
@@ -28,9 +39,15 @@ const CODE_LABELS: Record<string, string> = {
   SONIDO: "Sonido",
 };
 
-/** Los tipos y el equipamiento son códigos opacos del Módulo 1: los conocidos se traducen y el resto se humaniza. */
-export function codeLabel(code: string): string {
+/**
+ * Los tipos y el equipamiento vienen del Módulo 1: los códigos conocidos se traducen, los nombres ya escritos para
+ * personas (con minúsculas) se dejan igual y el resto se humaniza. Un espacio no tiene tipo: sin código, texto vacío.
+ */
+export function codeLabel(code: string | null | undefined): string {
+  if (!code) return "";
   const known = CODE_LABELS[code];
+  if (known) return known;
+  if (code !== code.toUpperCase()) return code;
   if (known) return known;
   const words = code.toLowerCase().replaceAll("_", " ");
   return words.charAt(0).toUpperCase() + words.slice(1);

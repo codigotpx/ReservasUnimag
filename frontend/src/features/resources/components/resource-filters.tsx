@@ -87,6 +87,7 @@ export function ResourceFilters({
           </Field>
         </div>
 
+        {TYPES_BY_CATEGORY[category].length > 0 && (
         <Field label={category === "ESPACIO" ? "Tipo de espacio" : "Tipo de activo"}>
           <Dropdown
             label={category === "ESPACIO" ? "Tipo de espacio" : "Tipo de activo"}
@@ -99,6 +100,7 @@ export function ResourceFilters({
             ]}
           />
         </Field>
+        )}
 
         {category === "ESPACIO" && (
           <Field label="Capacidad mínima">
