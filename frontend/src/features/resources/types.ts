@@ -18,7 +18,7 @@ export interface ResourceWithStatus {
   id: string;
   name: string;
   category: Category;
-  type: string;
+  type?: string | null; // los espacios del Módulo 1 no tienen subtipo
   location: string;
   faculty?: string; // espacio
   maxCapacity?: number; // espacio
