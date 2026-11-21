@@ -32,6 +32,7 @@ export type CreateReservationRequest =
 export interface Reservation {
   id: string;
   resourceId: string;
+  resourceCode?: string; // el código legible del Módulo 1 (ACT-201), para la placa
   name?: string; // se omite si el Módulo 1 no respondió
   category: Category;
   status: ReservationStatus;

@@ -36,16 +36,14 @@ import java.util.function.Predicate;
  * {@link ExternalServiceUnavailableException}, porque sin catálogo no hay nada que mostrar (FR-008).
  *
  * <p>El Módulo 1 no filtra ni tiene estado por lote: los filtros se aplican aquí y el lote sale del catálogo
- * completo. {@code RESERVADO} y {@code BLOQUEO_ACADEMICO} son estados que calcula este módulo con sus reservas, así
- * que para nosotros el recurso está {@code DISPONIBLE} y la disponibilidad la decide el cruce con las reservas.
+ * completo. Sus cinco estados se respetan tal cual, también {@code RESERVADO} y {@code BLOQUEO_ACADEMICO}: si su
+ * inventario los marca, el recurso no se ofrece.
  */
 @Component
 @Profile("!local")
 class InventoryRestAdapter implements InventoryPort {
 
     private static final Logger log = LoggerFactory.getLogger(InventoryRestAdapter.class);
-
-    private static final Set<String> OUR_STATES = Set.of("RESERVADO", "BLOQUEO_ACADEMICO");
 
     private final RestClient client;
     private final int pageSize;
@@ -168,13 +166,13 @@ class InventoryRestAdapter implements InventoryPort {
         ResourceCategory category = parseCategory(dto.tipo());
         if (category == ResourceCategory.ACTIVO) {
             return Resource.asset(id, name, dto.tipoActivo(), location, status, dto.estadoFisico(),
-                    dto.plazoDevolucion());
+                    dto.plazoDevolucion()).withCode(dto.codigo());
         }
         if (dto.aforoMaximo() == null) {
             throw new ContractViolation("el espacio " + id + " llegó sin aforoMaximo");
         }
         return Resource.space(id, name, null, location, status, dto.facultad(), dto.aforoMaximo(),
-                equipment(dto.equipamiento()));
+                equipment(dto.equipamiento())).withCode(dto.codigo());
     }
 
     /** Texto tal cual, o el {@code nombre} si el Módulo 1 manda objetos. */
@@ -198,9 +196,6 @@ class InventoryRestAdapter implements InventoryPort {
 
     private static OperationalStatus status(String value) {
         String estado = required(value, "estado");
-        if (OUR_STATES.contains(estado)) {
-            return OperationalStatus.DISPONIBLE;
-        }
         try {
             return OperationalStatus.valueOf(estado);
         } catch (IllegalArgumentException unknown) {

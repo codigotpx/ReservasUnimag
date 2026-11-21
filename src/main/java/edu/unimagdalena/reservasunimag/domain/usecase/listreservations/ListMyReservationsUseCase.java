@@ -52,11 +52,11 @@ public class ListMyReservationsUseCase implements ListMyReservationsPort {
                 .sorted(Comparator.comparing(Reservation::startsAt).thenComparing(Reservation::id))
                 .toList();
 
-        Map<String, String> names = new HashMap<>();
+        Map<String, Resource> names = new HashMap<>();
         boolean catalogUnavailable = false;
         try {
             for (String resourceId : mine.stream().map(Reservation::resourceId).distinct().toList()) {
-                inventory.details(resourceId).map(Resource::name).ifPresent(name -> names.put(resourceId, name));
+                inventory.details(resourceId).ifPresent(resource -> names.put(resourceId, resource));
             }
         } catch (ExternalServiceUnavailableException unavailable) {
             names.clear();
@@ -66,7 +66,9 @@ public class ListMyReservationsUseCase implements ListMyReservationsPort {
         Map<UUID, Absence> absent = mine.isEmpty() ? Map.of()
                 : absences.findActiveByReservations(mine.stream().map(Reservation::id).toList());
         List<MyReservations.Item> items = mine.stream()
-                .map(reservation -> new MyReservations.Item(reservation, names.get(reservation.resourceId()),
+                .map(reservation -> new MyReservations.Item(reservation,
+                        names.containsKey(reservation.resourceId()) ? names.get(reservation.resourceId()).name() : null,
+                        names.containsKey(reservation.resourceId()) ? names.get(reservation.resourceId()).code() : null,
                         reservation.overdue(now), cancellationPolicy.cancellableByHolder(reservation, now),
                         absent.get(reservation.id())))
                 .toList();
