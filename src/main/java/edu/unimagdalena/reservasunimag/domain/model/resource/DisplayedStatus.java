@@ -51,7 +51,11 @@ public enum DisplayedStatus {
         if (operational == OperationalStatus.EN_MANTENIMIENTO) {
             return EN_MANTENIMIENTO;
         }
-        DisplayedStatus result = DISPONIBLE;
+        // Lo que marca el inventario no trae fechas: bloquea cualquier franja, como el mantenimiento
+        if (operational == OperationalStatus.BLOQUEO_ACADEMICO) {
+            return BLOQUEO_ACADEMICO;
+        }
+        DisplayedStatus result = operational == OperationalStatus.RESERVADO ? RESERVADO : DISPONIBLE;
         if (operational == OperationalStatus.EN_USO && !now.isBefore(from) && now.isBefore(to)) {
             result = EN_USO;
         }

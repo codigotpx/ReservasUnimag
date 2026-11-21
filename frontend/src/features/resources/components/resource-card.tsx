@@ -75,7 +75,7 @@ export function ResourceCard({
 function details(resource: ResourceWithStatus): { icon: LucideIcon; text: string }[] {
   const location = resource.location ? [{ icon: MapPin, text: resource.location }] : [];
   if (resource.category === "ACTIVO") {
-    return [{ icon: Tag, text: `Placa ${resource.id}` }, ...location];
+    return [{ icon: Tag, text: `Placa ${resource.code ?? resource.id}` }, ...location];
   }
   const equipment = (resource.equipment ?? []).map(codeLabel).join(", ");
   return [

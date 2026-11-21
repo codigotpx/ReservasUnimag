@@ -18,6 +18,11 @@ public record MyReservations(List<Item> reservations, Quota quota, boolean catal
      * {@code cancellable} es si el titular todavía puede cancelarla (UC4 FR-007, FR-008). {@code absence} es la
      * ausencia vigente que se le registró, o {@code null} si no tiene o se anuló (UC9 FR-010).
      */
-    public record Item(Reservation reservation, String name, boolean overdue, boolean cancellable, Absence absence) {
+    public record Item(Reservation reservation, String name, String resourceCode, boolean overdue,
+                       boolean cancellable, Absence absence) {
+
+        public Item(Reservation reservation, String name, boolean overdue, boolean cancellable, Absence absence) {
+            this(reservation, name, null, overdue, cancellable, absence);
+        }
     }
 }

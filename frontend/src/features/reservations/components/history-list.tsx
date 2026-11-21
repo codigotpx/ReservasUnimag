@@ -1,5 +1,6 @@
 import { dayOf, monthYear, shortDay, timeOf } from "@/lib/dates";
 import type { Reservation } from "../types";
+import { ReservationId } from "./reservation-id";
 
 /** El historial agrupado por mes, de la más reciente a la más antigua. */
 export function HistoryList({ reservations }: { reservations: Reservation[] }) {
@@ -27,6 +28,7 @@ export function HistoryList({ reservations }: { reservations: Reservation[] }) {
                     <p className="text-gray-500">{period(reservation)}</p>
                     {badge.note && <p className="mt-1 text-sm text-violet-800">{badge.note}</p>}
                     {reservation.absence && <p className="mt-1 text-sm text-red-700">{reservation.absence.message}</p>}
+                    <ReservationId id={reservation.id} />
                   </div>
                   <span className={`shrink-0 rounded-lg px-3 py-1 text-sm font-semibold uppercase ${badge.className}`}>
                     {badge.label}

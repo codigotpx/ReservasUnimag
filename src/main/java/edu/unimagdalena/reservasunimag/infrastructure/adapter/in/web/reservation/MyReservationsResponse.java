@@ -21,13 +21,13 @@ record MyReservationsResponse(List<Item> reservations, ReservationResponse.Quota
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record Item(String id, String resourceId, String name, String category, String status, String start,
+    record Item(String id, String resourceId, String resourceCode, String name, String category, String status, String start,
                 String end, ReservationResponse.LoanBody loan, boolean cancellable, String useStartedAt,
                 AbsenceBody absence) {
 
         static Item from(MyReservations.Item item) {
             var reservation = item.reservation();
-            return new Item(reservation.id().toString(), reservation.resourceId(), item.name(),
+            return new Item(reservation.id().toString(), reservation.resourceId(), item.resourceCode(), item.name(),
                     reservation.category().name(), reservation.status().name(),
                     IsoTimes.offset(reservation.startsAt()), IsoTimes.offset(reservation.endsAt()),
                     ReservationResponse.LoanBody.of(reservation, item.overdue()), item.cancellable(),
