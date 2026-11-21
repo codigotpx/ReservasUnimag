@@ -78,6 +78,7 @@ record SearchResourcesResponse(
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record ResourceBody(
             String id,
+            String code,
             String name,
             String category,
             String type,
@@ -94,7 +95,7 @@ record SearchResourcesResponse(
 
         static ResourceBody from(ResourceWithStatus item) {
             var resource = item.resource();
-            return new ResourceBody(resource.id(), resource.name(), resource.category().name(), resource.type(),
+            return new ResourceBody(resource.id(), resource.code(), resource.name(), resource.category().name(), resource.type(),
                     resource.location(), resource.faculty(), resource.maxCapacity(), resource.equipment(),
                     resource.condition(), resource.loanTermBusinessDays(), item.status().name(),
                     item.selectable(), item.reason(),

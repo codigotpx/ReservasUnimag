@@ -50,6 +50,18 @@ class DisplayedStatusTest {
     }
 
     @Test
+    void whatTheInventoryMarksAsReservedOrAcademicBlocksAnyTimeSlot() {
+        // La API real del Módulo 1 usa también RESERVADO y BLOQUEO_ACADEMICO, sin fechas: se respetan siempre
+        assertThat(resolve(OperationalStatus.RESERVADO)).isEqualTo(DisplayedStatus.RESERVADO);
+        assertThat(resolve(OperationalStatus.BLOQUEO_ACADEMICO)).isEqualTo(DisplayedStatus.BLOQUEO_ACADEMICO);
+        assertThat(DisplayedStatus.resolve(OperationalStatus.RESERVADO, List.of(), at(20, 0), at(21, 0), LATER))
+                .isEqualTo(DisplayedStatus.RESERVADO);
+        // El mantenimiento sigue ganando, y una clase nuestra gana sobre un reservado del inventario
+        assertThat(resolve(OperationalStatus.RESERVADO, occupancy("R", OccupancyType.ACADEMIC_BLOCK, 10, 12)))
+                .isEqualTo(DisplayedStatus.BLOQUEO_ACADEMICO);
+    }
+
+    @Test
     void anAcademicBlockWinsOverAReservation() {
         assertThat(resolve(DISPONIBLE,
                 occupancy("R", OccupancyType.SPACE_RESERVATION, 10, 11),

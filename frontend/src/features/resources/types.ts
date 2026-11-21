@@ -16,6 +16,7 @@ export interface TimeSlot {
 
 export interface ResourceWithStatus {
   id: string;
+  code?: string; // el código legible del Módulo 1 (ESP-201, ACT-201)
   name: string;
   category: Category;
   type?: string | null; // los espacios del Módulo 1 no tienen subtipo

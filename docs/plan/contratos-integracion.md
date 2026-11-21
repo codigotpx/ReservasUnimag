@@ -62,9 +62,9 @@ El Módulo 1 publicó su API y **no sigue la propuesta de arriba**. Adaptamos `I
 | `GET /api/v1/resources/{id}` | `GET /api/v1/recursos/{id}`, con `id` UUID; un id que no es UUID da `400` | `400` y `404` son "no existe" |
 | `POST /api/v1/resources/operational-status` | no existe | sale del mismo catálogo completo; si el catálogo se trunca, la respuesta es "no disponible" |
 | Campos en inglés | `id`, `codigo`, `nombre`, `tipo` (`ESPACIO`/`ACTIVO`), `estado`, `estadoFisico`, `facultad`, `ubicacion`, `aforoMaximo`, `plazoDevolucion`, `tipoActivo`, `equipamiento` | `type` es `tipoActivo` en un activo y nulo en un espacio, que no trae subtipo; `loanTermBusinessDays` es `plazoDevolucion` |
-| `operationalStatus` con tres valores | `estado` con cinco: también `RESERVADO` y `BLOQUEO_ACADEMICO` (P-20.4 sigue sin cerrar de su lado) | esos dos son estados que calcula este módulo con sus reservas: se leen como `DISPONIBLE` y la disponibilidad la decide el cruce con las reservas |
+| `operationalStatus` con tres valores | `estado` con cinco: también `RESERVADO` y `BLOQUEO_ACADEMICO` (P-20.4 sigue sin cerrar de su lado) | se respetan (2026-11-20): si el inventario los marca, el recurso sale `RESERVADO` o `BLOQUEO_ACADEMICO` y no se ofrece, en cualquier franja, como el mantenimiento. Nosotros nunca se los mandamos, así que no se bloquea solo |
 
-El `resource_id` que guardamos es su `id` (UUID), no el `codigo`, porque la ficha solo se pide por `id`. Sus servidores están en Render gratis, que se duerme: `MODULE1_TIMEOUT` y `MODULE3_TIMEOUT` permiten subir los timeouts sin una release.
+El `resource_id` que guardamos es su `id` (UUID), no el `codigo`, porque la ficha solo se pide por `id`. El `codigo` (ESP-201, ACT-201) viaja como `code` en el catálogo y como `resourceCode` en "Mis reservas", para mostrarlo como placa. Sus servidores están en Render gratis, que se duerme: `MODULE1_TIMEOUT` y `MODULE3_TIMEOUT` permiten subir los timeouts sin una release.
 
 ### Al Módulo 3 — `CompliancePort`
 

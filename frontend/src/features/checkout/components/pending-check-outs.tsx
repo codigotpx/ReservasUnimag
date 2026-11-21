@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ApiRequestError, type ApiError } from "@/lib/api/client";
 import { dateTimeLabel, dayOf, shortDay, timeOf } from "@/lib/dates";
 import { fetchPendingReturns, fetchPendingReviews } from "../api";
+import { ReservationId } from "@/features/reservations/components/reservation-id";
 import type { Pagination, PendingReturnsResponse, PendingReviewsResponse } from "../types";
 
 type Tab = "returns" | "reviews";
@@ -71,7 +72,7 @@ function PendingReturns() {
             <Empty text="No hay préstamos pendientes de devolución." />
           ) : (
             <Table
-              head={["Activo", "Persona", "Recogido", "Vence", "Atraso", "Se declara perdido"]}
+              head={["Activo", "Persona", "Recogido", "Vence", "Atraso", "Se declara perdido", "Reserva"]}
               rows={data.loans.map((loan) => {
                 const near =
                   loan.lossThresholdAt !== undefined && Date.parse(loan.lossThresholdAt) - now < NEAR_LOSS_MS;
@@ -99,6 +100,7 @@ function PendingReturns() {
                     ) : (
                       "Sin fecha"
                     ),
+                    <ReservationId key="r" id={loan.reservationId} label="" />,
                   ],
                 };
               })}
@@ -161,7 +163,7 @@ function PendingReviews() {
               <Empty text="No hay espacios pendientes de revisión." />
             ) : (
               <Table
-                head={["Espacio", "Origen", "Quién la tenía", "Franja", "Terminó"]}
+                head={["Espacio", "Origen", "Quién la tenía", "Franja", "Terminó", "Reserva"]}
                 rows={data.reservations.map((review) => ({
                   key: review.reservationId,
                   cells: [
@@ -178,6 +180,7 @@ function PendingReviews() {
                     review.finishedDaysAgo === 0
                       ? "Hoy"
                       : `Hace ${review.finishedDaysAgo} ${review.finishedDaysAgo === 1 ? "día" : "días"}`,
+                    <ReservationId key="r" id={review.reservationId} label="" />,
                   ],
                 }))}
               />

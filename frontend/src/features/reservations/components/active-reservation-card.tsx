@@ -1,6 +1,7 @@
 import { CircleAlert, Clock } from "lucide-react";
 import { dayInSentence, dayOf, fullDayLabel, relativeDay, dayMonth, timeOf, timeUntil } from "@/lib/dates";
 import type { Reservation } from "../types";
+import { ReservationId } from "./reservation-id";
 
 /**
  * Una reserva vigente (UC4 T020). El botón de cancelar solo aparece cuando el backend dice que se puede
@@ -31,7 +32,7 @@ export function ActiveReservationCard({
 
       {reservation.loan ? (
         <>
-          <p className="mt-2 text-gray-500">Placa: {reservation.resourceId}</p>
+          <p className="mt-2 text-gray-500">Placa: {reservation.resourceCode ?? reservation.resourceId}</p>
           {reservation.loan.pickedUp && <LoanProgress reservation={reservation} now={now} />}
         </>
       ) : (
@@ -44,6 +45,7 @@ export function ActiveReservationCard({
         <timing.icon className="mt-0.5 size-5 shrink-0" />
         <span>{timing.text}</span>
       </p>
+      <ReservationId id={reservation.id} />
 
       <div className="mt-4 border-t border-gray-200 pt-4">
         {reservation.cancellable ? (

@@ -121,15 +121,17 @@ class InventoryRestAdapterTest {
     }
 
     @Test
-    void theStatesThisModuleComputesAreAvailableForInventory() {
+    void keepsEveryStateInventoryReportsAndItsCode() {
         stubAllPages();
 
         Catalog catalog = adapter(10, Duration.ofSeconds(2)).searchCatalog(NO_FILTER);
 
-        // RESERVADO y BLOQUEO_ACADEMICO salen de nuestras reservas: el cruce de disponibilidad los decide aquí
-        assertThat(catalog.resources().get(3).operationalStatus()).isEqualTo(OperationalStatus.DISPONIBLE);
-        assertThat(catalog.resources().get(4).operationalStatus()).isEqualTo(OperationalStatus.DISPONIBLE);
+        // También RESERVADO y BLOQUEO_ACADEMICO: si el inventario los marca, el recurso no se ofrece
+        assertThat(catalog.resources().get(3).operationalStatus()).isEqualTo(OperationalStatus.RESERVADO);
+        assertThat(catalog.resources().get(4).operationalStatus()).isEqualTo(OperationalStatus.BLOQUEO_ACADEMICO);
         assertThat(catalog.resources().get(2).operationalStatus()).isEqualTo(OperationalStatus.EN_USO);
+        assertThat(catalog.resources()).extracting(Resource::code)
+                .containsExactly("ESP-002", "ACT-001", "ESP-003", "ESP-004", "ACT-002");
     }
 
     @Test
